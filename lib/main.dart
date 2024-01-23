@@ -1,17 +1,37 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'appointment_page.dart';
+import 'booking.dart';
 import 'chat_page.dart';
 import 'image_upload_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   print('ensureInitialized');
   await Firebase.initializeApp();
   print('running');
+  await signInAutomatically();
   runApp(const MyApp());
 }
+Future<void> signInAutomatically() async {
+  String email = 'utkuyy97@gmail.com';
+  String password = '612009aa';
 
+  try {
+    UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    print('Signed in with email: ${userCredential.user?.email}');
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'user-not-found') {
+      print('No user found for that email.');
+    } else if (e.code == 'wrong-password') {
+      print('Wrong password provided for that user.');
+    }
+  }
+}
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -58,6 +78,14 @@ class HomePage extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const ChatPage()),
               ),
+            ),
+            ElevatedButton(
+              child: const Text('Book '),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BookingPage()),
+              ),
+
             ),
           ],
         ),

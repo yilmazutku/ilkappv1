@@ -1,6 +1,7 @@
+// import 'dart:js';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-// import 'package:table_calendar/table_calendar.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 
 class AppointmentPage extends StatefulWidget {
   const AppointmentPage({super.key});
@@ -35,7 +36,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
             setState(() {
               _selectedDay = selectedDay;
               _focusedDay = focusedDay; // update `_focusedDay` here as well
-              Appointment? info= requestInfo();
+              // Appointment? info= requestInfo();
             });
           }
         },
@@ -48,22 +49,56 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Appointment? requestInfo() {
-  //online mi yuzyuze mi? kendisi adina mi, isim yazsin. 2 field kendi girecek, time zaten alindi, id platform gnerated
-    
-    return null;
-  }
+  // Appointment? requestInfo() {
+  // //online mi yuzyuze mi? kendisi adina mi, isim yazsin. 2 field kendi girecek, time zaten alindi, id platform gnerated
+  //
+  //   return null;
+  // }
 }
-class Appointment {
-  final String name;
-  final DateTime time;
-  final String service;
-  final String id;
+// class Appointment {
+//   final String name;
+//   final DateTime time;
+//   final String service;
+//   final String id;
+//
+//   Appointment({
+//     required this.name,
+//     required this.time,
+//     required this.service,
+//     required this.id
+//   });
+// }
 
-  Appointment({
-    required this.name,
-    required this.time,
-    required this.service,
-    required this.id
-  });
-}
+// class Appointment {
+//   String id;
+//   String name;
+//   String serviceType; // 'online' or 'face-to-face'
+//   DateTime date;
+//   TimeOfDay time;
+//
+//   Appointment({
+//     required this.id,
+//     required this.name,
+//     required this.serviceType,
+//     required this.date,
+//     required this.time,
+//   });
+//
+//   // Convert a Appointment into a Map. The keys must correspond to the names of the fields in Firestore.
+//   Map<String, dynamic> toJson() => {
+//     'id': id,
+//     'name': name,
+//     'serviceType': serviceType,
+//     'date': date,
+//     'time': time.format(context as BuildContext), // context is needed to format the time
+//   };
+//
+//   // A method that retrieves all the data from Firestore and converts it to an Appointment object.
+//   factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
+//     id: json['id'],
+//     name: json['name'],
+//     serviceType: json['serviceType'],
+//     date: (json['date'] as Timestamp).toDate(),
+//     time: TimeOfDay(hour: json['time'].split(':')[0], minute: json['time'].split(':')[1]),
+//   );
+// }
