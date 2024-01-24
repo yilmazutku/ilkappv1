@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'appointment_page.dart';
@@ -11,6 +12,11 @@ void main() async {
   print('ensureInitialized');
   await Firebase.initializeApp();
   print('running');
+  // await FirebaseAppCheck.instance.activate(
+  // //  webRecaptchaSiteKey: 'recaptcha-v3-site-key',
+  //   // Set androidProvider to `AndroidProvider.debug`
+  //   androidProvider: AndroidProvider.playIntegrity,
+  // );
   await signInAutomatically();
   runApp(const MyApp());
 }
