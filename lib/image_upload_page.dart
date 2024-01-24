@@ -1,6 +1,7 @@
 
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -71,8 +72,10 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
   }
   Future uploadFile() async {
     if (_image == null) return;
+    var user = FirebaseAuth.instance.currentUser;
+    final userId=user!.uid;
     final fileName = _image!.name;
-    final destination = 'files/$fileName';
+    final destination = '$userId/$fileName';
 
     try {
       print('Future uploadFile is called.');
