@@ -1,6 +1,7 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/admin_panel_page.dart';
 import 'appointment_page.dart';
 import 'booking.dart';
 import 'chat_page.dart';
@@ -90,6 +91,14 @@ class HomePage extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BookingPage()),
+              ),
+
+            ),
+            ElevatedButton(
+              child: const Text('Admin Panel'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminPanelPage()),
               ),
 
             ),

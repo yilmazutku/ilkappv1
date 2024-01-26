@@ -76,7 +76,7 @@ class _BookingPageState extends State<BookingPage> {
 
   // This will hold the unavailable times
   Set<TimeOfDay> _unavailableTimes = {};
-
+  Set <Appointment> appointments= {};
   @override
   void initState() {
     super.initState();
@@ -120,6 +120,7 @@ class _BookingPageState extends State<BookingPage> {
 
         // If the appointment date is the same as the selected date, mark the time as unavailable
         if (appointment.date == _selectedDate) {
+
           _unavailableTimes.add(appointment.time);
         }
       }
@@ -183,6 +184,7 @@ class _BookingPageState extends State<BookingPage> {
 
   @override
   Widget build(BuildContext context) {
+    var list = <String>['Online', 'Face-to-Face'];
     return Scaffold(
       appBar: AppBar(title: Text('Book Appointment')),
       body: SingleChildScrollView(
@@ -199,7 +201,7 @@ class _BookingPageState extends State<BookingPage> {
               DropdownButton<String>(
                 value: _serviceType,
                 hint: const Text('Select Service Type'),
-                items: <String>['Online', 'Face-to-Face'].map((String value) {
+                items: list.map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),
@@ -215,7 +217,7 @@ class _BookingPageState extends State<BookingPage> {
               ListTile(
                 title: Text(
                     "Select Date: ${_selectedDate.toLocal()}".split(' ')[0]),
-                trailing: Icon(Icons.calendar_today),
+                trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? picked = await showDatePicker(
                     context: context,
@@ -237,8 +239,8 @@ class _BookingPageState extends State<BookingPage> {
                 children: _availableTimes.map((time) {
                   return ChoiceChip(
                     label: Text(time.format(context)),
-                    selected: _selectedTime == time,
-                    onSelected: (bool selected) {
+                    selected: _selectedTime == time, //tıklanmış olma durumunu neye göre tanımladığımızı tutuyor.
+                    onSelected: (bool selected) { //false ise tıklanmamış şekilde renderlanıp ui'a katılacaklar.
                       setState(() {
                         _selectedTime = selected ? time : null;
                       });
