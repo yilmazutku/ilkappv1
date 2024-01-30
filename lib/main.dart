@@ -8,10 +8,15 @@ import 'chat_page.dart';
 import 'image_upload_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+List<String> myList=['asd1', 'asd2','asd3'];
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   print('ensureInitialized');
   await Firebase.initializeApp();
+  List <String > shuffled=List.of(myList);
+  shuffled.shuffle();
+  print(shuffled);
   print('running');
   // await FirebaseAppCheck.instance.activate(
   // //  webRecaptchaSiteKey: 'recaptcha-v3-site-key',
