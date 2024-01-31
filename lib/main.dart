@@ -9,7 +9,8 @@ import 'image_upload_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 List<String> myList=['asd1', 'asd2','asd3'];
-
+String email = 'utkuyy97@gmail.com';
+String password = '612009aa';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   print('ensureInitialized');
@@ -24,17 +25,18 @@ void main() async {
   //   androidProvider: AndroidProvider.playIntegrity,
   // );
   await signInAutomatically();
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 Future<void> signInAutomatically() async {
-  String email = 'utkuyy97@gmail.com';
-  String password = '612009aa';
+
 
   try {
-    UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+    var instance = FirebaseAuth.instance;
+    UserCredential userCredential = await instance.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+    String uid=instance.currentUser!.uid;
     print('Signed in with email: ${userCredential.user?.email}');
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
@@ -45,8 +47,8 @@ Future<void> signInAutomatically() async {
   }
 }
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+   MyApp({super.key});
+  String? uid;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -56,6 +58,23 @@ class MyApp extends StatelessWidget {
       ),
       home: const HomePage(),
     );
+  }
+  void generateUid  () async{
+    FirebaseAuth? instance;
+    try {
+       instance = FirebaseAuth.instance;
+      UserCredential userCredential = await instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    }
+      on FirebaseAuthException catch (e) {
+        //TODO
+    }
+      uid=instance!.currentUser!.uid;
+  }
+    String? get uidGet {
+    return uid;
   }
 }
 
@@ -74,7 +93,7 @@ class HomePage extends StatelessWidget {
               child: const Text('Schedule Appointment'),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AppointmentPage()),
+                MaterialPageRoute(builder: (context) => const AppointmentPage(), allowSnapshotting:false),
               ),
             ),
             ElevatedButton(
