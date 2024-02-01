@@ -80,8 +80,7 @@ class _BookingPageState extends State<BookingPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize _availableTimes based on _selectedDate
-    // fetchAvailableTimes();
+
     fetchAppointments();
   }
 
@@ -93,25 +92,8 @@ class _BookingPageState extends State<BookingPage> {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.get();
 
-    // Get data from docs and convert map to List
-    // final allData = querySnapshot.docs.map((doc) => doc.data()).toList();
-
-    // Clear previous unavailable times
     _unavailableTimes.clear();
 
-    // for (var data in allData) {
-    //   Appointment appointment = Appointment.fromJson(data);
-    //
-    //   // If the appointment date is the same as the selected date, mark the time as unavailable
-    //   if (appointment.date.toIso8601String() == _selectedDate.toIso8601String()) {
-    //     _unavailableTimes.add(appointment.time);
-    //   }
-    // }
-    // The error you're encountering is due to the type mismatch. The fromJson factory constructor of your Appointment class expects a Map<String, dynamic>, but the data you're retrieving from Firestore is a generic Object?, which Dart cannot guarantee to be a map.
-    //
-    // This can happen because the data() method of a Firestore document snapshot returns Map<String, dynamic>?, which means it can be null or a map. Before using it, you should check if it's null and cast it to the correct type.
-    //
-    // Here's how you can fix it:
     for (var doc in querySnapshot.docs) {
       var data = doc.data();
       if (data is Map<String, dynamic>) {

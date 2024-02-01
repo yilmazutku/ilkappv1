@@ -71,7 +71,9 @@ class _ImageUploadPageState extends State<ImageUploadPage> {
       final ref = FirebaseStorage.instance.ref(destination);
       await ref.putFile(imgFile);
       print('ref.putFile is done');
+      return true;
     } catch (e) {
+      return false;
       print(e);
     }
   }
