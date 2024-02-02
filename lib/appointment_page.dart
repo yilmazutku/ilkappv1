@@ -14,7 +14,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
   // Define the selected day and focused day
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/images/user_images_page.dart';
+
+import 'commons/df_vt_enums.dart';
 
 class AdminPanelPage extends StatefulWidget {
   @override
@@ -54,19 +57,15 @@ class AdminPanelPage extends StatefulWidget {
 // }
 }
 
-enum DateFilter { today, last3Days, last7Days, last30Days }
+
 
 class _AdminPanelPageState extends State<AdminPanelPage> {
   List<String> newImageUrls = [];
   List<String> folders = [];
-  ListView? listvieww;
+  ListView? listview;
   DateFilter selectedDateFilter = DateFilter.today; // default filter option
   String currentFolder = '';
-
-  Map<String, List<String>> userImages = {
-    'utku': [],
-    'fatih': [],
-  };
+  ViewType currentView = ViewType.list;
 
   void updateDateFilter(DateFilter filter) {
     setState(() {
@@ -96,13 +95,19 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
     setState(() {
       folders = folderNames;
-      listvieww = ListView(
+      listview = ListView(
           children: folders
               .map((folderName) => ListTile(
                     title: Text(folderName),
-                    onTap: () => {
-                      fetchImagesFromFolder(folderName),
-                      currentFolder = folderName
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => UserImagesPage(
+                            folderName: folderName,
+                            selectedDateFilter: selectedDateFilter,
+                          ),
+                        ),
+                      );
                     },
                   ))
               .toList());
@@ -120,24 +125,27 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     DateTime startDate = DateTime.now();
     switch (selectedDateFilter) {
       case DateFilter.last3Days:
-        startDate = DateTime.now().subtract(Duration(days: 3));
+        startDate = DateTime.now().subtract(const Duration(days: 3));
         break;
       case DateFilter.last7Days:
-        startDate = DateTime.now().subtract(Duration(days: 7));
+        startDate = DateTime.now().subtract(const Duration(days: 7));
         break;
       case DateFilter.last30Days:
-        startDate = DateTime.now().subtract(Duration(days: 30));
+        startDate = DateTime.now().subtract(const Duration(days: 30));
         break;
       case DateFilter.today:
+        startDate = DateTime.now().subtract(const Duration(days: 1));
+        break;
       default:
         break;
     }
 
     List<String> imageUrls = [];
     for (var fileRef in result.items) {
-      DateTime? createdTime;
-      fileRef.getMetadata().then((value) => createdTime = value.timeCreated);
-      if (startDate.isBefore(createdTime!) &&
+      var metadata = await fileRef.getMetadata();
+      DateTime? createdTime = metadata.timeCreated;
+      if (createdTime != null &&
+          startDate.isBefore(createdTime!) &&
           createdTime!.isBefore(DateTime.now())) {
         final url = await fileRef.getDownloadURL();
         imageUrls.add(url);
@@ -145,7 +153,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     }
     setState(() {
       newImageUrls = imageUrls;
-      listvieww = ListView.builder(
+      listview = ListView.builder(
         itemCount: imageUrls.length,
         itemBuilder: (context, index) {
           return Image.network(imageUrls[index]);
@@ -154,37 +162,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     });
   }
 
-  Future<void> listFiles(Reference ref) async {
-    final ListResult result = await ref.listAll();
-    String foldername = '';
-    // Check for "folders" (prefixes)
-    for (var folderRef in result.prefixes) {
-      // Recursive call for each "folder"
-      await listFiles(folderRef);
-      foldername = folderRef.name;
-    }
-
-    // Check for "files" (items)
-    for (var fileRef in result.items) {
-      // Get download URL for each file
-      final url = await fileRef.getDownloadURL();
-      print('File: $url');
-      newImageUrls.add(url);
-      userImages.putIfAbsent(foldername, () => newImageUrls);
-      userImages.keys.forEach((element) {
-        print('(element)=$element');
-        print('(element)=');
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Panel'),
+        title: const Text('Admin Panel'),
       ),
-      body: listvieww,
+      body: listview,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           fetchUserFolders();
@@ -193,32 +177,4 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ),
     );
   }
-
-// @override
-// Widget build(BuildContext context) {
-//   return Scaffold(
-//     appBar: AppBar(
-//       title: Text('Admin Panel'),
-//     ),
-//     body: Center(
-//       child: TextButton(
-//         onPressed: () async {
-//           fetchUserFolders();
-//         },
-//         child: newImageUrls.isEmpty
-//             ? const Text('empty for now')
-//             : Expanded(
-//                 child: //Text('$newImageUrls.length')
-//                     ListView.builder(
-//                   itemCount: newImageUrls.length,
-//                   itemBuilder: (context, index) {
-//                     return Image.network(newImageUrls[index]);
-//                   },
-//                 ),
-//               ),
-//         // TODO: Display the list of users and their images
-//       ),
-//     ),
-//   );
-// }
 }
