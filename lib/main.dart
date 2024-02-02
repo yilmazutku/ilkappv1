@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:untitled/admin_panel_page.dart';
 import 'appointment_page.dart';
 import 'booking.dart';
-import 'chat_page.dart';
+import 'chat/chat_page.dart';
 import 'images/image_upload_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
