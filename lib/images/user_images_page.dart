@@ -1,14 +1,19 @@
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
-import '../commons/df_vt_enums.dart';
+import '../commons/common.dart';
 
+///admin panelinde bir kullanıcıya tıklandığında açılır. Recursive bir şekilde kjendini çağırır (? subject to change)
 class UserImagesPage extends StatefulWidget {
   final String folderName;
-  final DateFilter selectedDateFilter;
 
-  const UserImagesPage(
-      {super.key, required this.folderName, required this.selectedDateFilter});
+  //final DateFilter selectedDateFilter;
+
+  const UserImagesPage({
+    super.key,
+    required this.folderName,
+    /*required this.selectedDateFilter*/
+  });
 
   @override
   createState() {
@@ -31,49 +36,69 @@ class _UserImagesPageState extends State<UserImagesPage> {
     {
       // currentFolder = folderName;
       String folderName = widget.folderName;
-      final ref = FirebaseStorage.instance.ref('users/$folderName');
+      final ref =
+          FirebaseStorage.instance.ref('${Constants.urlUsers}$folderName');
       final ListResult result = await ref.listAll();
 
       // Determine the start date for filtering based on the selectedDateFilter
-      DateTime startDate = DateTime.now();
-      switch (widget.selectedDateFilter) {
-        case DateFilter.last3Days:
-          startDate = DateTime.now().subtract(const Duration(days: 3));
-          break;
-        case DateFilter.last7Days:
-          startDate = DateTime.now().subtract(const Duration(days: 7));
-          break;
-        case DateFilter.last30Days:
-          startDate = DateTime.now().subtract(const Duration(days: 30));
-          break;
-        case DateFilter.today:
-          startDate = DateTime.now().subtract(const Duration(days: 30));
-          break;
-        default:
-          break;
-      }
-      var asd = result.items.length;
-      print('result.itemsLength=$asd');
+      // DateTime startDate = DateTime.now();
+      // switch (widget.selectedDateFilter) {
+      //   case DateFilter.last3Days:
+      //     startDate = DateTime.now().subtract(const Duration(days: 3));
+      //     break;
+      //   case DateFilter.last7Days:
+      //     startDate = DateTime.now().subtract(const Duration(days: 7));
+      //     break;
+      //   case DateFilter.last30Days:
+      //     startDate = DateTime.now().subtract(const Duration(days: 30));
+      //     break;
+      //   case DateFilter.today:
+      //     startDate = DateTime.now().subtract(const Duration(days: 30));
+      //     break;
+      //   default:
+      //     break;
+      // }
       List<String> imageUrls = [];
       for (var fileRef in result.items) {
         var metadata = await fileRef.getMetadata();
-        DateTime? createdTime = metadata.timeCreated;
-        if (createdTime != null &&
-            startDate.isBefore(createdTime!) &&
-            createdTime!.isBefore(DateTime.now())) {
+        // DateTime? createdTime = metadata.timeCreated;
+       // if (metadata != null) {
           final url = await fileRef.getDownloadURL();
           imageUrls.add(url);
-        }
+        //}
       }
       if (mounted) {
         setState(() {
-          newImageUrls = imageUrls;
-          listview = ListView.builder(
-            itemCount: imageUrls.length,
-            itemBuilder: (context, index) {
-              return Image.network(imageUrls[index]);
-            },
-          );
+          if (imageUrls.isNotEmpty) {
+            newImageUrls = imageUrls;
+            listview = ListView.builder(
+              itemCount: imageUrls.length,
+              itemBuilder: (context, index) {
+                return Image.network(imageUrls[index]);
+              },
+            );
+          } else {
+            //TODO optimize recursive func
+            List<String> folderNames =
+                result.prefixes.map((folderRef) => folderRef.name).toList();
+            listview = ListView(
+                children: folderNames
+                    .map((folderName) => ListTile(
+                          title: Text(folderName),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => UserImagesPage(
+                                  folderName:
+                                      '${widget.folderName}/$folderName',
+                                  //selectedDateFilter: widget.selectedDateFilter,
+                                ),
+                              ),
+                            );
+                          },
+                        ))
+                    .toList());
+          }
         });
       } else {
         print('no mounting in user images page.');

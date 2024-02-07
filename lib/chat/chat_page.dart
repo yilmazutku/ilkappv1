@@ -76,7 +76,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: TextField(
                     controller: _messageController,
                     decoration:
-                        InputDecoration(labelText: 'Enter a message...'),
+                        const InputDecoration(labelText: 'Enter a message...'),
                   ),
                 ),
                 IconButton(

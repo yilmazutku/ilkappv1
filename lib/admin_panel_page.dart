@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:untitled/images/user_images_page.dart';
-import 'commons/df_vt_enums.dart';
+
+import 'commons/common.dart';
 
 class AdminPanelPage extends StatefulWidget {
   @override
@@ -11,15 +11,14 @@ class AdminPanelPage extends StatefulWidget {
   }
 }
 
-
-
 class _AdminPanelPageState extends State<AdminPanelPage> {
   List<String> newImageUrls = [];
   List<String> folders = [];
   ListView? listview;
   DateFilter selectedDateFilter = DateFilter.today; // default filter option
   String currentFolder = '';
-  ViewType currentView = ViewType.list;
+
+  //ViewType currentView = ViewType.list;
 
   void updateDateFilter(DateFilter filter) {
     setState(() {
@@ -58,7 +57,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                         MaterialPageRoute(
                           builder: (context) => UserImagesPage(
                             folderName: folderName,
-                            selectedDateFilter: selectedDateFilter,
+                           // selectedDateFilter: selectedDateFilter,
                           ),
                         ),
                       );
