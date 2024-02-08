@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/admin_appointments.dart';
 import 'package:untitled/admin_panel_page.dart';
 import 'package:untitled/images/meal_upload_page.dart';
-
+import 'admin_appointments.dart';
 import 'booking.dart';
 import 'chat/chat_page.dart';
 
@@ -130,6 +131,13 @@ class HomePage extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BookingPage()),
+              ),
+
+            ),    ElevatedButton(
+              child: const Text('Admin Appts'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminAppointmentsPage()),
               ),
 
             ),

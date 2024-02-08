@@ -37,11 +37,11 @@ class _BookingPageState extends State<BookingPage> {
   // Fetch appointments from Firestore and determine unavailable times
   Future<void> fetchAppointments() async {
     CollectionReference collectionRef =
-        FirebaseFirestore.instance.collection('appointment');
+        FirebaseFirestore.instance.collection('appointments');
 
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.get();
-
+    if (!mounted) return;
     _unavailableTimes.clear();
 
     for (var doc in querySnapshot.docs) {
@@ -51,9 +51,9 @@ class _BookingPageState extends State<BookingPage> {
         Appointment appointment = Appointment.fromJson(data);
 
         // If the appointment date is the same as the selected date, mark the time as unavailable
-        if (appointment.date == _selectedDate) {
-
-          _unavailableTimes.add(appointment.time);
+        bool isSameDate=appointment.dateTime.day==_selectedDate.day && appointment.dateTime.month==_selectedDate.month;
+        if (isSameDate) {
+          _unavailableTimes.add(TimeOfDay.fromDateTime(appointment.dateTime));
         }
       }
     }
@@ -75,7 +75,6 @@ class _BookingPageState extends State<BookingPage> {
         times.add(time);
       }
     }
-
     setState(() {
       _availableTimes = times;
     });
@@ -113,7 +112,45 @@ class _BookingPageState extends State<BookingPage> {
       _availableTimes = times;
     });
   }
+  void createAppointment() async {
+    if (_nameController.text.isEmpty || _serviceType == null || _selectedTime == null) {
+      // Show error
+      return;
+    }
 
+    // Update _selectedDate with the time component
+    DateTime finalDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    Appointment newAppointment = Appointment(
+      id: FirebaseAuth.instance.currentUser!.uid, // Assuming the user is logged in
+      name: _nameController.text,
+      serviceType: _serviceType!,
+      dateTime: finalDateTime,
+    );
+  print('date appointment=$finalDateTime');
+    // Attempt to save the appointment
+    try {
+      await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(newAppointment.id)
+          .set(newAppointment.toJson());
+
+      // If the operation is successful, you might want to clear the form or give feedback to the user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Appointment booked successfully")));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to book appointment")));
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     var list = <String>['Online', 'Face-to-Face'];
@@ -151,6 +188,7 @@ class _BookingPageState extends State<BookingPage> {
                     "Select Date: ${_selectedDate.toLocal()}".split(' ')[0]),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
+
                   DateTime? picked = await showDatePicker(
                     context: context,
                     initialDate: _selectedDate,
@@ -175,6 +213,9 @@ class _BookingPageState extends State<BookingPage> {
                     onSelected: (bool selected) { //false ise tıklanmamış şekilde renderlanıp ui'a katılacaklar.
                       setState(() {
                         _selectedTime = selected ? time : null;
+                        if(selected!=null && _selectedDate!=null) {
+                          _selectedDate=DateTime(_selectedDate.year,_selectedDate.month,_selectedDate.day,_selectedTime!.hour,_selectedTime!.minute);
+                        }
                       });
                     },
                   );
@@ -198,29 +239,10 @@ class _BookingPageState extends State<BookingPage> {
                   } else {
                     // No user is signed in
                     print('No user is signed in.');
+                    return;
                   }
 
-                  Appointment newAppointment = Appointment(
-                    //   id: DateTime.now().millisecondsSinceEpoch.toString(), // Generate a unique id based on the current time
-                    id: FirebaseAuth.instance.currentUser!.uid,
-                    // Assuming the user is logged in
-                    name: _nameController.text,
-                    serviceType: _serviceType!,
-                    date: _selectedDate,
-                    time: _selectedTime!,
-                  );
-                  // print(newAppointment.toJson(context));
-                  // Save the appointment to Firestore
-                  FirebaseFirestore.instance
-                      .collection('appointment')
-                      .doc('${newAppointment.id}2')
-                      // .doc('/asd')
-                      .set(newAppointment.toJson(context)).then((_) {
-                    // After successfully creating an appointment, refresh the available times
-                    fetchAppointments();
-                  }).catchError((error) {
-                    // Handle any errors here
-                  });
+                  createAppointment();
                 },
                 child: const Text('Book Appointment'),
               ),
@@ -230,4 +252,5 @@ class _BookingPageState extends State<BookingPage> {
       ),
     );
   }
+
 }

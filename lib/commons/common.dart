@@ -1,6 +1,5 @@
 //ortak şeyler burada toplansın
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 enum DateFilter { today, last3Days, last7Days, last30Days }
 
 enum ViewType { list, grid }
@@ -30,18 +29,18 @@ class Appointment {
   String id;
   String name;
   String serviceType; // 'online' or 'face-to-face'
-  DateTime date;
+  DateTime dateTime;
 
   // String date;
   // String time;
-  TimeOfDay time;
+  // TimeOfDay time;
 
   Appointment({
     required this.id,
     required this.name,
     required this.serviceType,
-    required this.date,
-    required this.time,
+    required this.dateTime,
+    // required this.time,
   });
 
   // Convert a Appointment into a Map. The keys must correspond to the names of the fields in Firestore.
@@ -54,28 +53,41 @@ class Appointment {
   //   'time': time.format(context).toString(), // context is needed to format the time
   //
   // };
-  Map<String, dynamic> toJson(BuildContext context) => {
+  Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'serviceType': serviceType,
-    'date': date,
-    //.toIso8601String(), // Convert DateTime to ISO 8601 string
-    'time': '${time.hour}:${time.minute}',
-    // Convert TimeOfDay to a string in HH:mm format
+    'dateTime': Timestamp.fromDate(dateTime), // Convert DateTime to Timestamp
   };
 
-  // A method that retrieves all the data from Firestore and converts it to an Appointment object.
-  factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
-    id: json['id'],
-    name: json['name'],
-    serviceType: json['serviceType'],
-    date: (json['date'] as Timestamp).toDate(),
-    time: TimeOfDay(
-        hour: int.parse(json['time'].split(':')[0]),
-        minute: int.parse(json['time'].split(':')[1])),
-  );
+  // // A method that retrieves all the data from Firestore and converts it to an Appointment object.
+  // factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
+  //   id: json['id'],
+  //   name: json['name'],
+  //   serviceType: json['serviceType'],
+  //   dateTime: (json['date'] as Timestamp).toDate(),
+  //   time: TimeOfDay(
+  //       hour: int.parse(json['time'].split(':')[0]),
+  //       minute: int.parse(json['time'].split(':')[1])),
+  // );
 
-  TimeOfDay getTime() {
-    return time;
+// A method that retrieves all the data from Firestore and converts it to an Appointment object.
+  factory Appointment.fromJson(Map<String, dynamic> json) {
+    // Parse the date and time into a single DateTime object
+    DateTime date = (json['dateTime'] as Timestamp).toDate();
+    DateTime dateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      date.hour,
+      date.minute,
+    );
+
+    return Appointment(
+      id: json['id'],
+      name: json['name'],
+      serviceType: json['serviceType'],
+      dateTime: dateTime,
+    );
   }
 }

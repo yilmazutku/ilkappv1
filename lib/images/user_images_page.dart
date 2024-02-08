@@ -67,7 +67,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
           imageUrls.add(url);
         //}
       }
-      if (mounted) {
+      if (mounted) { /*It is an error to call setState unless mounted is true.*/
         setState(() {
           if (imageUrls.isNotEmpty) {
             newImageUrls = imageUrls;
@@ -115,6 +115,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
       ),
       itemCount: newImageUrls.length,
       itemBuilder: (context, index) {
+        /*builder is called only for those children that are actually visible*/
         return InkWell(
           onTap: () => showFullImage(context, newImageUrls[index]),
           child: Image.network(
@@ -131,9 +132,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          child: Container(
-            child: Image.network(imageUrl),
-          ),
+          child: Image.network(imageUrl),
         );
       },
     );
