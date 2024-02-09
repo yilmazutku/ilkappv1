@@ -18,9 +18,9 @@ class _MealUploadPageState extends State<MealUploadPage> {
   final ImagePicker _picker = ImagePicker();
   final Map<Meals, XFile?> _mealImages = {
     for (var meal in Meals.values) meal: null,
-    //ya da   for( var meal in  Meals.values) {
-    //       _mealImages[meal.label]=null;
-    //     } loopunu alıp initState methodunu override edip onun icine koyacaksın. ikisi de aynı.
+    //ya da for( var meal in  Meals.values) {
+    //_mealImages[meal.label]=null;
+    //} loopunu alıp initState methodunu override edip onun icine koyacaksın. ikisi de aynı.
   };
 
   Future<void> pickAndUploadImage(Meals meal) async {

@@ -1,6 +1,5 @@
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-
 import '../commons/common.dart';
 
 ///admin panelinde bir kullanıcıya tıklandığında açılır. Recursive bir şekilde kjendini çağırır (? subject to change)
@@ -39,28 +38,9 @@ class _UserImagesPageState extends State<UserImagesPage> {
       final ref =
           FirebaseStorage.instance.ref('${Constants.urlUsers}$folderName');
       final ListResult result = await ref.listAll();
-
-      // Determine the start date for filtering based on the selectedDateFilter
-      // DateTime startDate = DateTime.now();
-      // switch (widget.selectedDateFilter) {
-      //   case DateFilter.last3Days:
-      //     startDate = DateTime.now().subtract(const Duration(days: 3));
-      //     break;
-      //   case DateFilter.last7Days:
-      //     startDate = DateTime.now().subtract(const Duration(days: 7));
-      //     break;
-      //   case DateFilter.last30Days:
-      //     startDate = DateTime.now().subtract(const Duration(days: 30));
-      //     break;
-      //   case DateFilter.today:
-      //     startDate = DateTime.now().subtract(const Duration(days: 30));
-      //     break;
-      //   default:
-      //     break;
-      // }
       List<String> imageUrls = [];
       for (var fileRef in result.items) {
-        var metadata = await fileRef.getMetadata();
+       // var metadata = await fileRef.getMetadata();
         // DateTime? createdTime = metadata.timeCreated;
        // if (metadata != null) {
           final url = await fileRef.getDownloadURL();
