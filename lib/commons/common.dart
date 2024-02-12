@@ -29,6 +29,8 @@ class Constants {
 //user bilgisi olmöadan bu2lı kullanılamaz buna da bı fıx ıı olur
   static const String urlMealPhotos =
       '${urlPhotos}mealPhotos/'; // + <date>/<mealType>/x
+  static const String userUrlPhotoChat='${urlUsers}mealTypes';
+  static const String userUrlDefault='${urlMealPhotos}'
   static const String urlChatPhotos = '${urlPhotos}chatPhotos/'; // + <date>/x
 }
 
@@ -49,6 +51,7 @@ class Appointment {
     required this.dateTime,
     // required this.time,
   });
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -56,7 +59,6 @@ class Appointment {
         'dateTime': Timestamp.fromDate(dateTime),
         // Convert DateTime to Timestamp
       };
-
 
 // A method that retrieves all the data from Firestore and converts it to an Appointment object.
   factory Appointment.fromJson(Map<String, dynamic> json) {

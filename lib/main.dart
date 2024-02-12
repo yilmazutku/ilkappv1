@@ -94,7 +94,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              child: const Text('Book '),
+              child: const Text('Book'),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BookingPage()),
@@ -109,7 +109,7 @@ class HomePage extends StatelessWidget {
 
             ),
             ElevatedButton(
-              child: const Text('Admin Panel'),
+              child: const Text('Admin Images'),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AdminImages()),

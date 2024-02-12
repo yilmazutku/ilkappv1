@@ -98,6 +98,12 @@ class _UserImagesPageState extends State<UserImagesPage> {
         /*builder is called only for those children that are actually visible*/
         return InkWell(
           onTap: () => showFullImage(context, newImageUrls[index]),
+          /*
+              Creates a widget that displays an ImageStream obtained from the network.
+              Either the width and height arguments should be specified, or the widget should be
+              placed in a context that sets tight layout constraints.
+              Otherwise, the image dimensions will change as the image is loaded, which will result in ugly layout changes
+           */
           child: Image.network(
             newImageUrls[index],
             fit: BoxFit.cover,
