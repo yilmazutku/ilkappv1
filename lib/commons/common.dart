@@ -23,14 +23,15 @@ enum Meals {
 }
 
 class Constants {
+  //database
+  static const String urlUserMealState='mealStates/'; //+ <user>/<date>/x
+  static const String urlChats = 'chats/'; // + <user>/<date>/x
+  //storage
   static const String urlUsers = 'users/';
-  static const String urlChats = '${urlUsers}chats/'; // + <user>/<date>/x
   static const String urlPhotos = '${urlUsers}photos/'; // +<user>/
 //user bilgisi olmöadan bu2lı kullanılamaz buna da bı fıx ıı olur
   static const String urlMealPhotos =
       '${urlPhotos}mealPhotos/'; // + <date>/<mealType>/x
-  static const String userUrlPhotoChat='${urlUsers}mealTypes';
-  static const String userUrlDefault='${urlMealPhotos}'
   static const String urlChatPhotos = '${urlPhotos}chatPhotos/'; // + <date>/x
 }
 

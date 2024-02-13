@@ -47,7 +47,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   google_fonts: ^6.1.0
   uuid: ^4.3.3
-
+  shared_preferences: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

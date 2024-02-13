@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../commons/common.dart';
 // Import necessary Firebase libraries
 
 class ChatPage extends StatefulWidget {
@@ -25,7 +27,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> sendMessage() async {
     if (_messageController.text.isNotEmpty) {
       await FirebaseFirestore.instance
-          .collection('chats')
+          .collection(Constants.urlChats)
           .doc('chat_id2') // Use appropriate chat ID
           .collection('messages')
           .add({

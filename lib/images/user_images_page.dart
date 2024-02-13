@@ -33,6 +33,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
 
   Future<void> fetchImages() async {
     {
+      // String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
       // currentFolder = folderName;
       String folderName = widget.folderName;
       final ref =
