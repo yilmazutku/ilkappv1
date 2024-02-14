@@ -7,7 +7,8 @@ import 'package:untitled/images/meal_upload_page.dart';
 import 'admin_pages/admin_appointments.dart';
 import 'booking.dart';
 import 'chat/chat_page.dart';
-
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:untitled/gen_l10n/app_localizations.dart';
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
 
@@ -41,6 +42,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // onGenerateTitle: (context) => S.of(context).helloWorld,
+      localizationsDelegates: const [
+        AppLocalizations.delegate, // Add this line
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'), // English
+
+      ],
       title: 'Service App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -73,14 +85,15 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Service App')),
+
+      appBar: AppBar(title:  Text((AppLocalizations.of(context)!.helloWorld),)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
 
             ElevatedButton(
-              child: const Text('Meal Plan'),
+              child: const Text('My Plan'),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const MealUploadPage()),
@@ -104,7 +117,7 @@ class HomePage extends StatelessWidget {
               child: const Text('Admin Appointments'),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AdminAppointmentsPage()),
+                MaterialPageRoute(builder: (context) => const AdminAppointmentsPage()),
               ),
 
             ),

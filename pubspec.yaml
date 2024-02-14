@@ -30,7 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
+  flutter_gen: any
   firebase_core: any
   image_picker: any
   firebase_storage: any
@@ -39,7 +41,7 @@ dependencies:
   table_calendar: any
   path_provider: any
   firebase_auth: any
-  intl: ^0.17.0
+  intl: 0.18.1
   #flutter_datetime_picker: any
   path: any
   # The following adds the Cupertino Icons font to your application.
@@ -49,16 +51,17 @@ dependencies:
   uuid: ^4.3.3
   shared_preferences: any
 dev_dependencies:
+  flutter_gen: any
   flutter_test:
     sdk: flutter
-
+  flutter_gen_runner: any
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.1
-
+  flutter_lints: any
+  intl: ^0.18.1 # Check for the latest version of intl
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -67,7 +70,7 @@ flutter:
   assets:
     - assets/ecl trg.PNG
   uses-material-design: true
-
+  generate: true
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

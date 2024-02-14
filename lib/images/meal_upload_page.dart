@@ -18,7 +18,7 @@ class MealUploadPage extends StatefulWidget {
 class _MealUploadPageState extends State<MealUploadPage> {
   _MealUploadPageState(); //initstate hep cagiriliyor ama constructor olai nasil olur? listten baslayarak bunu denemeye basladim TODO
   final ImagePicker _picker = ImagePicker();
-  final Map<Meals, List<String>> mealContents = {
+  final Map<Meals, List<String>> mealContents = { //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
     // Meals.br: ['Egg', 'Tomatoes', 'Bread'],
     // Meals.lunch: ['Soup', 'Chicken', 'Rice'],
     // Meals.dinner: ['Salad', 'Steak', 'Potatoes'],
@@ -36,6 +36,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
     for (var meal in Meals.values) meal: false,
   };
   static const String saveTime = 'saveTime';
+  late SharedPreferences prefz;
 
   @override
   initState() {
@@ -44,10 +45,9 @@ class _MealUploadPageState extends State<MealUploadPage> {
 
   Future<Map<Meals, bool>> initMealStates() async {
     await resetMealStatesIfDifferentDay();
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
     final Map<Meals, bool> loadedStates = {};
     for (var meal in Meals.values) {
-      bool isChecked = prefs.getBool(meal.label) ?? false;
+      bool isChecked = prefz.getBool(meal.label) ?? false;
       loadedStates[meal] = isChecked;
     }
 
@@ -55,31 +55,32 @@ class _MealUploadPageState extends State<MealUploadPage> {
   }
 
   Future<void> saveMealCheckedState(Meals meal, bool isChecked) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(meal.label, isChecked);
-    await prefs.setInt(saveTime, DateTime.now().millisecondsSinceEpoch);
-    await resetMealStatesIfDifferentDay();
+    await prefz.setBool(meal.label, isChecked);
+    await prefz.setInt(saveTime, DateTime.now().millisecondsSinceEpoch);
+    // await resetMealStatesIfDifferentDay();
   }
 
   Future<void> resetMealStatesIfDifferentDay() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? lastSaveTime = prefs.getInt(saveTime);
+    prefz = await SharedPreferences.getInstance();
+    int? lastSaveTime = prefz.getInt(saveTime);
     DateTime lastSaveDateTime =
         DateTime.fromMillisecondsSinceEpoch(lastSaveTime!);
     var now = DateTime.now();
-    bool isDifferentDay = lastSaveDateTime.day != now.day || lastSaveDateTime.month!=now.month || lastSaveDateTime.year!=now.year;
+    bool isDifferentDay = lastSaveDateTime.day != now.day ||
+        lastSaveDateTime.month != now.month ||
+        lastSaveDateTime.year != now.year;
     if (isDifferentDay) {
       for (var meal in Meals.values) {
-        prefs.setBool(meal.label, false);
+        prefz.setBool(meal.label, false);
         // loadedStates[meal] = isChecked;
       }
     }
   }
 
-  Future<bool> loadMealCheckedState(Meals meal) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(meal.label) ?? false; // Returns false if not set
-  }
+  // Future<bool> loadMealCheckedState(Meals meal) async {
+  //   final SharedPreferences prefz = await SharedPreferences.getInstance();
+  //   return prefz.getBool(meal.label) ?? false; // Returns false if not set
+  // }
 
   Future<void> pickAndUploadImage(Meals meal) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -101,11 +102,13 @@ class _MealUploadPageState extends State<MealUploadPage> {
       Reference ref = FirebaseStorage.instance.ref(path);
       print('uploadFile path=$path');
       await ref.putFile(file);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Image uploaded for $meal')),
       );
       setMealList();
     } on FirebaseException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Error during file upload')),
       );
