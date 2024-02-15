@@ -9,22 +9,17 @@ import '../commons/common.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MealUploadPage extends StatefulWidget {
-  const MealUploadPage({Key? key}) : super(key: key);
+  const MealUploadPage({super.key});
 
   @override
-  _MealUploadPageState createState() => _MealUploadPageState();
+   createState() => _MealUploadPageState();
 }
 
 class _MealUploadPageState extends State<MealUploadPage> {
   _MealUploadPageState(); //initstate hep cagiriliyor ama constructor olai nasil olur? listten baslayarak bunu denemeye basladim TODO
   final ImagePicker _picker = ImagePicker();
-  final Map<Meals, List<String>> mealContents = { //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
-    // Meals.br: ['Egg', 'Tomatoes', 'Bread'],
-    // Meals.lunch: ['Soup', 'Chicken', 'Rice'],
-    // Meals.dinner: ['Salad', 'Steak', 'Potatoes'],
-    // Meals.firstmid: ['Egg1', 'Tomatoes1', 'Bread1'],
-    // Meals.secondmid: ['Soup2', 'Chicken2', 'Rice2'],
-    // Meals.thirdmid: ['Salad3', 'Steak3', 'Potatoes3'],
+  final Map<Meals, List<String>> mealContents = {
+    //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
   };
   final Map<Meals, XFile?> _mealImages = {
     for (var meal in Meals.values) meal: null,
@@ -35,34 +30,27 @@ class _MealUploadPageState extends State<MealUploadPage> {
   final Map<Meals, bool> _checkedStates = {
     for (var meal in Meals.values) meal: false,
   };
-  static const String saveTime = 'saveTime';
-  late SharedPreferences prefz;
-
-  @override
-  initState() {
-    super.initState();
-  }
+  late SharedPreferences prefs;
 
   Future<Map<Meals, bool>> initMealStates() async {
     await resetMealStatesIfDifferentDay();
     final Map<Meals, bool> loadedStates = {};
     for (var meal in Meals.values) {
-      bool isChecked = prefz.getBool(meal.label) ?? false;
+      bool isChecked = prefs.getBool(meal.label) ?? false;
       loadedStates[meal] = isChecked;
     }
-
     return loadedStates;
   }
 
   Future<void> saveMealCheckedState(Meals meal, bool isChecked) async {
-    await prefz.setBool(meal.label, isChecked);
-    await prefz.setInt(saveTime, DateTime.now().millisecondsSinceEpoch);
-    // await resetMealStatesIfDifferentDay();
+    await prefs.setBool(meal.label, isChecked);
+    await prefs.setInt(
+        Constants.saveTime, DateTime.now().millisecondsSinceEpoch);
   }
 
   Future<void> resetMealStatesIfDifferentDay() async {
-    prefz = await SharedPreferences.getInstance();
-    int? lastSaveTime = prefz.getInt(saveTime);
+    prefs = await SharedPreferences.getInstance();
+    int? lastSaveTime = prefs.getInt(Constants.saveTime);
     DateTime lastSaveDateTime =
         DateTime.fromMillisecondsSinceEpoch(lastSaveTime!);
     var now = DateTime.now();
@@ -71,47 +59,33 @@ class _MealUploadPageState extends State<MealUploadPage> {
         lastSaveDateTime.year != now.year;
     if (isDifferentDay) {
       for (var meal in Meals.values) {
-        prefz.setBool(meal.label, false);
+        prefs.setBool(meal.label, false);
         // loadedStates[meal] = isChecked;
       }
     }
   }
 
-  // Future<bool> loadMealCheckedState(Meals meal) async {
-  //   final SharedPreferences prefz = await SharedPreferences.getInstance();
-  //   return prefz.getBool(meal.label) ?? false; // Returns false if not set
-  // }
-
-  Future<void> pickAndUploadImage(Meals meal) async {
+  Future<void> uploadFile(Meals meal) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() {
-        _mealImages[meal] = image;
-      });
-      await uploadFile(meal, File(image.path));
-    }
-  }
-
-  Future<void> uploadFile(Meals meal, File file) async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      String fileName = file.path.split('/').last;
-
-      String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      var path = '${Constants.urlUsers}$userId/$date/${meal.url}$fileName';
-      Reference ref = FirebaseStorage.instance.ref(path);
-      print('uploadFile path=$path');
-      await ref.putFile(file);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image uploaded for $meal')),
-      );
-      setMealList();
-    } on FirebaseException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Error during file upload')),
-      );
+      try {
+        final userId = FirebaseAuth.instance.currentUser!.uid;
+        String fileName = image.path.split('/').last;
+        String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        var path = '${Constants.urlUsers}$userId/$date/${meal.url}$fileName';
+        Reference ref = FirebaseStorage.instance.ref(path);
+        print('uploadFile path=$path');
+        await ref.putFile(File(image.path));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image uploaded for $meal')),
+        );
+      } on FirebaseException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Error during file upload')),
+        );
+      }
     }
   }
 
@@ -141,14 +115,12 @@ class _MealUploadPageState extends State<MealUploadPage> {
             // If there's an error loading the data, show an error message
             return const Center(child: Text("Error loading meal states"));
           }
-
-          // Data is loaded, proceed to build the UI with the loaded checkbox states
           // First, update the local checkbox states map with the data from the snapshot
           _checkedStates.addAll(snapshot.data!);
 
           // Now build the UI as usual, but using the updated _checkedStates
           return ListView(
-            children: _mealImages.keys.map((mealCategory) {
+            children: _checkedStates.keys.map((mealCategory) {
               List<Text> list = [];
               if (mealContents[mealCategory] != null &&
                   mealContents[mealCategory]!.isNotEmpty) {
@@ -171,7 +143,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.camera_alt),
-                          onPressed: () => pickAndUploadImage(mealCategory),
+                          onPressed: () => uploadFile(mealCategory),
                         ),
                         // Checkbox widget integrated with loaded state
                         CustomCheckbox(
@@ -180,8 +152,6 @@ class _MealUploadPageState extends State<MealUploadPage> {
                           onStateChanged: (bool newValue) {
                             // Update the parent widget's state or perform other actions here
                             saveMealCheckedState(mealCategory, newValue);
-                            // If you need to update something in the current state as well,
-                            // remember to call setState here if necessary
                           },
                         ),
                       ],
@@ -217,7 +187,7 @@ class CustomCheckbox extends StatefulWidget {
   });
 
   @override
-  _CustomCheckboxState createState() => _CustomCheckboxState();
+   createState() => _CustomCheckboxState();
 }
 
 class _CustomCheckboxState extends State<CustomCheckbox> {
@@ -228,7 +198,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> {
     super.initState();
     isChecked = widget.initialValue;
   }
-
+  //başka classta da kullanabılırım bu classı cunku napcagını parentı soyluyo
   void _toggleCheckbox(bool newValue) {
     setState(() {
       isChecked = !isChecked;
