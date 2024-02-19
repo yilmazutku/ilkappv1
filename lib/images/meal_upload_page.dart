@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../commons/common.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'meal_state_manager.dart';
 
 class MealUploadPage extends StatefulWidget {
   const MealUploadPage({super.key});
@@ -148,11 +150,11 @@ class _MealUploadPageState extends State<MealUploadPage> {
                         // Checkbox widget integrated with loaded state
                         CustomCheckbox(
                           meal: mealCategory,
-                          initialValue: _checkedStates[mealCategory] ?? false,
-                          onStateChanged: (bool newValue) {
-                            // Update the parent widget's state or perform other actions here
-                            saveMealCheckedState(mealCategory, newValue);
-                          },
+                          // initialValue: _checkedStates[mealCategory] ?? false,
+                          // onStateChanged: (bool newValue) {
+                          //   // Update the parent widget's state or perform other actions here
+                          //   saveMealCheckedState(mealCategory, newValue);
+                          // },
                         ),
                       ],
                     ),
@@ -174,46 +176,19 @@ class _MealUploadPageState extends State<MealUploadPage> {
   }
 }
 
-class CustomCheckbox extends StatefulWidget {
+class CustomCheckbox extends StatelessWidget {
+  const CustomCheckbox({super.key, required this.meal});
   final Meals meal;
-  final bool initialValue;
-  final Function(bool) onStateChanged; // Add this line
-
-  const CustomCheckbox({
-    super.key,
-    required this.meal,
-    required this.initialValue,
-    required this.onStateChanged, // Add this line
-  });
-
-  @override
-   createState() => _CustomCheckboxState();
-}
-
-class _CustomCheckboxState extends State<CustomCheckbox> {
-  late bool isChecked;
-
-  @override
-  void initState() {
-    super.initState();
-    isChecked = widget.initialValue;
-  }
-  //başka classta da kullanabılırım bu classı cunku napcagını parentı soyluyo
-  void _toggleCheckbox(bool newValue) {
-    setState(() {
-      isChecked = !isChecked;
-    });
-    widget.onStateChanged(newValue); // Invoke the callback with the new state
-    // Here, save the new state to SharedPreferences or any other persistent storage
-  }
 
   @override
   Widget build(BuildContext context) {
+    final mealStateManager = Provider.of<MealStateManager>(context);
+    bool isChecked = mealStateManager.checkedStates[meal] ?? false;
+
     return Checkbox(
       value: isChecked,
       onChanged: (bool? newValue) {
-        _toggleCheckbox(newValue ?? false);
-        // Optionally, perform additional actions such as saving the state
+        mealStateManager.setMealCheckedState(meal, newValue ?? false);
       },
     );
   }

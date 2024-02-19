@@ -39,6 +39,7 @@ dependencies:
   cloud_firestore: any
   firebase_app_check: ^0.2.1+13
   table_calendar: any
+  provider: ^6.0.1
   path_provider: any
   firebase_auth: any
   intl: 0.18.1

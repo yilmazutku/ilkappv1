@@ -1,32 +1,35 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:untitled/admin_pages/admin_appointments.dart';
 import 'package:untitled/admin_pages/admin_panel_page.dart';
 import 'package:untitled/images/meal_upload_page.dart';
-import 'admin_pages/admin_appointments.dart';
+
+import 'appointment_manager.dart';
 import 'booking.dart';
 import 'chat/chat_page.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:untitled/gen_l10n/app_localizations.dart';
+import 'images/meal_state_manager.dart';
+
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await signInAutomatically(); print('running');
+  await signInAutomatically();
+  print('running');
   runApp(MyApp());
 }
-Future<void> signInAutomatically() async {
 
+Future<void> signInAutomatically() async {
   try {
     var instance = FirebaseAuth.instance;
     UserCredential userCredential = await instance.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
-    String uid=instance.currentUser!.uid;
+    String uid = instance.currentUser!.uid;
     print('Signed in with email: ${userCredential.user?.email}');
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
@@ -36,46 +39,26 @@ Future<void> signInAutomatically() async {
     }
   }
 }
+
 class MyApp extends StatelessWidget {
-   MyApp({super.key});
-  String? uid;
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      // onGenerateTitle: (context) => S.of(context).helloWorld,
-      localizationsDelegates: const [
-        AppLocalizations.delegate, // Add this line
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => MealStateManager()),
+        ChangeNotifierProvider(create: (context) => AppointmentManager()),
       ],
-      supportedLocales: const [
-        Locale('en'), // English
-
-      ],
-      title: 'Service App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      child: MaterialApp(
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: const HomePage(), // Your initial route or home widget
+        // Define other properties as needed
+        // Your MaterialApp configuration
       ),
-      home: const HomePage(),
     );
-  }
-  void generateUid  () async{
-    FirebaseAuth? instance;
-    try {
-       instance = FirebaseAuth.instance;
-      UserCredential userCredential = await instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    }
-      on FirebaseAuthException catch (e) {
-        //TODO
-    }
-      uid=instance!.currentUser!.uid;
-  }
-    String? get uidGet {
-    return uid;
   }
 }
 
@@ -85,13 +68,19 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      appBar: AppBar(title:  Text((AppLocalizations.of(context)!.helloWorld),)),
+      appBar:
+          AppBar(title: Text('(AppLocalizations.of(context)!.helloWorld),')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-
+            // ElevatedButton(
+            //   child: const Text('My Plan'),
+            //   onPressed: () => Navigator.push(
+            //     context,
+            //     MaterialPageRoute(builder: (context) => const MealUploadPage()),
+            //   ),
+            // ),
             ElevatedButton(
               child: const Text('My Plan'),
               onPressed: () => Navigator.push(
@@ -99,6 +88,7 @@ class HomePage extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const MealUploadPage()),
               ),
             ),
+
             ElevatedButton(
               child: const Text('Chat with Admin'),
               onPressed: () => Navigator.push(
@@ -112,14 +102,14 @@ class HomePage extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const BookingPage()),
               ),
-
-            ),    ElevatedButton(
+            ),
+            ElevatedButton(
               child: const Text('Admin Appointments'),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminAppointmentsPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminAppointmentsPage()),
               ),
-
             ),
             ElevatedButton(
               child: const Text('Admin Images'),
@@ -127,7 +117,6 @@ class HomePage extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const AdminImages()),
               ),
-
             ),
           ],
         ),
@@ -135,5 +124,3 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-
-
