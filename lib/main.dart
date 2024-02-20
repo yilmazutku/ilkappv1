@@ -18,8 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await signInAutomatically();
-  print('running');
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 Future<void> signInAutomatically() async {
@@ -29,7 +28,6 @@ Future<void> signInAutomatically() async {
       email: email,
       password: password,
     );
-    String uid = instance.currentUser!.uid;
     print('Signed in with email: ${userCredential.user?.email}');
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
@@ -52,7 +50,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.green,
         ),
         home: const HomePage(), // Your initial route or home widget
         // Define other properties as needed
@@ -67,6 +65,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('Building HomePage...');
     return Scaffold(
       appBar:
           AppBar(title: Text('(AppLocalizations.of(context)!.helloWorld),')),
@@ -74,13 +73,6 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // ElevatedButton(
-            //   child: const Text('My Plan'),
-            //   onPressed: () => Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => const MealUploadPage()),
-            //   ),
-            // ),
             ElevatedButton(
               child: const Text('My Plan'),
               onPressed: () => Navigator.push(

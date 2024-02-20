@@ -25,7 +25,7 @@ enum Meals {
 class Constants {
   static const String saveTime = 'saveTime';
   //database
-  static const String adminAppointments = 'appointments';
+  static const String appointments = 'appointments';
   static const String urlChats = 'chats/'; // + <user>/<date>/x
   //storage
   static const String urlUsers = 'users/';
