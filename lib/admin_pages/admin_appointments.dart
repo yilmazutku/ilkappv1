@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../appointment_manager.dart';
+import '../managers/appointment_manager.dart';
 import '../commons/common.dart';
 
 class AdminAppointmentsPage extends StatelessWidget {
@@ -35,7 +35,7 @@ class AdminAppointmentsPage extends StatelessWidget {
               return ExpansionTile(
                 title: Text(DateFormat('EEEE, MMM d').format(date)),
                 children: appointments.map((appointment) => ListTile(
-                  title: Text('${TimeOfDay.fromDateTime(appointment.dateTime).format(context)} - ${appointment.serviceType}'),
+                  title: Text('${TimeOfDay.fromDateTime(appointment.dateTime).format(context)} - ${appointment.serviceType}- ${appointment.name}'),
                 )).toList(),
               );
             },

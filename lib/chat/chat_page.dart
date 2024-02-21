@@ -1,62 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../commons/common.dart';
+import '../managers/image_manager.dart';
+import '../managers/chat_manager.dart';
 // Import necessary Firebase libraries
 
-class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+class ChatPage extends StatelessWidget  {
 
-  // Add chat logic with Firebase
-
-  @override
-  createState() {
-    return _ChatPageState();
-  }
-}
-
-class _ChatPageState extends State<ChatPage> {
-  final TextEditingController _messageController = TextEditingController();
   final String adminId = 'admin'; // Example admin ID
   final String fieldTxid = 'tx_id';
   final String fieldRxid = 'rx_id';
   final String fieldMsg = 'msg';
   final String fieldTimestamp = 'timestamp';
 
-  Future<void> sendMessage() async {
-    if (_messageController.text.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection(Constants.urlChats)
-          .doc('chat_id2') // Use appropriate chat ID
-          .collection('messages')
-          .add({
-        fieldTxid: FirebaseAuth.instance.currentUser!.uid,
-        fieldRxid: adminId,
-        fieldMsg: _messageController.text,
-        fieldTimestamp: Timestamp.now(),
-      });
-      _messageController.clear();
-    }
-  }
+  const ChatPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final ImagePicker picker = ImagePicker();
+    final chatManager = Provider.of<ChatManager>(context);
+    final imageManager = Provider.of<ImageManager>(context);
+    XFile? image;
     return Scaffold(
-      appBar: AppBar(title: Text('Chat')),
+      appBar: AppBar(title: const Text('Chat')),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc('chat_id2') // Use appropriate chat ID
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
+              stream: chatManager.getMessagesStream(),
               builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
                 return ListView(
                   reverse: true,
@@ -76,14 +54,22 @@ class _ChatPageState extends State<ChatPage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _messageController,
+                    controller: chatManager.messageController,
                     decoration:
                         const InputDecoration(labelText: 'Enter a message...'),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: sendMessage,
+                  icon: const Icon(Icons.send),
+                  onPressed: chatManager.sendMessage,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt),
+                  onPressed: () async => {
+                    image =
+                        await picker.pickImage(source: ImageSource.gallery),
+                    imageManager.uploadFile(image, null)
+                  },
                 ),
               ],
             ),

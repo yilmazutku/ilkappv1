@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'appointment_manager.dart';
+import 'managers/appointment_manager.dart';
 import 'commons/common.dart';
 
 final auth = FirebaseAuth.instance;
@@ -17,10 +17,15 @@ class BookingPage extends StatefulWidget {
 
 class _BookingPageState extends State<BookingPage> {
   final meetingTypeList = MeetingType.values.map((e) => e.name).toList();
-  final _nameController = TextEditingController();
+  // final _nameController = TextEditingController(); // daha sonra eklenebilir kayıtlı olmayan kullanıcılar için
   String? _serviceType;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay? _selectedTime;
+
+  void setSelectedTime(bool selected, TimeOfDay time) {
+    print('selectedTime= $time');
+    _selectedTime = selected ? time : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,27 +39,7 @@ class _BookingPageState extends State<BookingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
               const SizedBox(height: 16),
-              // DropdownButton<String>(
-              //   value: _serviceType,
-              //   hint: const Text('Select Service Type'),
-              //   onChanged: (String? newValue) {
-              //     setState(() {
-              //       _serviceType = newValue;
-              //     });
-              //   },
-              //   items: meetingTypeList
-              //       .map<DropdownMenuItem<String>>((String value) {
-              //     return DropdownMenuItem<String>(
-              //       value: value,
-              //       child: Text(value),
-              //     );
-              //   }).toList(),
-              // ),
               ServiceTypeDropdown(
                 selectedServiceType: _serviceType,
                 serviceTypeList: meetingTypeList,
@@ -112,7 +97,7 @@ class _BookingPageState extends State<BookingPage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  if (_nameController.text.isEmpty ||
+                  if (/*_nameController.text.isEmpty ||*/
                       _serviceType == null ||
                       _selectedTime == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +116,7 @@ class _BookingPageState extends State<BookingPage> {
                   Appointment newAppointment = Appointment(
                     id: auth.currentUser!.uid,
                     // This might be replaced with a more appropriate ID generation strategy
-                    name: _nameController.text,
+                    name: /*_nameController.text*/'TODO',
                     serviceType: _serviceType!,
                     dateTime: finalDateTime,
                   );
@@ -152,10 +137,6 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  void setSelectedTime(bool selected, TimeOfDay time) {
-    print('selectedTime= $time');
-    _selectedTime = selected ? time : null;
-  }
 /*
   Here's a summary of how this setup works:
 
@@ -168,11 +149,6 @@ FutureBuilder for Time Slots: Utilizes a FutureBuilder to asynchronously fetch a
 Booking Button: Upon clicking, it validates the input fields, creates a new Appointment object with the selected details, and calls bookAppointment on the AppointmentManager to save the appointment. If successful, it displays a confirmation message.
 
 This architecture helps to keep your UI code clean and maintainable, facilitating easy updates or changes to the state management logic without requiring significant changes to your UI code.
-
-
-
-
-
    */
 }
 
@@ -198,7 +174,6 @@ class _ServiceTypeDropdownState extends State<ServiceTypeDropdown> {
   @override
   void initState() {
     super.initState();
-    // Initialize _serviceType with the selectedServiceType from the widget
     _serviceType = widget.selectedServiceType;
   }
 

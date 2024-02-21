@@ -3,13 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/admin_pages/admin_appointments.dart';
-import 'package:untitled/admin_pages/admin_panel_page.dart';
+import 'package:untitled/admin_pages/admin_images.dart';
+import 'package:untitled/managers/chat_manager.dart';
+import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/images/meal_upload_page.dart';
 
-import 'appointment_manager.dart';
+import 'managers/appointment_manager.dart';
 import 'booking.dart';
 import 'chat/chat_page.dart';
-import 'images/meal_state_manager.dart';
+import 'managers/meal_state_manager.dart';
 
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
@@ -45,6 +47,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (context) => ImageManager()),
+        ChangeNotifierProvider(create: (context) => ChatManager()),
         ChangeNotifierProvider(create: (context) => MealStateManager()),
         ChangeNotifierProvider(create: (context) => AppointmentManager()),
       ],

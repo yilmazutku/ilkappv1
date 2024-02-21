@@ -6,8 +6,6 @@ import '../commons/common.dart';
 class UserImagesPage extends StatefulWidget {
   final String folderName;
 
-  //final DateFilter selectedDateFilter;
-
   const UserImagesPage({
     super.key,
     required this.folderName,
@@ -33,22 +31,21 @@ class _UserImagesPageState extends State<UserImagesPage> {
 
   Future<void> fetchImages() async {
     {
-      // String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      // currentFolder = folderName;
       String folderName = widget.folderName;
       final ref =
           FirebaseStorage.instance.ref('${Constants.urlUsers}$folderName');
       final ListResult result = await ref.listAll();
       List<String> imageUrls = [];
       for (var fileRef in result.items) {
-       // var metadata = await fileRef.getMetadata();
+        // var metadata = await fileRef.getMetadata();
         // DateTime? createdTime = metadata.timeCreated;
-       // if (metadata != null) {
-          final url = await fileRef.getDownloadURL();
-          imageUrls.add(url);
+        // if (metadata != null) {
+        final url = await fileRef.getDownloadURL();
+        imageUrls.add(url);
         //}
       }
-      if (mounted) { /*It is an error to call setState unless mounted is true.*/
+      if (mounted) {
+        /*It is an error to call setState unless mounted is true.*/
         setState(() {
           if (imageUrls.isNotEmpty) {
             newImageUrls = imageUrls;

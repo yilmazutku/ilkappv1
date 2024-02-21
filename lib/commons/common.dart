@@ -32,8 +32,8 @@ class Constants {
   static const String urlPhotos = '${urlUsers}photos/'; // +<user>/
 //user bilgisi olmadan bu2lı kullanılamaz buna da bı fıx ıı olur
   static const String urlMealPhotos =
-      '${urlPhotos}mealPhotos/'; // + <date>/<mealType>/x
-  static const String urlChatPhotos = '${urlPhotos}chatPhotos/'; // + <date>/x
+      'mealPhotos/'; // + <date>/<mealType>/x
+  static const String urlChatPhotos = 'chatPhotos/'; // + <date>/x
 }
 
 class Appointment {
