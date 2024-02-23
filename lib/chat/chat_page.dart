@@ -68,6 +68,7 @@ class ChatPage extends StatelessWidget  {
                   onPressed: () async => {
                     image =
                         await picker.pickImage(source: ImageSource.gallery),
+                    if(image!=null)
                     imageManager.uploadFile(image, null)
                   },
                 ),

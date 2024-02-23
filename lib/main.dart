@@ -72,7 +72,7 @@ class HomePage extends StatelessWidget {
     print('Building HomePage...');
     return Scaffold(
       appBar:
-          AppBar(title: Text('(AppLocalizations.of(context)!.helloWorld),')),
+          AppBar(title: Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

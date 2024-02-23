@@ -45,7 +45,7 @@ class AppointmentManager extends ChangeNotifier {
           appointment.dateTime.month, appointment.dateTime.day);
       if (!weeklyAppointments.containsKey(date)) {
         weeklyAppointments[date] = [];
-      }
+      } //querybuilder TODO
       weeklyAppointments[date]!.add(appointment);
     }
   }
