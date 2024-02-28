@@ -24,7 +24,7 @@ class MealStateManager extends ChangeNotifier {
 
   void setMealCheckedState(Meals meal, bool isChecked) async {
     _checkedStates[meal] = isChecked;
-    notifyListeners(); // Notify listeners to rebuild the widgets that depend on this state
+    //notifyListeners(); // Notify listeners to rebuild the widgets that depend on this state
 
     // Save the state to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
