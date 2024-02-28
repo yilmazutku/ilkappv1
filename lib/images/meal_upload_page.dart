@@ -7,30 +7,8 @@ import '../commons/common.dart';
 import '../managers/image_manager.dart';
 import '../managers/meal_state_manager.dart';
 
-class MealUploadPage extends StatefulWidget {
+class MealUploadPage extends StatelessWidget {
   const MealUploadPage({super.key});
-
-  @override
-  createState() => _MealUploadPageState();
-}
-
-class _MealUploadPageState extends State<MealUploadPage> {
-  _MealUploadPageState(); //initstate hep cagiriliyor ama constructor olai nasil olur? listten baslayarak bunu denemeye basladim TODO
-  final ImagePicker _picker = ImagePicker();
-  final Map<Meals, List<String>> mealContents = {
-    //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
-  };
-  final Map<Meals, XFile?> _mealImages = {
-    for (var meal in Meals.values) meal: null,
-    //ya da for( var meal in  Meals.values) {
-    //_mealImages[meal.label]=null;
-    //} loopunu alıp initState methodunu override edip onun icine koyacaksın. ikisi de aynı.
-  };
-  final Map<Meals, bool> _checkedStates = {
-    for (var meal in Meals.values) meal: false,
-  };
-  late SharedPreferences prefs;
-  XFile? image;
 
   void setMealList() {
     //TODO: Yazılan diyet ile widget list guncellenecek. Input nereden girilecek? constta keyler girilebilir ama girilemdigi durumda fluter napıo?
@@ -38,8 +16,17 @@ class _MealUploadPageState extends State<MealUploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('building mealuploadğpage');
     final imageManager = Provider.of<ImageManager>(context);
     final mealStateManager = Provider.of<MealStateManager>(context);
+    XFile? image;
+    ImagePicker _picker = ImagePicker();
+    Map<Meals, List<String>> mealContents = {
+      //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
+    };
+    Map<Meals, bool> checkedStates = {
+      for (var meal in Meals.values) meal: false,
+    };
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meal Image Upload'),
@@ -52,9 +39,9 @@ class _MealUploadPageState extends State<MealUploadPage> {
           } else if (snapshot.hasError) {
             return const Center(child: Text("Error loading meal states"));
           }
-          _checkedStates.addAll(snapshot.data!);
+          checkedStates.addAll(snapshot.data!);
           return ListView(
-            children: _checkedStates.keys.map((mealCategory) {
+            children: checkedStates.keys.map((mealCategory) {
               List<Text> list = [];
               if (mealContents[mealCategory] != null &&
                   mealContents[mealCategory]!.isNotEmpty) {
@@ -62,6 +49,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                     .map((content) => Text('• $content'))
                     .toList();
               }
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -104,21 +92,49 @@ class _MealUploadPageState extends State<MealUploadPage> {
     );
   }
 }
-
-class CustomCheckbox extends StatelessWidget {
+// class CustomCheckbox extends StatelessWidget {
+//   const CustomCheckbox({super.key, required this.meal});
+//
+//   final Meals meal;
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Consumer<MealStateManager>(
+//       builder: (context, mealStateManager, _) {
+//         bool isChecked = mealStateManager.checkedStates[meal] ?? false;
+//         return Checkbox(
+//           value: isChecked,
+//           onChanged: (newValue) {
+//             mealStateManager.setMealCheckedState(meal, newValue ?? false);
+//           },
+//         );
+//       },
+//     );
+//   }
+// }
+class CustomCheckbox extends StatefulWidget {
   const CustomCheckbox({super.key, required this.meal});
 
   final Meals meal;
 
   @override
+  createState() => _CustomCheckboxState();
+}
+
+class _CustomCheckboxState extends State<CustomCheckbox> {
+  @override
   Widget build(BuildContext context) {
+    bool? check;
     final mealStateManager = Provider.of<MealStateManager>(context);
-    bool isChecked = mealStateManager.checkedStates[meal] ?? false;
+    bool isChecked = mealStateManager.checkedStates[widget.meal] ?? false;
 
     return Checkbox(
-      value: isChecked,
+      value: check ?? isChecked,
       onChanged: (bool? newValue) {
-        mealStateManager.setMealCheckedState(meal, newValue ?? false);
+        mealStateManager.setMealCheckedState(widget.meal, newValue ?? false);
+        setState(() {
+          check = newValue ?? false;
+        });
       },
     );
   }
