@@ -16,7 +16,7 @@ class MealUploadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('building mealuploadğpage');
+    print('building mealuploadpage');
     final imageManager = Provider.of<ImageManager>(context);
     final mealStateManager = Provider.of<MealStateManager>(context);
     XFile? image;
@@ -68,7 +68,7 @@ class MealUploadPage extends StatelessWidget {
                             onPressed: () async => {
                                   image = await _picker.pickImage(
                                       source: ImageSource.gallery),
-                                  imageManager.uploadFile(image, mealCategory),
+                                  imageManager.uploadFile(image, meal:mealCategory),
                                 }),
                         CustomCheckbox(
                           meal: mealCategory,
@@ -92,6 +92,7 @@ class MealUploadPage extends StatelessWidget {
     );
   }
 }
+
 // class CustomCheckbox extends StatelessWidget {
 //   const CustomCheckbox({super.key, required this.meal});
 //

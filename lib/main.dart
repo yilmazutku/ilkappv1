@@ -48,7 +48,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ImageManager()),
-        ChangeNotifierProvider(create: (context) => ChatManager()),
+        ChangeNotifierProxyProvider<ImageManager, ChatManager>(
+          create: (context) => ChatManager(imageManager:Provider.of<ImageManager>(context, listen: false)),
+          update: (context, imageManager, previousChatManager) => ChatManager(imageManager:imageManager),
+        ),
         ChangeNotifierProvider(create: (context) => MealStateManager()),
         ChangeNotifierProvider(create: (context) => AppointmentManager()),
       ],

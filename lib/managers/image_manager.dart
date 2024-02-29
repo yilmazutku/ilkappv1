@@ -18,35 +18,40 @@ class ImageManager extends ChangeNotifier {
   //   return manager;
   // }
 
-  Future<void> uploadFile(XFile? image,Meals? meal) async {
+  Future<String?> uploadFile(XFile? image, {Meals? meal}) async {
     if (image != null) {
       try {
         final userId = FirebaseAuth.instance.currentUser!.uid;
         String fileName = image.path.split('/').last;
         String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        String path='${Constants.urlUsers}$userId';
+        String path = '${Constants.urlUsers}$userId';
         if (meal != null) {
-          path = '$path/${Constants.urlMealPhotos}/$date/${meal.url}$fileName';
-        } else { //chatphoto
-          path = '$path/${Constants.urlChatPhotos}/$date/$fileName';
+          path = '$path/${Constants.urlMealPhotos}$date/${meal.url}$fileName';
+        } else {
+          //chatphoto
+          path = '$path/${Constants.urlChatPhotos}$date/$fileName';
         }
         Reference ref = FirebaseStorage.instance.ref(path);
-        print('uploading File path=$path');
+        print('isChatPhoto=${meal == null}, uploading File path=$path');
         await ref.putFile(File(image.path));
+        // After uploading, get the download URL
+        String downloadUrl = await ref.getDownloadURL();
+        print('uploaded File path=$path, downloadUrl=$downloadUrl');
+        return downloadUrl; // Return the URL of the uploaded image
         // if (!mounted) return;
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text('Image uploaded for $meal')),
         // );
-      } on FirebaseException catch (e) {      // if (!mounted) return;
+      } on FirebaseException catch (e) {
+        // if (!mounted) return;
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text(e.message ?? 'Error during file upload')),
         // );
-
       }
+    } else {
+      print('No image is selected.');
+      return null; // Return null if no image was selected or upload failed
     }
-    else {
-      print('Null image cannot be uploaded.');
-    }
+    return null;
   }
-
 }

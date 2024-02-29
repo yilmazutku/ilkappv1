@@ -70,9 +70,10 @@ dev_dependencies:
 flutter:
   assets:
     - assets/ecl trg.PNG
+    - assets/utku.png
   uses-material-design: true
   generate: true
-  # The following line ensures that the Material Icons font is
+  # The following line ensures that the Mater ial Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
 
