@@ -100,7 +100,8 @@ class ChatPage extends StatelessWidget {
                         const InputDecoration(labelText: 'Enter a message...'),
                   ),
                 ),
-                IconButton(
+                IconButton
+                  (
                   icon: const Icon(Icons.send),
                   onPressed:chatManager.sendMessage
                 ),

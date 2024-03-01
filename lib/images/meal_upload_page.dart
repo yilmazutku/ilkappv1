@@ -52,7 +52,8 @@ class MealUploadPage extends StatelessWidget {
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+                children:
+                [
                   ListTile(
                     title: Center(
                       child: Text(
@@ -68,7 +69,8 @@ class MealUploadPage extends StatelessWidget {
                             onPressed: () async => {
                                   image = await _picker.pickImage(
                                       source: ImageSource.gallery),
-                                  imageManager.uploadFile(image, meal:mealCategory),
+                                  imageManager.uploadFile(image,
+                                      meal: mealCategory),
                                 }),
                         CustomCheckbox(
                           meal: mealCategory,
