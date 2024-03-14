@@ -4,19 +4,28 @@ import 'package:flutter/material.dart';
 import '../commons/common.dart';
 
 class AppointmentManager extends ChangeNotifier {
-  Map<DateTime, List<Appointment>> weeklyAppointments = {};
-  DateTime selectedDate = DateTime.now(); // Tracks the selected date
+  final Map<DateTime, List<Appointment>> _dailyAppointments = {};
 
-  void updateSelectedDate(DateTime newDate) {
+  Map<DateTime, List<Appointment>> get dailyAppointments => _dailyAppointments;
+
+  DateTime _selectedDate = DateTime.now(); // Tracks the selected date
+
+  Future<void> updateSelectedDate(DateTime newDate) async {
     print('updatedSelectedDate=$newDate');
-    selectedDate = newDate;
-    fetchAppointments(); // Fetch appointments for the week of the new selected date
+    _selectedDate = newDate;
+    await fetchAppointments(
+        selectedDate:
+            _selectedDate); // Fetch appointments for the week of the new selected date
     notifyListeners(); // Notify listeners to rebuild widgets if necessary
   }
 
+  /**
+   * belirli bir gün için müsait saatleri bulur
+   */
   Future<List<TimeOfDay>> getAvailableTimeSlots(DateTime date) async {
     print('gettingAvailableTimeSlots for=$date');
-    await fetchAppointments(); // Make sure the appointments are up to date
+    await fetchAppointments(
+        selectedDate: date); // Make sure the appointments are up to date
     List<TimeOfDay> availableSlots = [];
 
     // Example: Assuming appointments can be booked from 9 AM to 5 PM, every half hour
@@ -32,21 +41,37 @@ class AppointmentManager extends ChangeNotifier {
     return availableSlots;
   }
 
-  Future<void> fetchAppointments() async {
+  Future<void> fetchAppointments({DateTime? selectedDate}) async {
     CollectionReference collectionRef =
         FirebaseFirestore.instance.collection(Constants.appointments);
-    QuerySnapshot querySnapshot = await collectionRef.get();
-    weeklyAppointments.clear();
+    // QuerySnapshot querySnapshot = await collectionRef.get();
+    QuerySnapshot? querySnapshot;
+    if (selectedDate == null) {
+      //admin çağırmış
+      querySnapshot = await collectionRef.get();
+    } else {
+      //user çağırmış, günlük saatleri dolduracak
+      querySnapshot =
+          await collectionRef.where('dateTime', isEqualTo: selectedDate).get();
+    }
+    /*
+  // Query for appointments within the specified date range
+  QuerySnapshot querySnapshot = await collectionRef
+      .where('dateTime', isGreaterThanOrEqualTo: startTimestamp)
+      .where('dateTime', isLessThanOrEqualTo: endTimestamp)
+      .get();
+     */
+    _dailyAppointments.clear();
     for (var doc in querySnapshot.docs) {
       Appointment appointment =
           Appointment.fromJson(doc.data() as Map<String, dynamic>);
       // DateTime date = appointment.dateTime;
       DateTime date = DateTime(appointment.dateTime.year,
           appointment.dateTime.month, appointment.dateTime.day);
-      if (!weeklyAppointments.containsKey(date)) {
-        weeklyAppointments[date] = [];
-      } //querybuilder TODO
-      weeklyAppointments[date]!.add(appointment);
+      if (!_dailyAppointments.containsKey(date)) {
+        _dailyAppointments[date] = [];
+      }
+      _dailyAppointments[date]!.add(appointment);
     }
   }
 
@@ -75,7 +100,7 @@ class AppointmentManager extends ChangeNotifier {
         DateTime(date.year, date.month, date.day);
     DateTime dateTimeWithHour =
         DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    for (var appointment in weeklyAppointments[dateYmd] ?? []) {
+    for (var appointment in _dailyAppointments[dateYmd] ?? []) {
       if (appointment.dateTime == dateTimeWithHour) {
         return false; // Slot is not available
       }

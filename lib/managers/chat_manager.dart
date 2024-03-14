@@ -12,29 +12,34 @@ import '../commons/common.dart';
 import 'image_manager.dart';
 
 class ChatManager extends ChangeNotifier {
-  final TextEditingController messageController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+  TextEditingController get messageController => _messageController;
+
   final String adminId = 'admin'; // Example admin ID
-  final String chatId = 'chat_id2'; // Static chat ID for simplicity
+  //final String chatId = 'chat_id2'; // Static chat ID for simplicity
+  final String chatId = FirebaseAuth.instance.currentUser!.uid;
   final ImageManager imageManager;
   ChatManager({required this.imageManager});
 
   Future<void> sendMessage({XFile? image}) async {
-    Map<String, dynamic> messageData = {
-      'tx_id': FirebaseAuth.instance.currentUser!.uid,
-      'rx_id': adminId,
-      'msg': messageController.text,
-      'timestamp': Timestamp.now(),
-
-    };
+    String? imageUrl;
     if (image != null) {
-      messageData['imageUrl'] = await imageManager.uploadFile(image); // Add imageUrl to the document if it's not null
+      imageUrl = await imageManager.uploadFile(image); // Upload image and get URL
     }
+
+    // Create MessageData object including the imageUrl if available
+    MessageData message = MessageData(
+      msg: _messageController.text,
+      timestamp: Timestamp.now(),
+      imageUrl: imageUrl,
+    );
+
     await FirebaseFirestore.instance
         .collection(Constants.urlChats)
         .doc(chatId)
         .collection('messages')
-        .add(messageData);
-    messageController.clear();
+        .add(message.toJson());
+    _messageController.clear();
     notifyListeners();
   }
   //Asset yükleyerek denemek için

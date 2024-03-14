@@ -10,11 +10,7 @@ import '../managers/chat_manager.dart';
 // Import necessary Firebase libraries
 
 class ChatPage extends StatelessWidget {
-  final String adminId = 'admin'; // Example admin ID
-  final String fieldTxid = 'tx_id';
-  final String fieldRxid = 'rx_id';
-  final String fieldMsg = 'msg';
-  final String fieldTimestamp = 'timestamp';
+  //TODO chat msglarda saat gozukecek tarih deistikce wsapptaki gibi tarih cıkacak
 
   const ChatPage({super.key});
 
@@ -44,15 +40,16 @@ class ChatPage extends StatelessWidget {
                     final data = doc.data()
                         as Map<String, dynamic>; // Cast the document to a Map
                     final msg = data['msg'] as String;
-                    final txId = data['tx_id'] as String;
+                    final txId = data['timestamp'] as Timestamp;
                     final imageUrl = data.containsKey('imageUrl')
                         ? data['imageUrl'] as String?
                         : null; // Check if imageUrl exists
                     return Column(
                       children: [
                         ListTile(
-                          title: Text(msg),
-                          subtitle: Text(txId),
+                          subtitle: Text(msg),
+
+                          title: Text('Siz${'\n'}${txId.toDate().toLocal().toIso8601String()}'),
                           //   trailing: imageUrl != null ? Image.network(imageUrl) : null, // Display image if available
                         ),
                         // if (imageUrl != null)
@@ -110,6 +107,7 @@ class ChatPage extends StatelessWidget {
                   onPressed: () async => {
                     image = await picker.pickImage(source: ImageSource.gallery),
                    chatManager.sendMessage(image:image)
+
                   },
                 ),
               ],

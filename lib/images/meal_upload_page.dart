@@ -20,7 +20,7 @@ class MealUploadPage extends StatelessWidget {
     final imageManager = Provider.of<ImageManager>(context);
     final mealStateManager = Provider.of<MealStateManager>(context);
     XFile? image;
-    ImagePicker _picker = ImagePicker();
+    ImagePicker picker = ImagePicker();
     Map<Meals, List<String>> mealContents = {
       //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
     };
@@ -67,7 +67,7 @@ class MealUploadPage extends StatelessWidget {
                         IconButton(
                             icon: const Icon(Icons.camera_alt),
                             onPressed: () async => {
-                                  image = await _picker.pickImage(
+                                  image = await picker.pickImage(
                                       source: ImageSource.gallery),
                                   imageManager.uploadFile(image,
                                       meal: mealCategory),

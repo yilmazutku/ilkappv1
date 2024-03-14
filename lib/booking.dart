@@ -61,7 +61,7 @@ class _BookingPageState extends State<BookingPage> {
                     setState(() {
                       _selectedDate = picked;
                     });
-                    appointmentManager.updateSelectedDate(picked);
+                   await appointmentManager.updateSelectedDate(picked);
                   }
                 },
               ),
@@ -90,7 +90,7 @@ class _BookingPageState extends State<BookingPage> {
                       }).toList(),
                     );
                   } else {
-                    return const Text("No available times.");
+                    return const Text("Seçtiğiniz gün için müsait bir saat bulunmuyor.");
                   }
                 },
               ),

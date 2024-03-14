@@ -24,6 +24,7 @@ enum Meals {
 
 class Constants {
   static const String saveTime = 'saveTime';
+
   //database
   static const String appointments = 'appointments';
   static const String urlChats = 'chats/'; // + <user>/<date>/x
@@ -35,6 +36,34 @@ class Constants {
       'mealPhotos/'; // + <date>/<mealType>/x
   static const String urlChatPhotos = 'chatPhotos/'; // + <date>/x
 }
+
+class MessageData {
+  String msg;
+  Timestamp timestamp;
+  String? imageUrl; // Optional image URL
+
+  MessageData({
+    required this.msg,
+    required this.timestamp,
+    this.imageUrl,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'msg': msg,
+    'timestamp': timestamp,
+    'imageUrl': imageUrl, // Include imageUrl in the JSON map
+  };
+
+  // Updated factory constructor to handle imageUrl
+  factory MessageData.fromJson(Map<String, dynamic> json) {
+    return MessageData(
+      msg: json['msg'],
+      timestamp: json['timestamp'] as Timestamp,
+      imageUrl: json['imageUrl'], // Safely extract imageUrl
+    );
+  }
+}
+
 
 class Appointment {
   String id;
@@ -54,7 +83,8 @@ class Appointment {
     // required this.time,
   });
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() =>
+      {
         'id': id,
         'name': name,
         'serviceType': serviceType,

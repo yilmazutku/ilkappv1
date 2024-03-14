@@ -28,10 +28,10 @@ class AdminAppointmentsPage extends StatelessWidget {
 
           // Assuming fetchAppointmentsForWeek updates weeklyAppointments inside AppointmentManager
           return ListView.builder(
-            itemCount: appointmentManager.weeklyAppointments.keys.length,
+            itemCount: appointmentManager.dailyAppointments.keys.length,
             itemBuilder: (context, index) {
-              DateTime date = appointmentManager.weeklyAppointments.keys.elementAt(index);
-              List<Appointment> appointments = appointmentManager.weeklyAppointments[date]!;
+              DateTime date = appointmentManager.dailyAppointments.keys.elementAt(index);
+              List<Appointment> appointments = appointmentManager.dailyAppointments[date]!;
               return ExpansionTile(
                 title: Text(DateFormat('EEEE, MMM d').format(date)),
                 children: appointments.map((appointment) => ListTile(

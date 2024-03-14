@@ -73,53 +73,58 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print('Building HomePage...');
-    return Scaffold(
-      appBar:
+    // if(FirebaseAuth.instance.currentUser?.uid=='mChhGVRpH1PBAonozPiEitDm5pE2') {
+  // }
+    // else {
+        return Scaffold(
+          appBar:
           AppBar(title: Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              child: const Text('My Plan'),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MealUploadPage()),
-              ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                ElevatedButton(
+                  child: const Text('My Plan'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MealUploadPage()),
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text('Chat with Admin'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatPage()),
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text('Book'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BookingPage()),
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text('Admin Appointments'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AdminAppointmentsPage()),
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text('Admin Images'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AdminImages()),
+                  ),
+                ),
+              ],
             ),
+          ),
+        );
+      }
 
-            ElevatedButton(
-              child: const Text('Chat with Admin'),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatPage()),
-              ),
-            ),
-            ElevatedButton(
-              child: const Text('Book'),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BookingPage()),
-              ),
-            ),
-            ElevatedButton(
-              child: const Text('Admin Appointments'),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const AdminAppointmentsPage()),
-              ),
-            ),
-            ElevatedButton(
-              child: const Text('Admin Images'),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdminImages()),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // }
   }
-}
+

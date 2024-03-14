@@ -69,5 +69,4 @@ class MealStateManager extends ChangeNotifier {
     }
   }
 
-// Add other methods as needed, such as initializing states from SharedPreferences
 }
