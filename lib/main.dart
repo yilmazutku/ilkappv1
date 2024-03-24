@@ -87,6 +87,7 @@ class HomePage extends StatelessWidget {
               children: <Widget>[
 
                 ElevatedButton(
+                  //TODO ogunlere gore secıolmesın gunluk tum fotolar gozuksun dedi nilay
                   child: const Text('My Login'),
                   onPressed: () => Navigator.push(
                     context,
