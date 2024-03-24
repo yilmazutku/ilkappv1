@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/admin_pages/admin_appointments.dart';
 import 'package:untitled/admin_pages/admin_images.dart';
+import 'package:untitled/login_page.dart';
 import 'package:untitled/managers/chat_manager.dart';
 import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/images/meal_upload_page.dart';
@@ -59,7 +60,8 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.green,
         ),
-        home: const HomePage(), // Your initial route or home widget
+       home: const HomePage(), // Your initial route or home widget
+
         // Define other properties as needed
         // Your MaterialApp configuration
       ),
@@ -83,40 +85,12 @@ class HomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
+
                 ElevatedButton(
-                  child: const Text('My Plan'),
+                  child: const Text('My Login'),
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const MealUploadPage()),
-                  ),
-                ),
-                ElevatedButton(
-                  child: const Text('Chat with Admin'),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ChatPage()),
-                  ),
-                ),
-                ElevatedButton(
-                  child: const Text('Book'),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BookingPage()),
-                  ),
-                ),
-                ElevatedButton(
-                  child: const Text('Admin Appointments'),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AdminAppointmentsPage()),
-                  ),
-                ),
-                ElevatedButton(
-                  child: const Text('Admin Images'),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AdminImages()),
+                    MaterialPageRoute(builder: (context) =>  LoginPage()),
                   ),
                 ),
               ],

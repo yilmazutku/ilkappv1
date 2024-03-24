@@ -76,4 +76,10 @@ class ChatManager extends ChangeNotifier {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is disposed.
+    _messageController.dispose();
+    super.dispose();
+  }
 }
