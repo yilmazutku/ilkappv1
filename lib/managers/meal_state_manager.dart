@@ -47,10 +47,6 @@ class MealStateManager extends ChangeNotifier {
   Future<void> resetMealStatesIfDifferentDay() async {
     // prefs = await SharedPreferences.getInstance();
     int? lastSaveTime = prefs?.getInt(Constants.saveTime);
-    if (lastSaveTime == null) {
-      setMealsFalse();
-      return;
-    }
     DateTime lastSaveDateTime =
         DateTime.fromMillisecondsSinceEpoch(lastSaveTime!);
     var now = DateTime.now();

@@ -19,9 +19,7 @@ class AppointmentManager extends ChangeNotifier {
     notifyListeners(); // Notify listeners to rebuild widgets if necessary
   }
 
-  /**
-   * belirli bir gün için müsait saatleri bulur
-   */
+  /// belirli bir gün için müsait saatleri bulur
   Future<List<TimeOfDay>> getAvailableTimeSlots(DateTime date) async {
     print('gettingAvailableTimeSlots for=$date');
     await fetchAppointments(

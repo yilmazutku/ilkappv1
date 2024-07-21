@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
-import 'main.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -25,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login Page'),
+        title: const Text('Login Page'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -35,36 +36,36 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Enter your email',
                 labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Enter your password',
                 labelText: 'Password',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isLoading ? null : _login,
               // Disable button when loading
               child: _isLoading
-                  ? CircularProgressIndicator() // Show loading indicator
-                  : Text('Login'),
+                  ? const CircularProgressIndicator() // Show loading indicator
+                  : const Text('Login'),
             ),
             if (_errorMessage.isNotEmpty) // Show error message if not empty
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: Text(
                   _errorMessage,
-                  style: TextStyle(color: Colors.red, fontSize: 16),
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
                 ),
               ),
           ],
@@ -91,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
 
 
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => HomePageAfterLogin()));
+          context, MaterialPageRoute(builder: (context) => const HomePageAfterLogin()));
     }
 
     setState(() {

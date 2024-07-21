@@ -2,16 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:untitled/admin_pages/admin_appointments.dart';
-import 'package:untitled/admin_pages/admin_images.dart';
-import 'package:untitled/login_page.dart';
+
 import 'package:untitled/managers/chat_manager.dart';
 import 'package:untitled/managers/image_manager.dart';
-import 'package:untitled/images/meal_upload_page.dart';
+import 'package:untitled/pages/login_page.dart';
 
 import 'managers/appointment_manager.dart';
-import 'booking.dart';
-import 'chat/chat_page.dart';
 import 'managers/meal_state_manager.dart';
 
 String email = 'utkuyy97@gmail.com';
@@ -80,7 +76,7 @@ class HomePage extends StatelessWidget {
     // else {
         return Scaffold(
           appBar:
-          AppBar(title: Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
+          AppBar(title: const Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +87,7 @@ class HomePage extends StatelessWidget {
                   child: const Text('My Login'),
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  LoginPage()),
+                    MaterialPageRoute(builder: (context) =>  const LoginPage()),
                   ),
                 ),
               ],

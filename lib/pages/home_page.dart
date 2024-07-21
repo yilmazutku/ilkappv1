@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'admin_pages/admin_appointments.dart';
-import 'admin_pages/admin_images.dart';
-import 'booking.dart';
-import 'chat/chat_page.dart';
-import 'images/meal_upload_page.dart';
+import 'admin_appointments_page.dart';
+import 'admin_images_page.dart';
+import 'booking_page.dart';
+import 'chat_page.dart';
+import 'meal_upload_page.dart';
 class HomePageAfterLogin extends StatelessWidget {
   const HomePageAfterLogin({super.key});
 
@@ -16,7 +16,7 @@ class HomePageAfterLogin extends StatelessWidget {
     // else {
     return Scaffold(
       appBar:
-      AppBar(title: Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
+      AppBar(title: const Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

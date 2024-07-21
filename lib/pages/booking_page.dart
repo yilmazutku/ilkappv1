@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'managers/appointment_manager.dart';
-import 'commons/common.dart';
+import '../managers/appointment_manager.dart';
+import '../commons/common.dart';
 
 final auth = FirebaseAuth.instance;
 

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +41,7 @@ class ImageManager extends ChangeNotifier {
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text('Image uploaded for $meal')),
         // );
-      } on FirebaseException catch (e) {
+      } on FirebaseException {
         // if (!mounted) return;
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text(e.message ?? 'Error during file upload')),
