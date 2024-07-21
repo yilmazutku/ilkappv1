@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../commons/common.dart';
+import '../commons/customcheckbox.dart';
 import '../managers/image_manager.dart';
 import '../managers/meal_state_manager.dart';
 
@@ -94,50 +95,4 @@ class MealUploadPage extends StatelessWidget {
   }
 }
 
-// class CustomCheckbox extends StatelessWidget {
-//   const CustomCheckbox({super.key, required this.meal});
-//
-//   final Meals meal;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Consumer<MealStateManager>(
-//       builder: (context, mealStateManager, _) {
-//         bool isChecked = mealStateManager.checkedStates[meal] ?? false;
-//         return Checkbox(
-//           value: isChecked,
-//           onChanged: (newValue) {
-//             mealStateManager.setMealCheckedState(meal, newValue ?? false);
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
-class CustomCheckbox extends StatefulWidget {
-  const CustomCheckbox({super.key, required this.meal});
 
-  final Meals meal;
-
-  @override
-  createState() => _CustomCheckboxState();
-}
-
-class _CustomCheckboxState extends State<CustomCheckbox> {
-  @override
-  Widget build(BuildContext context) {
-    bool? check;
-    final mealStateManager = Provider.of<MealStateManager>(context);
-    bool isChecked = mealStateManager.checkedStates[widget.meal] ?? false;
-
-    return Checkbox(
-      value: check ?? isChecked,
-      onChanged: (bool? newValue) {
-        mealStateManager.setMealCheckedState(widget.meal, newValue ?? false);
-        setState(() {
-          check = newValue ?? false;
-        });
-      },
-    );
-  }
-}

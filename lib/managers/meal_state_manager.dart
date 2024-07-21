@@ -37,7 +37,8 @@ class MealStateManager extends ChangeNotifier {
     await resetMealStatesIfDifferentDay();
     final Map<Meals, bool> loadedStates = {};
     for (var meal in Meals.values) {
-      bool isChecked = prefs?.getBool(meal.label) ?? false;
+      bool? boolMeal = prefs?.getBool(meal.label);
+      bool isChecked = boolMeal ?? false;
       loadedStates[meal] = isChecked;
     }
     _init=true;
@@ -47,13 +48,16 @@ class MealStateManager extends ChangeNotifier {
   Future<void> resetMealStatesIfDifferentDay() async {
     // prefs = await SharedPreferences.getInstance();
     int? lastSaveTime = prefs?.getInt(Constants.saveTime);
+    bool isDifferentDay = false;
+    if(lastSaveTime!=null) {
     DateTime lastSaveDateTime =
         DateTime.fromMillisecondsSinceEpoch(lastSaveTime!);
     var now = DateTime.now();
-    bool isDifferentDay = lastSaveDateTime.day != now.day ||
+    isDifferentDay = lastSaveDateTime.day != now.day ||
         lastSaveDateTime.month != now.month ||
         lastSaveDateTime.year != now.year;
-    if (isDifferentDay) {
+    }
+    if (isDifferentDay || lastSaveTime==null) {
       setMealsFalse();
     }
   }

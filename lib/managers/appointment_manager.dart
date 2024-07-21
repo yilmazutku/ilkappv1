@@ -44,13 +44,17 @@ class AppointmentManager extends ChangeNotifier {
         FirebaseFirestore.instance.collection(Constants.appointments);
     // QuerySnapshot querySnapshot = await collectionRef.get();
     QuerySnapshot? querySnapshot;
+
     if (selectedDate == null) {
       //admin çağırmış
       querySnapshot = await collectionRef.get();
     } else {
+      DateTime startOfDay = DateTime(selectedDate.year,selectedDate.month,selectedDate.day,0);
+
+      DateTime endOfDay = DateTime(selectedDate.year,selectedDate.month,selectedDate.day,23,59);
       //user çağırmış, günlük saatleri dolduracak
       querySnapshot =
-          await collectionRef.where('dateTime', isEqualTo: selectedDate).get();
+          await collectionRef.where('dateTime', isGreaterThanOrEqualTo: startOfDay, isLessThan : endOfDay).get();
     }
     /*
   // Query for appointments within the specified date range
