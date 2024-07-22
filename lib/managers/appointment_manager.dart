@@ -46,7 +46,7 @@ class AppointmentManager extends ChangeNotifier {
     QuerySnapshot? querySnapshot;
 
     if (selectedDate == null) {
-      //admin çağırmış
+      //admin çağırmış tüm appointmentları görsün.
       querySnapshot = await collectionRef.get();
     } else {
       DateTime startOfDay = DateTime(selectedDate.year,selectedDate.month,selectedDate.day,0);

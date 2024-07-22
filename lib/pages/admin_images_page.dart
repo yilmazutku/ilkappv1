@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../commons/common.dart';
 import 'admin_user_images_page.dart';
-
+//TODO bir sayfada tum fotograflari gormek istiyor.
 class AdminImages extends StatefulWidget {
   const AdminImages({super.key});
 
@@ -90,3 +90,50 @@ class _AdminImagesState extends State<AdminImages> {
     );
   }
 }
+// import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+// import 'admin_user_images_page.dart';
+// import 'package:untitled/managers/admin_images_provider.dart';
+// // Uses the provider to fetch and display the initial list of user folders.
+// // Navigates to UserImagesPage on folder tap.
+// class AdminImages extends StatelessWidget {
+//   const AdminImages({super.key});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('Admin Panel'),
+//       ),
+//       body: Consumer<AdminImagesProvider>(
+//         builder: (context, provider, child) {
+//           return FutureBuilder(
+//             future: provider.fetchUserFolderNames(),
+//             builder: (context, snapshot) {
+//               if (snapshot.connectionState == ConnectionState.waiting) {
+//                 return const Center(child: CircularProgressIndicator());
+//               } else if (snapshot.hasError) {
+//                 return const Center(child: Text("Error loading user folders"));
+//               }
+//               return ListView(
+//                 children: provider.folders
+//                     .map((folderName) => ListTile(
+//                   title: Text(folderName),
+//                   onTap: () {
+//                     provider.navigateToFolder(folderName);
+//                     Navigator.of(context).push(
+//                       MaterialPageRoute(
+//                         builder: (context) => UserImagesPage(),
+//                       ),
+//                     );
+//                   },
+//                 ))
+//                     .toList(),
+//               );
+//             },
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
