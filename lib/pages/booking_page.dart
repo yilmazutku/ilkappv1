@@ -8,29 +8,14 @@ import '../commons/common.dart';
 
 final auth = FirebaseAuth.instance;
 
-class BookingPage extends StatefulWidget {
+class BookingPage extends StatelessWidget {
   const BookingPage({super.key});
-
-  @override
-  createState() => _BookingPageState();
-}
-
-class _BookingPageState extends State<BookingPage> {
-  final meetingTypeList = MeetingType.values.map((e) => e.name).toList();
-  // final _nameController = TextEditingController(); // daha sonra eklenebilir kayıtlı olmayan kullanıcılar için
-  String? _serviceType;
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay? _selectedTime;
-
-  void setSelectedTime(bool selected, TimeOfDay time) {
-    print('selectedTime= $time');
-    _selectedTime = selected ? time : null;
-  }
 
   @override
   Widget build(BuildContext context) {
     final appointmentManager = Provider.of<AppointmentManager>(context);
     print('Building BookingPage...');
+
     return Scaffold(
       appBar: AppBar(title: const Text('Book Appointment')),
       body: SingleChildScrollView(
@@ -40,35 +25,27 @@ class _BookingPageState extends State<BookingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              ServiceTypeDropdown(
-                selectedServiceType: _serviceType,
-                serviceTypeList: meetingTypeList,
-                onServiceTypeChanged: (newValue) => _serviceType = newValue,
-              ),
+              const ServiceTypeDropdown(),
               const SizedBox(height: 16),
               ListTile(
-                title: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
-                //TODO belki isim yazabilir ayların
+                title: Text(DateFormat('dd/MM/yyyy').format(appointmentManager.selectedDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
                     context: context,
-                    initialDate: _selectedDate,
+                    initialDate: appointmentManager.selectedDate,
                     firstDate: DateTime.now(),
                     lastDate: DateTime(2101),
                   );
-                  if (picked != null && picked != _selectedDate) {
-                    setState(() {
-                      _selectedDate = picked;
-                    });
-                   await appointmentManager.updateSelectedDate(picked);
+                  if (picked != null && picked != appointmentManager.selectedDate) {
+                    appointmentManager.setSelectedDate(picked);
+                    await appointmentManager.updateSelectedDate(picked);
                   }
                 },
               ),
               const SizedBox(height: 16),
-              // Display available time slots
               FutureBuilder<List<TimeOfDay>>(
-                future: appointmentManager.getAvailableTimeSlots(_selectedDate),
+                future: appointmentManager.getAvailableTimeSlots(appointmentManager.selectedDate),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
@@ -80,11 +57,9 @@ class _BookingPageState extends State<BookingPage> {
                       children: availableTimes.map((time) {
                         return ChoiceChip(
                           label: Text(time.format(context)),
-                          selected: _selectedTime == time,
+                          selected: appointmentManager.selectedTime == time,
                           onSelected: (bool selected) {
-                            setState(() {
-                              setSelectedTime(selected, time);
-                            });
+                            appointmentManager.setSelectedTime(selected ? time : TimeOfDay.now());
                           },
                         );
                       }).toList(),
@@ -97,36 +72,27 @@ class _BookingPageState extends State<BookingPage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  if (/*_nameController.text.isEmpty ||*/
-                      _serviceType == null ||
-                      _selectedTime == null) {
+                  try {
+                    await appointmentManager.bookAppointment(Appointment(
+                      id: '123', // Replace with actual user ID
+                      name: 'TODO', // Replace with actual user name
+                      serviceType: appointmentManager.serviceType!,
+                      dateTime: DateTime(
+                        appointmentManager.selectedDate.year,
+                        appointmentManager.selectedDate.month,
+                        appointmentManager.selectedDate.day,
+                        appointmentManager.selectedTime!.hour,
+                        appointmentManager.selectedTime!.minute,
+                      ),
+                    ));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please fill all fields")),
+                      const SnackBar(content: Text("Appointment booked successfully")),
                     );
-                    return;
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString())),
+                    );
                   }
-                  DateTime finalDateTime = DateTime(
-                    _selectedDate.year,
-                    _selectedDate.month,
-                    _selectedDate.day,
-                    _selectedTime!.hour,
-                    _selectedTime!.minute,
-                  );
-
-                  Appointment newAppointment = Appointment(
-                    id: auth.currentUser!.uid,
-                    // This might be replaced with a more appropriate ID generation strategy
-                    name: /*_nameController.text*/'TODO',
-                    serviceType: _serviceType!,
-                    dateTime: finalDateTime,
-                  );
-
-                  await appointmentManager.bookAppointment(newAppointment);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("Appointment booked successfully")),
-                  );
                 },
                 child: const Text('Book Appointment'),
               ),
@@ -136,6 +102,9 @@ class _BookingPageState extends State<BookingPage> {
       ),
     );
   }
+}
+
+
 
 /*
   Here's a summary of how this setup works:
@@ -150,50 +119,21 @@ Booking Button: Upon clicking, it validates the input fields, creates a new Appo
 
 This architecture helps to keep your UI code clean and maintainable, facilitating easy updates or changes to the state management logic without requiring significant changes to your UI code.
    */
-}
 
-class ServiceTypeDropdown extends StatefulWidget {
-  final String? selectedServiceType;
-  final List<String> serviceTypeList;
-  final Function(String?) onServiceTypeChanged;
 
-  const ServiceTypeDropdown({
-    super.key,
-    required this.selectedServiceType,
-    required this.serviceTypeList,
-    required this.onServiceTypeChanged,
-  });
-
-  @override
-  createState() => _ServiceTypeDropdownState();
-}
-
-class _ServiceTypeDropdownState extends State<ServiceTypeDropdown> {
-  String? _serviceType;
-
-  @override
-  void initState() {
-    super.initState();
-    _serviceType = widget.selectedServiceType;
-  }
+class ServiceTypeDropdown extends StatelessWidget {
+  const ServiceTypeDropdown({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final appointmentManager = Provider.of<AppointmentManager>(context);
     return DropdownButton<String>(
-      value: _serviceType,
+      value: appointmentManager.serviceType,
       hint: const Text('Select Service Type'),
       onChanged: (String? newValue) {
-        if (newValue != _serviceType) {
-          setState(() {
-            print('Building ServiceTypeDropdown widget... ');
-            _serviceType = newValue;
-          });
-          widget.onServiceTypeChanged(
-              newValue); // Notify the parent widget of the change
-        }
+        appointmentManager.setServiceType(newValue);
       },
-      items:
-          widget.serviceTypeList.map<DropdownMenuItem<String>>((String value) {
+      items: appointmentManager.meetingTypeList.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value),

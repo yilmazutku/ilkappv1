@@ -31,7 +31,7 @@ class LoginProvider extends ChangeNotifier {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => const HomePageAfterLogin()));
     }
-
+  //TODO: bu loading'in get yapildigi yerde true false bakıyor, true iken buraya tekrar getirtip durumu konttol et. sanırım hala giriş yapılmaya çalışılıyorken tekrar logine basınca bu durum gerçekleşebilir.
     _isLoading = false;
     notifyListeners();
   }
