@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../commons/logger.dart';
 import 'admin_appointments_page.dart';
 import 'admin_images_page.dart';
 import 'booking_page.dart';
 import 'chat_page.dart';
 import 'meal_upload_page.dart';
+
+final Logger logger = Logger.forClass(HomePageAfterLogin);
+
 class HomePageAfterLogin extends StatelessWidget {
   const HomePageAfterLogin({super.key});
 
   @override
   Widget build(BuildContext context) {
-    print('Building HomePage...');
+    logger.info('Building HomePage...');
     // if(FirebaseAuth.instance.currentUser?.uid=='mChhGVRpH1PBAonozPiEitDm5pE2') {
     // }
     // else {
     return Scaffold(
       appBar:
-      AppBar(title: const Text(/*'(AppLocalizations.of(context)!.helloWorld),'*/'Trial App v0')),
+      AppBar(title: const Text('Trial App v0')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

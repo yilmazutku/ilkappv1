@@ -111,4 +111,9 @@ class Appointment {
       dateTime: dateTime,
     );
   }
+
+  @override
+  String toString() {
+    return 'Appointment{id: $id, name: $name, serviceType: $serviceType, dateTime: $dateTime}';
+  }
 }

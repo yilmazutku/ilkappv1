@@ -1,69 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:untitled/pages/home_page_after_login.dart';
+
+import '../commons/logger.dart';
+
 class LoginProvider extends ChangeNotifier {
+  final Logger logger = Logger.forClass(LoginProvider);
+
+  final String userNotFoundMessage = 'Kullanıcı adı bulunamadı.';
+  final String wrongPasswordMessage =
+      'Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.';
+  final String fieldsEmptyMsg = 'Lütfen alanları doldurunuz.';
+  final String emailEmptyMsg = 'Kullanıcı adı kısmını lütfen doldurunuz.';
+  final String pwEmptyMsg = 'Şifre kısmını lütfen doldurunuz.';
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
   String _errorMessage = '';
 
-  bool get isLoading => _isLoading;
-  String get errorMessage => _errorMessage;
+  bool get isLoading {
+    logger.info('isLoading getter called, isLoading: $_isLoading');
+    return _isLoading;
+  }
 
-  final String userNotFoundMessage = 'Kullanıcı adı bulunamadı.';
-  final String wrongPasswordMessage = 'Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.';
-  final String fieldsEmptyMsg = 'Lütfen alanları doldurunuz.';
-  final String emailEmptyMsg = 'Kullanıcı adı kısmını lütfen doldurunuz.';
-  final String pwEmptyMsg = 'Şifre kısmını lütfen doldurunuz.';
+  String get errorMessage {
+    logger.info('errorMessage getter called, errorMessage: $_errorMessage');
+    // String strTempErrMsg=StringBuffer(_errorMessage).toString();
+    // _errorMessage='';
+    // logger.info('errorMessage getter called, strTempErrMsg: $strTempErrMsg');
+    return _errorMessage;
+  }
 
   Future<void> login(BuildContext context) async {
-    _isLoading = true;
+    if (!_validateInputs()) {
+      notifyListeners();
+      return;
+    }
+
+    _setLoadingState(true);
     _errorMessage = '';
     notifyListeners();
 
-    bool isLoginSuccessful = await signInAutomatically(
-        emailController.value, passwordController.value);
-    isLoginSuccessful=true;
-    if (!isLoginSuccessful) {
+    bool isLoginSuccessful = await signIn(
+        emailController.text.trim(), passwordController.text.trim());
+    isLoginSuccessful = true; //TODO
+    if (isLoginSuccessful) {
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePageAfterLogin()),
+        );
+      }
+    } else {
       notifyListeners();
     }
-    else {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const HomePageAfterLogin()));
+
+    _setLoadingState(false);
+  }
+
+  Future<bool> signIn(String email, String password) async {
+    // const bool isProduction = bool.fromEnvironment('dart.vm.product');
+    //
+    // if (!isProduction) { //debug ortamındayım
+    //   logger.debug(
+    //       'signInAutomatically called with email: $email, password: $password');
+    // } else {
+    //   logger.info('signInAutomatically called with email: $email');
+    // }
+    logger.debug(
+        'signInAutomatically called with email: $email, password: $password');
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        _setError(userNotFoundMessage);
+      } else if (e.code == 'wrong-password') {
+        _setError(wrongPasswordMessage);
+      } else {
+        _setError('Giriş yaparken beklenmeyen bir hata oluştu.');
+      }
+      return false;
+    } catch (e) {
+      _setError('Giriş yaparken beklenmeyen bir hata oluştu.');
+      return false;
     }
-  //TODO: bu loading'in get yapildigi yerde true false bakıyor, true iken buraya tekrar getirtip durumu konttol et. sanırım hala giriş yapılmaya çalışılıyorken tekrar logine basınca bu durum gerçekleşebilir.
-    _isLoading = false;
+  }
+
+  void _setLoadingState(bool isLoading) {
+    _isLoading = isLoading;
+    logger.info('Loading state changed: $_isLoading');
     notifyListeners();
   }
 
-  Future<bool> signInAutomatically(
-      TextEditingValue email, TextEditingValue pw) async {
-    if (email.text.isEmpty && pw.text.isEmpty) {
-      _errorMessage = fieldsEmptyMsg;
+  void _setError(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  bool _validateInputs() {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      _setError(fieldsEmptyMsg);
       return false;
     }
-    if (email.text.isEmpty) {
-      _errorMessage = emailEmptyMsg;
-      return false;
-    } else if (pw.text.isEmpty) {
-      _errorMessage = pwEmptyMsg;
-      return false;
-    } else {
-      try {
-        var instance = FirebaseAuth.instance;
-        UserCredential userCredential =
-        await instance.signInWithEmailAndPassword(
-          email: email.text,
-          password: pw.text,
-        );
-        return true;
-      } on FirebaseAuthException catch (e) {
-        _errorMessage = e.code == 'user-not-found'
-            ? userNotFoundMessage
-            : wrongPasswordMessage;
-        return false;
-      }
-    }
+    return true;
   }
 
   @override

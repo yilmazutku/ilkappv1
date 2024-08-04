@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../commons/common.dart';
+
 // Manages the state of the current folder path.
 // Handles fetching of folder names and images.
 // Provides methods for navigation (navigateToFolder and navigateBack).

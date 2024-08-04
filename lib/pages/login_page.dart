@@ -146,14 +146,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../commons/logger.dart';
 import '../managers/login_manager.dart';
 
-
+final Logger logger = Logger.forClass(LoginPage);
 class LoginPage extends StatelessWidget {
+
+
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    logger.info('building loginPage');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login Page'),
@@ -162,6 +166,8 @@ class LoginPage extends StatelessWidget {
         padding: const EdgeInsets.all(20.0),
         child: Consumer<LoginProvider>(
           builder: (context, loginProvider, child) {
+            String errorMessage = loginProvider.errorMessage;
+            bool isLoading = loginProvider.isLoading;
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -186,17 +192,18 @@ class LoginPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: loginProvider.isLoading ? null : () => loginProvider.login(context),
-                  child: loginProvider.isLoading
+                  onPressed: isLoading ? null : () => loginProvider.login(context),
+                  child: isLoading
                       ? const CircularProgressIndicator()
                       : const Text('Login'),
                 ),
-                if (loginProvider.errorMessage.isNotEmpty)
+
+                if (errorMessage.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 20),
                     child: Text(
-                      loginProvider.errorMessage,
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red, fontSize: 16), //TODO ileride yeni login yapılmamışsa oncekinin errorunu silmek isteyebiliriz?
                     ),
                   ),
               ],

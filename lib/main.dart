@@ -7,6 +7,7 @@ import 'package:untitled/managers/chat_manager.dart';
 import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/pages/login_page.dart';
 
+import 'commons/logger.dart';
 import 'managers/admin_images_provider.dart';
 import 'managers/appointment_manager.dart';
 import 'managers/login_manager.dart';
@@ -14,12 +15,15 @@ import 'managers/meal_state_manager.dart';
 
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
+final logger = Logger('MyApp');
 
 void main() async {
+  logger.info('Application started');
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await signInAutomatically();
   runApp(const MyApp());
+
 }
 
 Future<void> signInAutomatically() async {
@@ -29,12 +33,12 @@ Future<void> signInAutomatically() async {
       email: email,
       password: password,
     );
-    print('Signed in with email: ${userCredential.user?.email}');
+    logger.info('Signed in with email: ${userCredential.user?.email}');
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
-      print('No user found for that email.');
+      logger.warn('No user found for that email.');
     } else if (e.code == 'wrong-password') {
-      print('Wrong password provided for that user.');
+      logger.warn('Wrong password provided for that user.');
     }
   }
 }
@@ -74,7 +78,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building HomePage...');
+    logger.info('Building HomePage with materialpageroute loginpage...');
     // if(FirebaseAuth.instance.currentUser?.uid=='mChhGVRpH1PBAonozPiEitDm5pE2') {
   // }
     // else {

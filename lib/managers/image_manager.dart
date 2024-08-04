@@ -7,8 +7,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../commons/common.dart';
+import '../commons/logger.dart';
+
+class UploadResult {
+  final String? downloadUrl;
+  final String? errorMessage;
+
+  UploadResult({this.downloadUrl, this.errorMessage});
+}
 
 class ImageManager extends ChangeNotifier {
+  final Logger logger = Logger.forClass(ImageManager);
+
   //singleton pattern
   // late ImageManager manager;
   //
@@ -17,40 +27,37 @@ class ImageManager extends ChangeNotifier {
   //   return manager;
   // }
 
-  Future<String?> uploadFile(XFile? image, {Meals? meal}) async {
+  Future<UploadResult> uploadFile(XFile? image, {Meals? meal}) async {
     if (image != null) {
       try {
         final userId = FirebaseAuth.instance.currentUser!.uid;
         String fileName = image.path.split('/').last;
         String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        String path = '${Constants.urlUsers}$userId';
+        String path;
         if (meal != null) {
-          path = '$path/${Constants.urlMealPhotos}$date/${meal.url}$fileName';
+          path = 'users/$userId/mealPhotos/$date/${meal.url}/$fileName';
         } else {
-          //chatphoto
-          path = '$path/${Constants.urlChatPhotos}$date/$fileName';
+          path = 'users/$userId/chatPhotos/$date/$fileName';
         }
+
         Reference ref = FirebaseStorage.instance.ref(path);
-        print('isChatPhoto=${meal == null}, uploading File path=$path');
+        logger.debug('Uploading file to path: $path');
         await ref.putFile(File(image.path));
         // After uploading, get the download URL
         String downloadUrl = await ref.getDownloadURL();
-        print('uploaded File path=$path, downloadUrl=$downloadUrl');
-        return downloadUrl; // Return the URL of the uploaded image
+        logger.info('Uploaded file to path: $path, downloadUrl: $downloadUrl');
+        return UploadResult(downloadUrl: downloadUrl);
         // if (!mounted) return;
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text('Image uploaded for $meal')),
         // );
-      } on FirebaseException {
-        // if (!mounted) return;
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(content: Text(e.message ?? 'Error during file upload')),
-        // );
+      } on FirebaseException catch (e){
+        logger.err('Error during file upload:{}',[e]);
+        return UploadResult(errorMessage: e.message);
       }
     } else {
-      print('No image is selected.');
-      return null; // Return null if no image was selected or upload failed
+      logger.warn('No image selected for upload.');
+      return UploadResult(errorMessage: 'No image selected.');
     }
-    return null;
   }
 }

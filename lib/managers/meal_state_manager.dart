@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../commons/common.dart';
-
+import '../commons/logger.dart';
+final Logger logger = Logger.forClass(MealStateManager);
 class MealStateManager extends ChangeNotifier {
   final Map<Meals, bool> _checkedStates = {
     for (var meal in Meals.values) meal: false,
   };
   SharedPreferences? prefs; // Make prefs nullable to check if initialized
   Map<Meals, bool> get checkedStates => _checkedStates;
-  bool? _init;
-
-  bool? get init => _init;
 
   MealStateManager() {
     initPrefs();
@@ -19,18 +17,27 @@ class MealStateManager extends ChangeNotifier {
 
   Future<void> initPrefs() async {
     prefs = await SharedPreferences.getInstance();
-    await initMealStates(); // Initialize meal states after prefs is ready
+    await resetMealStatesIfDifferentDay();
+    _loadMealStates();
+  //  notifyListeners();
   }
 
   void setMealCheckedState(Meals meal, bool isChecked) async {
     _checkedStates[meal] = isChecked;
     //notifyListeners(); // Notify listeners to rebuild the widgets that depend on this state
-
     // Save the state to SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(meal.label, isChecked);
-    await prefs.setInt(
+    await prefs?.setBool(meal.label, isChecked);
+   bool? isSuccessfullySet= await prefs?.setInt(
         Constants.saveTime, DateTime.now().millisecondsSinceEpoch);
+    logger.info('isSuccessfullySet={} for meal={}, isChecked={}', [ isSuccessfullySet! ,meal, isChecked]);
+  }
+
+  void _loadMealStates() {
+    for (var meal in Meals.values) {
+      bool? boolMeal = prefs?.getBool(meal.label);
+      bool isChecked = boolMeal ?? false;
+      _checkedStates[meal] = isChecked;
+    }
   }
 
   Future<Map<Meals, bool>> initMealStates() async {
@@ -41,23 +48,22 @@ class MealStateManager extends ChangeNotifier {
       bool isChecked = boolMeal ?? false;
       loadedStates[meal] = isChecked;
     }
-    _init=true;
     return loadedStates;
   }
 
   Future<void> resetMealStatesIfDifferentDay() async {
-    // prefs = await SharedPreferences.getInstance();
     int? lastSaveTime = prefs?.getInt(Constants.saveTime);
-    bool isDifferentDay = false;
-    if(lastSaveTime!=null) {
+    if (lastSaveTime == null) {
+      setMealsFalse();
+      return;
+    }
     DateTime lastSaveDateTime =
-        DateTime.fromMillisecondsSinceEpoch(lastSaveTime!);
+        DateTime.fromMillisecondsSinceEpoch(lastSaveTime);
     var now = DateTime.now();
-    isDifferentDay = lastSaveDateTime.day != now.day ||
+    bool isDifferentDay = lastSaveDateTime.day != now.day ||
         lastSaveDateTime.month != now.month ||
         lastSaveDateTime.year != now.year;
-    }
-    if (isDifferentDay || lastSaveTime==null) {
+    if (isDifferentDay) {
       setMealsFalse();
     }
   }
@@ -65,8 +71,8 @@ class MealStateManager extends ChangeNotifier {
   void setMealsFalse() {
     for (var meal in Meals.values) {
       prefs?.setBool(meal.label, false);
-      // loadedStates[meal] = isChecked;
+      _checkedStates[meal] = false;
     }
+    //notifyListeners();
   }
-
 }
