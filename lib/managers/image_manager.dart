@@ -13,6 +13,8 @@ class UploadResult {
   final String? downloadUrl;
   final String? errorMessage;
 
+  bool get isUploadOk => downloadUrl != null && errorMessage == null;
+
   UploadResult({this.downloadUrl, this.errorMessage});
 }
 
@@ -39,7 +41,6 @@ class ImageManager extends ChangeNotifier {
         } else {
           path = 'users/$userId/chatPhotos/$date/$fileName';
         }
-
         Reference ref = FirebaseStorage.instance.ref(path);
         logger.debug('Uploading file to path: $path');
         await ref.putFile(File(image.path));
@@ -51,13 +52,17 @@ class ImageManager extends ChangeNotifier {
         // ScaffoldMessenger.of(context).showSnackBar(
         //   SnackBar(content: Text('Image uploaded for $meal')),
         // );
-      } on FirebaseException catch (e){
-        logger.err('Error during file upload:{}',[e]);
+      } on FirebaseException catch (e) {
+        logger.err('FirebaseException Error during file upload:{}', [e]);
         return UploadResult(errorMessage: e.message);
+      } on Exception catch (e2) {
+        logger.err('Unexpected error during file upload:{}', [e2]);
+        return UploadResult(
+            errorMessage: 'Fotoğraf yüklenirken beklenmeyen bir hata oluştu.');
       }
     } else {
-      logger.warn('No image selected for upload.');
-      return UploadResult(errorMessage: 'No image selected.');
+      //logger.warn('No image selected for upload.');
+      return UploadResult();
     }
   }
 }

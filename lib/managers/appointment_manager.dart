@@ -121,9 +121,9 @@ class AppointmentManager extends ChangeNotifier {
 
   DateTime _selectedDate = DateTime.now(); // Tracks the selected date
   // String? _serviceType;
-  ValueNotifier<String?> _serviceTypeNotifier = ValueNotifier<String?>(null);
+  final ValueNotifier<String?> _serviceTypeNotifier = ValueNotifier<String?>(null);
   //TimeOfDay? _selectedTime;
-  ValueNotifier<TimeOfDay?> _selectedTimeNotifier =
+  final ValueNotifier<TimeOfDay?> _selectedTimeNotifier =
       ValueNotifier<TimeOfDay?>(null);
   ValueNotifier<String?> get serviceTypeNotifier => _serviceTypeNotifier;
   DateTime get selectedDate => _selectedDate;
@@ -246,7 +246,7 @@ class AppointmentManager extends ChangeNotifier {
       try {
         await FirebaseFirestore.instance
             .collection(Constants.appointments)
-            .doc('${appointment.id}')
+            .doc(appointment.id)
             .set(appointment.toJson());
         fetchAppointments(); // Refresh the appointments after a new booking
         notifyListeners();

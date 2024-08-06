@@ -131,6 +131,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
   Map<Meals, bool> checkedStates = {
     for (var meal in Meals.values) meal: false,
   };
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -139,7 +140,8 @@ class _MealUploadPageState extends State<MealUploadPage> {
   }
 
   Future<void> _initMealStates() async {
-    final mealStateManager = Provider.of<MealStateManager>(context, listen: false);
+    final mealStateManager =
+        Provider.of<MealStateManager>(context, listen: false);
     final states = await mealStateManager.initMealStates();
     setState(() {
       checkedStates.addAll(states);
@@ -165,8 +167,10 @@ class _MealUploadPageState extends State<MealUploadPage> {
       appBar: AppBar(
         title: const Text('Meal Image Upload'),
       ),
-      body: ListView(
-        children: checkedStates.keys.map((mealCategory) {
+      body: Stack(
+          children: [
+      ListView(
+      children: checkedStates.keys.map((mealCategory) {
           List<Text> list = [];
           if (mealContents[mealCategory] != null &&
               mealContents[mealCategory]!.isNotEmpty) {
@@ -194,16 +198,30 @@ class _MealUploadPageState extends State<MealUploadPage> {
                         image = await picker.pickImage(
                           source: ImageSource.gallery,
                         );
-                        final result =
-                        await imageManager.uploadFile(image, meal: mealCategory);
-                        if (result.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(result.errorMessage!)),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Fotoğraf başarıyla yüklendi.')),
-                          );
+                        if (image != null) {
+                          setState(() {
+                            _isUploading = true;
+                          });
+                          final result = await imageManager.uploadFile(image,
+                              meal: mealCategory);
+
+                          if (context.mounted) {
+                            setState(() {
+                              _isUploading = false;
+                            });
+
+                            if (result.isUploadOk) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Fotoğraf başarıyla yüklendi.')),
+                              );
+                            } else if (result.errorMessage != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(result.errorMessage!)),
+                              );
+                            }
+                          }
                         }
                       },
                     ),
@@ -223,6 +241,12 @@ class _MealUploadPageState extends State<MealUploadPage> {
             ],
           );
         }).toList(),
+      ),
+            if (_isUploading)
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+          ],
       ),
     );
   }

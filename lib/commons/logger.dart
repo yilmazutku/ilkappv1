@@ -35,7 +35,7 @@ class Logger {
       return message;
     }
     for (var arg in args) {
-      message = message.replaceFirst(RegExp(r'\{\}'), arg?.toString() ?? 'null');
+      message = message.replaceFirst(RegExp(r'\{\}'), arg.toString() ?? 'null');
     }
     return message;
   }

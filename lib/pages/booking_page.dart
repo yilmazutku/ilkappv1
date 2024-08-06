@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -30,16 +28,17 @@ class BookingPage extends StatelessWidget {
             children: [
               const SizedBox(height: 16),
               const Row(
-                children: const [
+                children: [
                   Text('Görüşme'),
                   SizedBox(width: 16),
                   ServiceTypeDropdown(),
                 ],
               ),
-           //  const ServiceTypeDropdown(),
+              //  const ServiceTypeDropdown(),
               const SizedBox(height: 16),
               ListTile(
-                title: Text(DateFormat('dd/MM/yyyy').format(appointmentManager.selectedDate)),
+                title: Text(DateFormat('dd/MM/yyyy')
+                    .format(appointmentManager.selectedDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final DateTime? picked = await showDatePicker(
@@ -48,7 +47,8 @@ class BookingPage extends StatelessWidget {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 45)),
                   );
-                  if (picked != null && picked != appointmentManager.selectedDate) {
+                  if (picked != null &&
+                      picked != appointmentManager.selectedDate) {
                     appointmentManager.setSelectedDate(picked);
                     await appointmentManager.updateSelectedDate(picked);
                   }
@@ -56,7 +56,8 @@ class BookingPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               FutureBuilder<List<TimeOfDay>>(
-                future: appointmentManager.getAvailableTimeSlots(appointmentManager.selectedDate),
+                future: appointmentManager
+                    .getAvailableTimeSlots(appointmentManager.selectedDate),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
@@ -67,13 +68,15 @@ class BookingPage extends StatelessWidget {
                     return Wrap(
                       children: availableTimes.map((time) {
                         return ValueListenableBuilder<TimeOfDay?>(
-                          valueListenable: appointmentManager.selectedTimeNotifier,
+                          valueListenable:
+                              appointmentManager.selectedTimeNotifier,
                           builder: (context, selectedTime, child) {
                             return ChoiceChip(
                               label: Text(time.format(context)),
                               selected: selectedTime == time,
                               onSelected: (bool selected) {
-                                appointmentManager.setSelectedTime(selected ? time : null);
+                                appointmentManager
+                                    .setSelectedTime(selected ? time : null);
                               },
                             );
                           },
@@ -81,7 +84,8 @@ class BookingPage extends StatelessWidget {
                       }).toList(),
                     );
                   } else {
-                    return const Text("Seçtiğiniz gün için müsait bir saat bulunmuyor.");
+                    return const Text(
+                        "Seçtiğiniz gün için müsait bir saat bulunmuyor.");
                   }
                 },
               ),
@@ -89,12 +93,16 @@ class BookingPage extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-    //   if(FirebaseAuth.instance.currentUser?.uid==null){
+                  //   if(FirebaseAuth.instance.currentUser?.uid==null){
                   try {
                     await appointmentManager.bookAppointment(Appointment(
-                      id: FirebaseAuth.instance.currentUser!.uid, // Replace with actual user ID
-                      name: FirebaseAuth.instance.currentUser!.displayName ?? 'nullDisplayName', // Replace with actual user name
-                      serviceType: appointmentManager.serviceTypeNotifier!.value!,
+                      id: FirebaseAuth.instance.currentUser!.uid,
+                      // Replace with actual user ID
+                      name: FirebaseAuth.instance.currentUser!.displayName ??
+                          'nullDisplayName',
+                      // Replace with actual user name
+                      serviceType:
+                          appointmentManager.serviceTypeNotifier.value!,
                       dateTime: DateTime(
                         appointmentManager.selectedDate.year,
                         appointmentManager.selectedDate.month,
@@ -105,13 +113,38 @@ class BookingPage extends StatelessWidget {
                         appointmentManager.selectedTimeNotifier.value!.minute,
                       ),
                     ));
-                    if(context.mounted){
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Appointment booked successfully")),
-                    );
+                    // if(context.mounted){
+                    // ScaffoldMessenger.of(context).showSnackBar(
+                    //   const SnackBar(content: Text("Appointment booked successfully")),
+                    // );
+                    // }
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("Başarılı!"),
+                            content: const Text(
+                                "Randevunuz başarılı bir şekilde oluşturuldu."),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Dismiss the dialog
+                                },
+                                child: const Text(
+                                  "Tamam",
+                                  selectionColor: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     }
                   } catch (e) {
-                    logger.err('an error occurred while making appointment= {}',[e]);
+                    logger.err(
+                        'an error occurred while making appointment= {}', [e]);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(e.toString())),
@@ -128,7 +161,8 @@ class BookingPage extends StatelessWidget {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               FutureBuilder<List<Appointment>>(
-                future: appointmentManager.fetchUserAppointments(FirebaseAuth.instance!.currentUser!.uid),
+                future: appointmentManager.fetchUserAppointments(
+                    FirebaseAuth.instance.currentUser!.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
@@ -144,7 +178,8 @@ class BookingPage extends StatelessWidget {
                       children: appointments.map((appointment) {
                         return ListTile(
                           title: Text("Görüşme: ${appointment.serviceType}"),
-                          subtitle: Text("Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}"),
+                          subtitle: Text(
+                              "Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}"),
                         );
                       }).toList(),
                     );
@@ -161,8 +196,6 @@ class BookingPage extends StatelessWidget {
   }
 }
 
-
-
 /*
   Here's a summary of how this setup works:
 
@@ -176,7 +209,6 @@ Booking Button: Upon clicking, it validates the input fields, creates a new Appo
 
 This architecture helps to keep your UI code clean and maintainable, facilitating easy updates or changes to the state management logic without requiring significant changes to your UI code.
    */
-
 
 class ServiceTypeDropdown extends StatelessWidget {
   const ServiceTypeDropdown({super.key});
@@ -193,7 +225,8 @@ class ServiceTypeDropdown extends StatelessWidget {
           onChanged: (String? newValue) {
             appointmentManager.setServiceType(newValue);
           },
-          items: appointmentManager.meetingTypeList.map<DropdownMenuItem<String>>((String value) {
+          items: appointmentManager.meetingTypeList
+              .map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(value),
