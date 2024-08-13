@@ -26,7 +26,7 @@ void main() async {
 
 }
 
-Future<void> signInAutomatically() async {
+Future<void> signInAutomatically() async { //TODO launchta kaldırılacak user sidedan
   try {
     var instance = FirebaseAuth.instance;
     UserCredential userCredential = await instance.signInWithEmailAndPassword(
@@ -48,7 +48,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // return MediaQuery(
+    //   data: const MediaQueryData(alwaysUse24HourFormat: true), // Set 24-hour format globally
     return MultiProvider(
+    // child: MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ImageManager()),
         ChangeNotifierProxyProvider<ImageManager, ChatManager>(
@@ -69,6 +72,7 @@ class MyApp extends StatelessWidget {
         // Define other properties as needed
         // Your MaterialApp configuration
       ),
+    // ),
     );
   }
 }
@@ -78,7 +82,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logger.info('Building HomePage with materialpageroute loginpage...');
+    logger.info('Building HomePage with MaterialPageRoute(builder: (context) =>  const LoginPage()...');
     // if(FirebaseAuth.instance.currentUser?.uid=='mChhGVRpH1PBAonozPiEitDm5pE2') {
   // }
     // else {

@@ -160,8 +160,23 @@ class _MealUploadPageState extends State<MealUploadPage> {
     XFile? image;
     ImagePicker picker = ImagePicker();
     Map<Meals, List<String>> mealContents = {
-      //TODO kısıden kısıye ogunler deısıo hepsını koymamalıyız default olarak
+      Meals.br: ['Eggs', 'Toast', 'Orange Juice'],
+      Meals.firstmid: ['Yogurt', 'Fruit', 'Nuts'],
+      Meals.lunch: ['Grilled Chicken', 'Salad', 'Rice'],
+      Meals.secondmid: ['Yogurt oglen', 'Fruit', 'Nuts'],
+
+      Meals.dinner: ['Steak', 'Mashed Potatoes', 'Green Beans'],
+      Meals.thirdmid: ['Yogurt gece', 'Fruit', 'Nuts']
     };
+    Map<Meals, TimeOfDay> mealTimes = {
+      Meals.br: const TimeOfDay(hour: 8, minute: 30),
+      Meals.firstmid: const TimeOfDay(hour: 10, minute: 30),
+      Meals.lunch: const TimeOfDay(hour: 12, minute: 30),
+      Meals.secondmid: const TimeOfDay(hour: 15, minute: 30),
+      Meals.dinner: const TimeOfDay(hour: 18, minute: 30),
+      Meals.thirdmid: const TimeOfDay(hour: 21, minute: 30)
+    };
+    const defaultMealTime = TimeOfDay(hour: 0, minute: 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -179,19 +194,26 @@ class _MealUploadPageState extends State<MealUploadPage> {
                 .toList();
           }
 
+
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start, // Change this line
+
             children: [
               ListTile(
-                title: Center(
-                  child: Text(
+                title: Align(
+                  alignment: Alignment.centerLeft,  // Align the text to the left
+                child: Text(
                     mealCategory.label,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                   ),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Text(
+                   MaterialLocalizations.of(context).formatTimeOfDay(mealTimes[mealCategory]??defaultMealTime),
+                      textAlign: TextAlign.left,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.camera_alt),
                       onPressed: () async {

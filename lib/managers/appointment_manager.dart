@@ -120,55 +120,46 @@ class AppointmentManager extends ChangeNotifier {
   Map<DateTime, List<Appointment>> get dailyAppointments => _dailyAppointments;
 
   DateTime _selectedDate = DateTime.now(); // Tracks the selected date
-  // String? _serviceType;
-  final ValueNotifier<String?> _serviceTypeNotifier = ValueNotifier<String?>(null);
-  //TimeOfDay? _selectedTime;
+  final ValueNotifier<String?> _serviceTypeNotifier =
+      ValueNotifier<String?>(null);
   final ValueNotifier<TimeOfDay?> _selectedTimeNotifier =
       ValueNotifier<TimeOfDay?>(null);
+
   ValueNotifier<String?> get serviceTypeNotifier => _serviceTypeNotifier;
+
   DateTime get selectedDate => _selectedDate;
 
-  // String? get serviceType => _serviceType;
 
-  //TimeOfDay? get selectedTime => _selectedTime;
   ValueNotifier<TimeOfDay?> get selectedTimeNotifier => _selectedTimeNotifier;
 
   void setServiceType(String? newValue) {
     // _serviceType = newValue;
-  //  notifyListeners();
+    //  notifyListeners();
     _serviceTypeNotifier.value = newValue;
   }
 
-  void setSelectedDate(DateTime date) {
+  /// takvimden yeni gün seçilir, müsait vakitleri o güne göre ayarlar
+  Future<void> setSelectedDate(DateTime date) async {
     _selectedDate = date;
+    logger.info('updatedSelectedDate as {}', [date]);
+    await fetchAppointments(
+        selectedDate:
+            _selectedDate); // Fetch appointments for the week of the new selected date
     notifyListeners();
   }
 
-  // void setSelectedTime(TimeOfDay time) {
-  //   _selectedTime = time;
-  //   notifyListeners();
-  // }
   void setSelectedTime(TimeOfDay? time) {
     _selectedTimeNotifier.value = time;
   }
 
-  Future<void> updateSelectedDate(DateTime newDate) async {
-    logger.info('updatedSelectedDate as {}', [newDate]);
-    _selectedDate = newDate;
-    await fetchAppointments(
-        selectedDate:
-            _selectedDate); // Fetch appointments for the week of the new selected date
-    // notifyListeners(); // Notify listeners to rebuild widgets if necessary
-  }
-
   /// belirli bir gün için müsait saatleri bulur
-  Future<List<TimeOfDay>> getAvailableTimeSlots(DateTime date) async {
+  Future<List<TimeOfDay>> getAvailableTimesForDate(DateTime date) async {
     logger.info('gettingAvailableTimeSlots for date={}', [date]);
     await fetchAppointments(
         selectedDate: date); // Make sure the appointments are up to date
     List<TimeOfDay> availableSlots = [];
 
-    // Example: Assuming appointments can be booked from 9 AM to 5 PM, every half hour
+    // Example: Assuming appointments can be booked from 9 AM to 5 PM, every half hour //TODO bunu onlara bırakmak lazım. elle girsinler
     for (int hour = 9; hour < 19; hour++) {
       for (int minute = 0; minute < 60; minute += 30) {
         TimeOfDay time = TimeOfDay(hour: hour, minute: minute);
@@ -177,27 +168,32 @@ class AppointmentManager extends ChangeNotifier {
         }
       }
     }
-
     return availableSlots;
   }
-  Future<List<Appointment>> fetchUserAppointments(String userId) async {
-    CollectionReference collectionRef = FirebaseFirestore.instance.collection(Constants.appointments);
-    QuerySnapshot querySnapshot = await collectionRef.where('id', isEqualTo: userId).get();
 
+  Future<List<Appointment>> fetchCurrentUserAppointments(String userId) async {
+    CollectionReference collectionRef =
+        FirebaseFirestore.instance.collection(Constants.appointments);
+    QuerySnapshot querySnapshot =
+        await collectionRef.where('id', isEqualTo: userId).get();
     List<Appointment> userAppointments = [];
-    if(querySnapshot.docs.isNotEmpty){
-    for (var doc in querySnapshot.docs) {
-      Appointment appointment = Appointment.fromJson(doc.data() as Map<String, dynamic>);
-      logger.info('appointment found {}',[appointment]);
-      userAppointments.add(appointment);
-    }
-    }
-    else {
+    if (querySnapshot.docs.isNotEmpty) {
+      for (var doc in querySnapshot.docs) {
+        Appointment appointment =
+            Appointment.fromJson(doc.data() as Map<String, dynamic>);
+        if (!appointment.dateTime.isBefore(DateTime.now())) {
+          //önceki randevular gözükmesin.
+          logger.info('CurrentUser appointment found={}', [appointment]);
+          userAppointments.add(appointment);
+        }
+      }
+    } else {
       logger.info('no appointment found for current user.');
     }
     return userAppointments;
   }
 
+  ///1-admin tüm randevular için çağırır (null arg) 2-bookAppointment 3-getAvailableTimesForDate
   Future<void> fetchAppointments({DateTime? selectedDate}) async {
     CollectionReference collectionRef =
         FirebaseFirestore.instance.collection(Constants.appointments);
@@ -207,6 +203,7 @@ class AppointmentManager extends ChangeNotifier {
       //admin çağırmış tüm appointmentları görsün.
       querySnapshot = await collectionRef.get();
     } else {
+      //getAvailableTimeSlots()'tan çağrılmış.
       DateTime startOfDay =
           DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0);
 
@@ -256,6 +253,7 @@ class AppointmentManager extends ChangeNotifier {
     } else {
       logger.warn('selected date={} is not available.', [appointment.dateTime]);
     }
+   // notifyListeners();
   }
 
   bool isTimeSlotAvailable(DateTime date, TimeOfDay time) {

@@ -34,7 +34,6 @@ class BookingPage extends StatelessWidget {
                   ServiceTypeDropdown(),
                 ],
               ),
-              //  const ServiceTypeDropdown(),
               const SizedBox(height: 16),
               ListTile(
                 title: Text(DateFormat('dd/MM/yyyy')
@@ -49,15 +48,15 @@ class BookingPage extends StatelessWidget {
                   );
                   if (picked != null &&
                       picked != appointmentManager.selectedDate) {
-                    appointmentManager.setSelectedDate(picked);
-                    await appointmentManager.updateSelectedDate(picked);
+                    await appointmentManager.setSelectedDate(picked);
+                  //  await appointmentManager.updateSelectedDate(picked);
                   }
                 },
               ),
               const SizedBox(height: 16),
               FutureBuilder<List<TimeOfDay>>(
                 future: appointmentManager
-                    .getAvailableTimeSlots(appointmentManager.selectedDate),
+                    .getAvailableTimesForDate(appointmentManager.selectedDate),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
@@ -89,11 +88,9 @@ class BookingPage extends StatelessWidget {
                   }
                 },
               ),
-
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  //   if(FirebaseAuth.instance.currentUser?.uid==null){
                   try {
                     await appointmentManager.bookAppointment(Appointment(
                       id: FirebaseAuth.instance.currentUser!.uid,
@@ -107,17 +104,10 @@ class BookingPage extends StatelessWidget {
                         appointmentManager.selectedDate.year,
                         appointmentManager.selectedDate.month,
                         appointmentManager.selectedDate.day,
-                        // appointmentManager.selectedTime!.hour,
-                        // appointmentManager.selectedTime!.minute,
                         appointmentManager.selectedTimeNotifier.value!.hour,
                         appointmentManager.selectedTimeNotifier.value!.minute,
                       ),
                     ));
-                    // if(context.mounted){
-                    // ScaffoldMessenger.of(context).showSnackBar(
-                    //   const SnackBar(content: Text("Appointment booked successfully")),
-                    // );
-                    // }
                     if (context.mounted) {
                       showDialog(
                         context: context,
@@ -160,8 +150,9 @@ class BookingPage extends StatelessWidget {
                 'Randevularım',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
+              // Randevularım
               FutureBuilder<List<Appointment>>(
-                future: appointmentManager.fetchUserAppointments(
+                future: appointmentManager.fetchCurrentUserAppointments(
                     FirebaseAuth.instance.currentUser!.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -171,7 +162,7 @@ class BookingPage extends StatelessWidget {
                   } else if (snapshot.hasData) {
                     var appointments = snapshot.data!;
                     if (appointments.isEmpty) {
-                      return const Text("No appointments found.");
+                      return const Text("Yaklaşan randevunuz bulunmuyor.");
                     }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +175,7 @@ class BookingPage extends StatelessWidget {
                       }).toList(),
                     );
                   } else {
-                    return const Text("No appointments found.");
+                    return const Text("Yaklaşan randevunuz bulunmuyor.");
                   }
                 },
               ),
