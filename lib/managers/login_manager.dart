@@ -32,10 +32,10 @@ class LoginProvider extends ChangeNotifier {
     return _errorMessage;
   }
 
-  Future<void> login(BuildContext context) async {
+  Future<bool> login(BuildContext context) async {
     if (!_validateInputs()) {
       notifyListeners();
-      return;
+      return false;
     }
 
     _setLoadingState(true);
@@ -53,10 +53,12 @@ class LoginProvider extends ChangeNotifier {
         );
       }
     } else {
-      notifyListeners();
+      if (context.mounted) {
+        //page kısmında TODO
+      }
     }
-
     _setLoadingState(false);
+    return isLoginSuccessful;
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -77,16 +79,42 @@ class LoginProvider extends ChangeNotifier {
       );
       return true;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        _setError(userNotFoundMessage);
-      } else if (e.code == 'wrong-password') {
-        _setError(wrongPasswordMessage);
-      } else {
-        _setError('Giriş yaparken beklenmeyen bir hata oluştu.');
+      switch (e.code) {
+        case 'invalid-email':
+          setError('Geçersiz e-posta adresi.');
+          break;
+        case 'user-disabled':
+          setError('Bu kullanıcı hesabı devre dışı bırakılmış.');
+          break;
+        case 'user-not-found':
+          setError('Kullanıcı adı bulunamadı.');
+          break;
+        case 'wrong-password':
+          setError('Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.');
+          break;
+        case 'account-exists-with-different-credential':
+          setError(
+              'Bu e-posta adresiyle daha önce farklı bir yöntemle giriş yapılmış.');
+          break;
+        case 'credential-already-in-use':
+          setError(
+              'Bu kimlik bilgileri zaten başka bir kullanıcı tarafından kullanılıyor.');
+          break;
+        case 'operation-not-allowed':
+          setError('Bu işlem şu anda yapılamıyor.');
+          break;
+        case 'invalid-credential':
+          setError(
+              'Girilen e-mail adresi ve/veya şifre hatalı. Lütfen kontrol edip tekrar deneyiniz.'); //Sağlanan kimlik bilgileri yanlış, hatalı veya süresi dolmuş.
+          break;
+        default:
+          setError(
+              'FirebaseAuthException: Giriş yaparken beklenmeyen bir hata oluştu.');
+          break;
       }
       return false;
     } catch (e) {
-      _setError('Giriş yaparken beklenmeyen bir hata oluştu.');
+      setError('Giriş yaparken beklenmeyen bir hata oluştu.');
       return false;
     }
   }
@@ -97,7 +125,7 @@ class LoginProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setError(String message) {
+  void setError(String message) {
     _errorMessage = message;
     notifyListeners();
   }
@@ -105,7 +133,7 @@ class LoginProvider extends ChangeNotifier {
   bool _validateInputs() {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
-      _setError(fieldsEmptyMsg);
+      setError(fieldsEmptyMsg);
       return false;
     }
     return true;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:untitled/pages/parser_page.dart';
 
 import '../commons/logger.dart';
 import 'admin_appointments_page.dart';
@@ -59,6 +60,13 @@ class HomePageAfterLogin extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AdminImages()),
+              ),
+            ),
+            ElevatedButton(
+              child: const Text('Admin Pdf'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) =>  PdfParserPage()),
               ),
             ),
           ],

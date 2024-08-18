@@ -16,6 +16,7 @@ class BookingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appointmentManager = Provider.of<AppointmentManager>(context);
+    final screenWidth = MediaQuery.of(context).size.width; // Get screen width
     logger.info('Building BookingPage...');
 
     return Scaffold(
@@ -49,7 +50,6 @@ class BookingPage extends StatelessWidget {
                   if (picked != null &&
                       picked != appointmentManager.selectedDate) {
                     await appointmentManager.setSelectedDate(picked);
-                  //  await appointmentManager.updateSelectedDate(picked);
                   }
                 },
               ),
@@ -84,73 +84,80 @@ class BookingPage extends StatelessWidget {
                     );
                   } else {
                     return const Text(
-                        "Seçtiğiniz gün için müsait bir saat bulunmuyor.");
+                        'Seçtiğiniz gün için müsait bir saat bulunmuyor.');
                   }
                 },
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await appointmentManager.bookAppointment(Appointment(
-                      id: FirebaseAuth.instance.currentUser!.uid,
-                      // Replace with actual user ID
-                      name: FirebaseAuth.instance.currentUser!.displayName ??
-                          'nullDisplayName',
-                      // Replace with actual user name
-                      serviceType:
-                          appointmentManager.serviceTypeNotifier.value!,
-                      dateTime: DateTime(
-                        appointmentManager.selectedDate.year,
-                        appointmentManager.selectedDate.month,
-                        appointmentManager.selectedDate.day,
-                        appointmentManager.selectedTimeNotifier.value!.hour,
-                        appointmentManager.selectedTimeNotifier.value!.minute,
-                      ),
-                    ));
-                    if (context.mounted) {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text("Başarılı!"),
-                            content: const Text(
-                                "Randevunuz başarılı bir şekilde oluşturuldu."),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context)
-                                      .pop(); // Dismiss the dialog
-                                },
-                                child: const Text(
-                                  "Tamam",
-                                  selectionColor: Colors.blue,
-                                ),
-                              ),
-                            ],
+              Center(
+                child: SizedBox(
+                  width: screenWidth * 0.35, // 50% of the screen width
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await appointmentManager.bookAppointment(Appointment(
+                          id: FirebaseAuth.instance.currentUser!.uid,
+                          name:
+                              FirebaseAuth.instance.currentUser!.displayName ??
+                                  'nullDisplayName',
+                          serviceType:
+                              appointmentManager.serviceTypeNotifier.value!,
+                          dateTime: DateTime(
+                            appointmentManager.selectedDate.year,
+                            appointmentManager.selectedDate.month,
+                            appointmentManager.selectedDate.day,
+                            appointmentManager.selectedTimeNotifier.value!.hour,
+                            appointmentManager
+                                .selectedTimeNotifier.value!.minute,
+                          ),
+                        ));
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text("Başarılı!"),
+                                content: const Text(
+                                    "Randevunuz başarılı bir şekilde oluşturuldu."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context)
+                                          .pop(); // Dismiss the dialog
+                                    },
+                                    child: const Text(
+                                      "Tamam",
+                                      selectionColor: Colors.blue,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           );
-                        },
-                      );
-                    }
-                  } catch (e) {
-                    logger.err(
-                        'an error occurred while making appointment= {}', [e]);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString())),
-                      );
-                    }
-                  }
-                  //}
-                },
-                child: const Text('Book Appointment'),
+                        }
+                      } catch (e) {
+                        logger.err(
+                            'an error occurred while making appointment= {}',
+                            [e]);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text(
+                      'Book Appointment',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
                 'Randevularım',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              // Randevularım
               FutureBuilder<List<Appointment>>(
                 future: appointmentManager.fetchCurrentUserAppointments(
                     FirebaseAuth.instance.currentUser!.uid),
@@ -186,7 +193,6 @@ class BookingPage extends StatelessWidget {
     );
   }
 }
-
 /*
   Here's a summary of how this setup works:
 

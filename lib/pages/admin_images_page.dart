@@ -93,7 +93,7 @@ class _AdminImagesState extends State<AdminImages> {
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 // import 'admin_user_images_page.dart';
-// import 'package:untitled/managers/admin_images_provider.dart';
+// import 'package:untitled/managers/admin_images_manager.dart';
 // // Uses the provider to fetch and display the initial list of user folders.
 // // Navigates to UserImagesPage on folder tap.
 // class AdminImages extends StatelessWidget {

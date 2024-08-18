@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:untitled/managers/admin_images_provider.dart';
+import 'package:untitled/managers/admin_images_manager.dart';
 
 import '../commons/common.dart';
 

@@ -6,7 +6,7 @@
 // import '../commons/customcheckbox.dart';
 // import '../commons/logger.dart';
 // import '../managers/image_manager.dart';
-// import '../managers/meal_state_manager.dart';
+// import '../managers/meal_state_and_upload_manager.dart';
 // final Logger logger = Logger.forClass(MealUploadPage);
 // class MealUploadPage extends StatelessWidget {
 //   const MealUploadPage({super.key});
@@ -116,7 +116,7 @@ import '../commons/common.dart';
 import '../commons/customcheckbox.dart';
 import '../commons/logger.dart';
 import '../managers/image_manager.dart';
-import '../managers/meal_state_manager.dart';
+import '../managers/meal_state_and_upload_manager.dart';
 
 final Logger logger = Logger.forClass(MealUploadPage);
 

@@ -8,11 +8,11 @@ import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/pages/login_page.dart';
 
 import 'commons/logger.dart';
-import 'managers/admin_images_provider.dart';
+import 'managers/admin_images_manager.dart';
 import 'managers/appointment_manager.dart';
 import 'managers/login_manager.dart';
-import 'managers/meal_state_manager.dart';
-
+import 'managers/meal_state_and_upload_manager.dart';
+import 'firebase_options.dart';
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
 final logger = Logger('MyApp');
@@ -20,7 +20,9 @@ final logger = Logger('MyApp');
 void main() async {
   logger.info('Application started');
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await signInAutomatically();
   runApp(const MyApp());
 
