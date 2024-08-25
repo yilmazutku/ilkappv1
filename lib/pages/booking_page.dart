@@ -158,6 +158,9 @@ class BookingPage extends StatelessWidget {
                 'Randevularım',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
+              // Existing FutureBuilder for displaying appointments
+              // Existing FutureBuilder for displaying appointments
+// Existing FutureBuilder for displaying appointments
               FutureBuilder<List<Appointment>>(
                 future: appointmentManager.fetchCurrentUserAppointments(
                     FirebaseAuth.instance.currentUser!.uid),
@@ -178,6 +181,82 @@ class BookingPage extends StatelessWidget {
                           title: Text("Görüşme: ${appointment.serviceType}"),
                           subtitle: Text(
                               "Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}"),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.cancel, color: Colors.red),
+                            onPressed: () async {
+                              // Show confirmation dialog before canceling
+                              bool? confirmCancel = await showDialog<bool>(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text("Randevuyu İptal Et"),
+                                    content: const Text("Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop(false); // Dismisses the dialog and returns false
+                                        },
+                                        child: const Text("Hayır"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop(true); // Dismisses the dialog and returns true
+                                        },
+                                        child: const Text("Evet"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+
+                              // If the user confirmed the cancellation
+                              if (confirmCancel == true) {
+                                try {
+                                  await appointmentManager.cancelAppointment(appointment.id);
+                                  if (context.mounted) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                         title: const Text("Başarılı"),
+                                          content: const Text("Randevu iptal edildi."),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop(); // Dismiss the dialog
+                                              },
+                                              child: const Text("Tamam"),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  }
+                                } catch (e) {
+                                  logger.err('an error occurred while canceling appointment= {}', [e]);
+                                  if (context.mounted) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text("Hata"),
+                                          content: Text("Hata: ${e.toString()}"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop(); // Dismiss the dialog
+                                              },
+                                              child: const Text("Tamam"),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
                         );
                       }).toList(),
                     );
@@ -186,6 +265,9 @@ class BookingPage extends StatelessWidget {
                   }
                 },
               ),
+
+
+
             ],
           ),
         ),

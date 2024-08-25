@@ -269,4 +269,6 @@ class AppointmentManager extends ChangeNotifier {
     }
     return true; // Slot is available
   }
+
+  cancelAppointment(String id) {}
 }
