@@ -318,7 +318,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
   Future<void> _fetchUserMealList() async {
     try {
       // Replace 'userId' with the actual user ID or fetch it dynamically if needed
-      final userId = 'your_user_id'; // Example: get the current user's ID
+      const userId = 'your_user_id'; // Example: get the current user's ID
       final DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
           .collection('userinfo')
           .doc(userId)

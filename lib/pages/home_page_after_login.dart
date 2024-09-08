@@ -4,7 +4,7 @@ import 'package:untitled/pages/reset_password_page.dart';
 import '../commons/logger.dart';
 import 'admin_appointments_page.dart';
 import 'admin_images_page.dart';
-import 'admin_userdata.dart';
+import 'admin_create_user_page.dart';
 import 'booking_page.dart';
 import 'file_handler_page.dart';
 import 'meal_upload_page.dart';

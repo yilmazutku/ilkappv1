@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:docx_to_text/docx_to_text.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import for Cloud Firestore
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -20,7 +19,7 @@ class FileHandlerPage extends StatefulWidget {
 
 class _FileHandlerPageState extends State<FileHandlerPage> {
   String? _localFilePath;
-  Map<String, List<String>> subtitles = {
+  Map<String, List<Map<String, dynamic>>> subtitles = {
     'Subtitle 1': [],
     'Subtitle 2': [],
     'Subtitle 3': [],
@@ -93,7 +92,7 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
         itemCount: subtitles.length,
         itemBuilder: (context, index) {
           String key = subtitles.keys.elementAt(index);
-          List<String> values = subtitles[key]!;
+          List<Map<String, dynamic>> values = subtitles[key]!;
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -103,7 +102,8 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
                   key,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                for (var value in values) Text('- $value'),
+                for (var value in values)
+                  Text('- ${value['content']} at ${value['time']}'),
               ],
             ),
           );
@@ -171,19 +171,44 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   }
 
   void _extractSubtitles(String text) {
+    log.info('text={}', [text]);
     final lines = text.split(RegExp(r'\r\n|\r|\n')).map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
     String? currentSubtitle;
+    String? currentSubtitleTime; // Store the time for the current subtitle
 
     for (var line in lines) {
-      if (subtitles.containsKey(line)) {
-        log.info('Found subtitle: {}', [line]);
-        currentSubtitle = line;
+      // Check if the line contains a subtitle and extract time if present
+      log.info('line={}', [line]);
+
+      // Find if the line contains any of the subtitles
+      var foundSubtitle = subtitles.keys.firstWhere(
+            (key) => line.contains(key),
+        orElse: () => '',
+      );
+
+      if (foundSubtitle.isNotEmpty) {
+        log.info('Found subtitle: {}', [foundSubtitle]);
+        currentSubtitle = foundSubtitle;
+
+        // Extract numeric time part for the subtitle
+        final timeMatch = RegExp(r'(\d{1,2}:\d{2})').firstMatch(line);
+        currentSubtitleTime = timeMatch != null ? timeMatch.group(0) : null;
+
+        log.info('Extracted time for subtitle {}: {}', [foundSubtitle, currentSubtitleTime ?? 'Not Specified']);
       } else if (currentSubtitle != null) {
-        subtitles[currentSubtitle]!.add(line);
+        // Add content with the time associated with the current subtitle, handling null safely
+        subtitles[currentSubtitle]!.add({
+          'content': line,
+          'time': currentSubtitleTime ?? 'Not Specified',
+        });
       }
     }
+
+
     log.info('Parsed text: {}', [subtitles]);
   }
+
+
 
   /// Updated Step 4: Upload the parsed content to Cloud Firestore
   Future<void> _uploadContentToFirestore() async {
