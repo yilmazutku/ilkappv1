@@ -8,10 +8,10 @@ import '../managers/appointment_manager.dart';
 import '../commons/common.dart';
 
 final auth = FirebaseAuth.instance;
-final Logger logger = Logger.forClass(BookingPage);
+final Logger logger = Logger.forClass(AppointmentsPage);
 
-class BookingPage extends StatelessWidget {
-  const BookingPage({super.key});
+class AppointmentsPage extends StatelessWidget {
+  const AppointmentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

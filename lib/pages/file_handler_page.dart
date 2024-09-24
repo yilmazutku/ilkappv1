@@ -8,8 +8,14 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:untitled/commons/logger.dart';
 
-final Logger log = Logger.forClass(FileHandlerPage);
+import '../commons/common.dart';
 
+final Logger log = Logger.forClass(FileHandlerPage);
+/*
+Suggested Improvements:
+Add more robust error handling in _parseFileContent and _extractSubtitles.
+Use user feedback (e.g., dialog, Snackbar) when the user forgets to select a user or when file selection is canceled.
+ */
 class FileHandlerPage extends StatefulWidget {
   const FileHandlerPage({super.key});
 
@@ -19,18 +25,21 @@ class FileHandlerPage extends StatefulWidget {
 
 class _FileHandlerPageState extends State<FileHandlerPage> {
   String? _localFilePath;
-  Map<String, List<Map<String, dynamic>>> subtitles = {
-    'Subtitle 1': [],
-    'Subtitle 2': [],
-    'Subtitle 3': [],
-    'Subtitle 4': [],
-  };
+  List<Map<String, dynamic>> subtitles = [];
+
   List<String> _userList = [];
   String? _selectedUser;
 
   @override
   void initState() {
     super.initState();
+    for (var meal in Meals.values) {
+      subtitles.add({
+        'name': meal.label,
+        'time': meal.defaultTime,
+        'content': [],
+      });
+    }
     _fetchUserList();
   }
 
@@ -91,19 +100,18 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
       child: ListView.builder(
         itemCount: subtitles.length,
         itemBuilder: (context, index) {
-          String key = subtitles.keys.elementAt(index);
-          List<Map<String, dynamic>> values = subtitles[key]!;
+          final subtitle = subtitles[index];
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  key,
+                  '${subtitle['name']} \t ${subtitle['time']}',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                for (var value in values)
-                  Text('- ${value['content']} at ${value['time']}'),
+                for (var content in subtitle['content'])
+                  Text('- ${content['content']}'),
               ],
             ),
           );
@@ -111,6 +119,7 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
       ),
     );
   }
+
 
   /// Fetch user list from Cloud Firestore
   Future<void> _fetchUserList() async {
@@ -165,48 +174,62 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   Future<void> _parseFileContent(File file) async {
     final bytes = await file.readAsBytes();
     String text = docxToText(bytes);
-    subtitles.forEach((key, value) => value.clear());
+
+    // Clear the previous subtitle data
+    for (var subtitle in subtitles) {
+      subtitle['content'].clear();
+      subtitle['time'] = 'Not Specified'; // Reset time for each subtitle
+    }
+
     _extractSubtitles(text);
     setState(() {});
   }
 
+
   void _extractSubtitles(String text) {
     log.info('text={}', [text]);
+
+    // Split the text into lines and clean it
     final lines = text.split(RegExp(r'\r\n|\r|\n')).map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
-    String? currentSubtitle;
-    String? currentSubtitleTime; // Store the time for the current subtitle
+    Map<String, dynamic>? currentSubtitle;
 
     for (var line in lines) {
-      // Check if the line contains a subtitle and extract time if present
-      log.info('line={}', [line]);
+      log.info('Processing line: {}', [line]);
 
-      // Find if the line contains any of the subtitles
-      var foundSubtitle = subtitles.keys.firstWhere(
-            (key) => line.contains(key),
-        orElse: () => '',
+      // Check if the line contains any of the subtitles
+      var foundSubtitle = subtitles.firstWhere(
+            (subtitle) => line.contains(subtitle['name']),
+        orElse: () => {},
       );
 
+      // If a new subtitle is found, set it as the current subtitle
       if (foundSubtitle.isNotEmpty) {
-        log.info('Found subtitle: {}', [foundSubtitle]);
+        log.info('Found subtitle: {}', [foundSubtitle['name']]);
         currentSubtitle = foundSubtitle;
 
-        // Extract numeric time part for the subtitle
+        // Extract numeric time part for the subtitle, if present
         final timeMatch = RegExp(r'(\d{1,2}:\d{2})').firstMatch(line);
-        currentSubtitleTime = timeMatch != null ? timeMatch.group(0) : null;
+        currentSubtitle['time'] = timeMatch?.group(0) ?? '';
 
-        log.info('Extracted time for subtitle {}: {}', [foundSubtitle, currentSubtitleTime ?? 'Not Specified']);
-      } else if (currentSubtitle != null) {
-        // Add content with the time associated with the current subtitle, handling null safely
-        subtitles[currentSubtitle]!.add({
+        log.info('Extracted time for subtitle {}: {}', [currentSubtitle['name'], currentSubtitle['time']]);
+      }
+      // If no subtitle is found but there's a current subtitle, treat the line as content
+      else if (currentSubtitle != null) {
+        log.info('Adding content to subtitle {}: {}', [currentSubtitle['name'], line]);
+
+        // Add content to the current subtitle's content list
+        currentSubtitle['content'].add({
           'content': line,
-          'time': currentSubtitleTime ?? 'Not Specified',
         });
+      } else {
+        log.warn('No subtitle found and no active subtitle for line: {}', [line]);
       }
     }
 
-
-    log.info('Parsed text: {}', [subtitles]);
+    log.info('Parsed subtitles: {}', [subtitles]);
   }
+
+
 
 
 
@@ -222,21 +245,25 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
     String documentPath = 'userinfo/$_selectedUser/dietlists/$currentDateTime';
 
     try {
-      // Convert subtitles map to a structure suitable for Firestore
-      Map<String, dynamic> dataToUpload = {};
-      subtitles.forEach((subtitle, lines) {
-        dataToUpload[subtitle] = lines;
-      });
+      // Convert subtitles list to a structure suitable for Firestore
+      List<Map<String, dynamic>> dataToUpload = subtitles.map((subtitle) {
+        return {
+          'name': subtitle['name'],
+          'time': subtitle['time'],
+          'content': subtitle['content'],
+        };
+      }).toList();
 
       // Upload to Cloud Firestore
       DocumentReference ref = FirebaseFirestore.instance.doc(documentPath);
-      await ref.set(dataToUpload);
+      await ref.set({'subtitles': dataToUpload});
 
       log.info('Diet list stored successfully at path: {}', [documentPath]);
     } catch (e) {
       log.err('Failed to upload diet list: {}', [e.toString()]);
     }
   }
+
 
   /// Step 5: Delete the file from the temporary directory
   Future<void> _deleteFile() async {
@@ -248,7 +275,11 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
 
         setState(() {
           _localFilePath = null;
-          subtitles.forEach((key, value) => value.clear());
+          // Clear subtitles
+          for (var subtitle in subtitles) {
+            subtitle['content'].clear();
+            subtitle['time'] = 'Not Specified'; // Reset time
+          }
         });
       }
     }

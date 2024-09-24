@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../commons/logger.dart';
+final Logger log = Logger.forClass(ChangePasswordPage);
+
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
 
@@ -32,15 +35,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         password: currentPassword,
       );
       await user.reauthenticateWithCredential(credential);
-      print('User re-authenticated successfully.');
+      log.info('User re-authenticated successfully.');
 
       // Update the password
       await user.updatePassword(newPassword);
-      print('Password updated successfully.');
+      log.info('Password updated successfully.');
 
       // Optionally, sign the user out and redirect to login page
       await FirebaseAuth.instance.signOut();
-      print('User signed out. Redirect to login page.');
+      log.info('User signed out. Redirect to login page.');
 
       setState(() {
         _statusMessage = 'Password updated successfully! Please log in again.';
@@ -53,7 +56,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       setState(() {
         _statusMessage = 'Failed to update password: $e';
       });
-      print('Failed to update password: $e');
+      log.info('Failed to update password: $e');
     }
   }
 

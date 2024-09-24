@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/pages/reset_password_page.dart';
+import 'package:untitled/usersAndAccount/reset_password_page.dart';
 
 import '../commons/logger.dart';
-import 'admin_appointments_page.dart';
+import '../appointments/admin_appointments_page.dart';
+import '../usersAndAccount/admin_create_user_page.dart';
 import 'admin_images_page.dart';
-import 'admin_create_user_page.dart';
-import 'booking_page.dart';
+import '../appointments/appointments_page.dart';
 import 'file_handler_page.dart';
 import 'meal_upload_page.dart';
 
@@ -22,65 +22,81 @@ class HomePageAfterLogin extends StatelessWidget {
     // else {
     return Scaffold(
       appBar: AppBar(title: const Text('Trial App v0')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: <Widget>[
-            ElevatedButton(
-              child: const Text('Planım'),
-              onPressed: () => Navigator.push(
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+              child: const Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            // ListTile for "Planım"
+            ListTile(
+              leading: const Icon(Icons.food_bank),
+              title: const Text('Planım'),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const MealUploadPage()),
               ),
             ),
-            // ElevatedButton(
-            //   child: const Text('Chat with Admin'),
-            //   onPressed: () => Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => const ChatPage()),
-            //   ),
-            // ),
-            ElevatedButton(
-              child: const Text('Randevu'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Randevu"
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Randevu'),
+              onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BookingPage()),
+                MaterialPageRoute(builder: (context) => const AppointmentsPage()),
               ),
             ),
-
-            ElevatedButton(
-              child: const Text('Şifre Sıfırla'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Şifre Sıfırla"
+            ListTile(
+              leading: const Icon(Icons.lock),
+              title: const Text('Şifre Sıfırla'),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
               ),
             ),
-            ElevatedButton(
-              child: const Text('Admin Appointments'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Admin Appointments"
+            ListTile(
+              leading: const Icon(Icons.assignment),
+              title: const Text('Admin Appointments'),
+              onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const AdminAppointmentsPage()),
+                MaterialPageRoute(builder: (context) => const AdminAppointmentsPage()),
               ),
             ),
-            ElevatedButton(
-              child: const Text('Admin Images'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Admin Images"
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text('Admin Images'),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AdminImages()),
               ),
             ),
-            ElevatedButton(
-              child: const Text('Admin Liste'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Admin Liste"
+            ListTile(
+              leading: const Icon(Icons.list),
+              title: const Text('Admin Liste'),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const FileHandlerPage()),
               ),
             ),
-
-            ElevatedButton(
-              child: const Text('Admin Kullanıcı oluştur'),
-              onPressed: () => Navigator.push(
+            // ListTile for "Admin Kullanıcı oluştur"
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Admin Kullanıcı oluştur'),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CreateUserPage()),
               ),
@@ -88,7 +104,79 @@ class HomePageAfterLogin extends StatelessWidget {
           ],
         ),
       ),
+      body: const Center(
+        child: Text('Select an option from the side menu'),
+      ),
     );
+    // return Scaffold(
+    //   appBar: AppBar(title: const Text('Trial App v0')),
+    //   body: Center(
+    //     child: Column(
+    //       mainAxisAlignment: MainAxisAlignment.center,
+    //       children: <Widget>[
+    //         ElevatedButton(
+    //           child: const Text('Planım'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const MealUploadPage()),
+    //           ),
+    //         ),
+    //         // ElevatedButton(
+    //         //   child: const Text('Chat with Admin'),
+    //         //   onPressed: () => Navigator.push(
+    //         //     context,
+    //         //     MaterialPageRoute(builder: (context) => const ChatPage()),
+    //         //   ),
+    //         // ),
+    //         ElevatedButton(
+    //           child: const Text('Randevu'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const BookingPage()),
+    //           ),
+    //         ),
+    //
+    //         ElevatedButton(
+    //           child: const Text('Şifre Sıfırla'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
+    //           ),
+    //         ),
+    //         ElevatedButton(
+    //           child: const Text('Admin Appointments'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(
+    //                 builder: (context) => const AdminAppointmentsPage()),
+    //           ),
+    //         ),
+    //         ElevatedButton(
+    //           child: const Text('Admin Images'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const AdminImages()),
+    //           ),
+    //         ),
+    //         ElevatedButton(
+    //           child: const Text('Admin Liste'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const FileHandlerPage()),
+    //           ),
+    //         ),
+    //
+    //         ElevatedButton(
+    //           child: const Text('Admin Kullanıcı oluştur'),
+    //           onPressed: () => Navigator.push(
+    //             context,
+    //             MaterialPageRoute(builder: (context) => const CreateUserPage()),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 
 // }

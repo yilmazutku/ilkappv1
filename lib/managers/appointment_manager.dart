@@ -204,8 +204,12 @@ class AppointmentManager extends ChangeNotifier {
       querySnapshot = await collectionRef.get();
     } else {
       //getAvailableTimeSlots()'tan çağrılmış.
-      DateTime startOfDay =
-          DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0);
+      //selectedDate bugunse dk ve saat onceki saatleri almasın
+      DateTime startOfDay = DateTime.now().day == selectedDate.day
+          ? DateTime(selectedDate.year, selectedDate.month, selectedDate.day,
+              DateTime.now().hour, DateTime.now().minute)
+          : DateTime(
+              selectedDate.year, selectedDate.month, selectedDate.day, 0);
 
       DateTime endOfDay = DateTime(
           selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);

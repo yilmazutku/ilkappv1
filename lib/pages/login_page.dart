@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:untitled/pages/reset_password_page.dart';
+import 'package:untitled/usersAndAccount/reset_password_page.dart';
 
 import '../commons/logger.dart';
 import '../managers/login_manager.dart';

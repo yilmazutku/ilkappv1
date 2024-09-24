@@ -8,18 +8,18 @@ enum ViewType { list, grid }
 enum MeetingType { online, f2f }
 
 enum Meals {
-  br('kahvalti', 'sabah/'),
-  firstmid('sabah ara öğün', 'ilkara/'),
-  lunch('öğle yemeği', 'oglen/'),
-  secondmid('ikindi ara öğün', 'ikinciara/'),
-  dinner('akşam yemeği', 'aksam/'),
-  thirdmid('akşam ara öğün', 'ucuncuara/'),
-  ;
+  br('Kahvaltı', 'sabah/', '09:00'),
+  firstmid('sabah ara öğün', 'ilkara/', '10:30'),
+  lunch('Öğle', 'oglen/', '12:30'),
+  secondmid('Öğle Ara Öğün', 'ikinciara/', '16:00'),
+  dinner('Akşam', 'aksam/', '19:00'),
+  thirdmid('Gece Ara Öğün', 'ucuncuara/', '21:00');
 
-  const Meals(this.label, this.url);
+  const Meals(this.label, this.url, this.defaultTime);
 
   final String label;
   final String url;
+  final String defaultTime;
 }
 
 class Constants {
