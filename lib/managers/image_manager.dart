@@ -17,17 +17,9 @@ class UploadResult {
 
   UploadResult({this.downloadUrl, this.errorMessage});
 }
-
+/// MealUploadPage kullanır resim yüklerken.
 class ImageManager extends ChangeNotifier {
   final Logger logger = Logger.forClass(ImageManager);
-
-  //singleton pattern
-  // late ImageManager manager;
-  //
-  // ImageManager get getManager {
-  //   manager ??= ImageManager();
-  //   return manager;
-  // }
 
   Future<UploadResult> uploadFile(XFile? image, {Meals? meal}) async {
     if (image != null) {

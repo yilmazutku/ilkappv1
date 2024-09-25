@@ -5,6 +5,7 @@ import 'package:untitled/managers/admin_images_manager.dart';
 
 import '../commons/common.dart';
 
+/// Admin Images Page kullanır, bir kullanıcının fotoğraflarını görmek için klasör halinde.
 class UserImagesPage extends StatelessWidget {
   const UserImagesPage({super.key,required String folderName});
 

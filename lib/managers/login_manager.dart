@@ -1,37 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:untitled/pages/home_page_after_login.dart';
-
-import '../commons/logger.dart';
 
 class LoginProvider extends ChangeNotifier {
-  final Logger logger = Logger.forClass(LoginProvider);
-
-  final String userNotFoundMessage = 'Kullanıcı adı bulunamadı.';
-  final String wrongPasswordMessage =
-      'Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.';
-  final String fieldsEmptyMsg = 'Lütfen alanları doldurunuz.';
-  final String emailEmptyMsg = 'Kullanıcı adı kısmını lütfen doldurunuz.';
-  final String pwEmptyMsg = 'Şifre kısmını lütfen doldurunuz.';
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
   bool _isLoading = false;
   String _errorMessage = '';
+  bool _isLoggedIn = false;
 
-  bool get isLoading {
-    logger.info('isLoading getter called, isLoading: $_isLoading');
-    return _isLoading;
-  }
+  bool get isLoggedIn => _isLoggedIn;
+  bool get isLoading => _isLoading;
+  String get errorMessage => _errorMessage;
 
-  String get errorMessage {
-    logger.info('errorMessage getter called, errorMessage: $_errorMessage');
-    // String strTempErrMsg=StringBuffer(_errorMessage).toString();
-    // _errorMessage='';
-    // logger.info('errorMessage getter called, strTempErrMsg: $strTempErrMsg');
-    return _errorMessage;
-  }
-
+  // Login function
   Future<bool> login(BuildContext context) async {
     if (!_validateInputs()) {
       notifyListeners();
@@ -40,103 +22,74 @@ class LoginProvider extends ChangeNotifier {
 
     _setLoadingState(true);
     _errorMessage = '';
-    notifyListeners();
 
-    bool isLoginSuccessful = await signIn(
+    bool isLoginSuccessful = await _signIn(
         emailController.text.trim(), passwordController.text.trim());
-    isLoginSuccessful = true; //TODO
+
     if (isLoginSuccessful) {
-      if (context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePageAfterLogin()),
-        );
-      }
-    } else {
-      if (context.mounted) {
-        //page kısmında TODO
-      }
+      _isLoggedIn = true;
     }
+
     _setLoadingState(false);
+    notifyListeners();
     return isLoginSuccessful;
   }
 
-  Future<bool> signIn(String email, String password) async {
-    // const bool isProduction = bool.fromEnvironment('dart.vm.product');
-    //
-    // if (!isProduction) { //debug ortamındayım
-    //   logger.debug(
-    //       'signInAutomatically called with email: $email, password: $password');
-    // } else {
-    //   logger.info('signInAutomatically called with email: $email');
-    // }
-    logger.debug(
-        'signInAutomatically called with email: $email, password: $password');
+  // Sign-in function
+  Future<bool> _signIn(String email, String password) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       return true;
     } on FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case 'invalid-email':
-          setError('Geçersiz e-posta adresi.');
-          break;
-        case 'user-disabled':
-          setError('Bu kullanıcı hesabı devre dışı bırakılmış.');
-          break;
-        case 'user-not-found':
-          setError('Kullanıcı adı bulunamadı.');
-          break;
-        case 'wrong-password':
-          setError('Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.');
-          break;
-        case 'account-exists-with-different-credential':
-          setError(
-              'Bu e-posta adresiyle daha önce farklı bir yöntemle giriş yapılmış.');
-          break;
-        case 'credential-already-in-use':
-          setError(
-              'Bu kimlik bilgileri zaten başka bir kullanıcı tarafından kullanılıyor.');
-          break;
-        case 'operation-not-allowed':
-          setError('Bu işlem şu anda yapılamıyor.');
-          break;
-        case 'invalid-credential':
-          setError(
-              'Girilen e-mail adresi ve/veya şifre hatalı. Lütfen kontrol edip tekrar deneyiniz.'); //Sağlanan kimlik bilgileri yanlış, hatalı veya süresi dolmuş.
-          break;
-        default:
-          setError(
-              'FirebaseAuthException: Giriş yaparken beklenmeyen bir hata oluştu.');
-          break;
-      }
+      _handleFirebaseAuthError(e);
       return false;
-    } catch (e) {
-      setError('Giriş yaparken beklenmeyen bir hata oluştu.');
+    } catch (_) {
+      _errorMessage = 'Beklenmeyen bir hata oluştu.';
       return false;
     }
   }
 
-  void _setLoadingState(bool isLoading) {
-    _isLoading = isLoading;
-    logger.info('Loading state changed: $_isLoading');
+  // Handle Firebase errors
+  void _handleFirebaseAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        _errorMessage = 'Geçersiz e-posta adresi.';
+        break;
+      case 'user-disabled':
+        _errorMessage = 'Bu kullanıcı hesabı devre dışı bırakılmış.';
+        break;
+      case 'user-not-found':
+        _errorMessage = 'Kullanıcı adı bulunamadı.';
+        break;
+      case 'wrong-password':
+        _errorMessage = 'Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.';
+        break;
+      default:
+        _errorMessage = 'Giriş yaparken beklenmeyen bir hata oluştu.';
+        break;
+    }
     notifyListeners();
   }
 
-  void setError(String message) {
-    _errorMessage = message;
+  // Clear the error message
+  void clearError() {
+    _errorMessage = '';
     notifyListeners();
   }
 
+  // Input validation
   bool _validateInputs() {
-    if (emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty) {
-      setError(fieldsEmptyMsg);
+    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
+      _errorMessage = 'Lütfen alanları doldurunuz.';
       return false;
     }
     return true;
+  }
+
+  // Set loading state
+  void _setLoadingState(bool isLoading) {
+    _isLoading = isLoading;
+    notifyListeners();
   }
 
   @override

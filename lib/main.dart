@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:untitled/managers/chat_manager.dart';
 import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/pages/login_page.dart';
 
@@ -56,10 +55,10 @@ class MyApp extends StatelessWidget {
     // child: MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ImageManager()),
-        ChangeNotifierProxyProvider<ImageManager, ChatManager>(
-          create: (context) => ChatManager(imageManager:Provider.of<ImageManager>(context, listen: false)),
-          update: (context, imageManager, previousChatManager) => ChatManager(imageManager:imageManager),
-        ),
+        // ChangeNotifierProxyProvider<ImageManager, ChatManager>(
+        //   create: (context) => ChatManager(imageManager:Provider.of<ImageManager>(context, listen: false)),
+        //   update: (context, imageManager, previousChatManager) => ChatManager(imageManager:imageManager),
+        // ),
         ChangeNotifierProvider(create: (context) => MealStateManager()),
         ChangeNotifierProvider(create: (context) => AppointmentManager()),
         ChangeNotifierProvider(create: (_) => LoginProvider()),

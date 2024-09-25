@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
-
+import '../appointments/appointments_page.dart';
 import '../commons/logger.dart';
 import '../managers/login_manager.dart';
+import 'meal_upload_page.dart';
 
 final Logger logger = Logger.forClass(LoginPage);
 
@@ -13,7 +14,8 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    logger.info('building loginPage');
+    logger.info('Building LoginPage');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kullanıc\u0131 Girişi'),
@@ -24,82 +26,129 @@ class LoginPage extends StatelessWidget {
           builder: (context, loginProvider, child) {
             String errorMessage = loginProvider.errorMessage;
             bool isLoading = loginProvider.isLoading;
+
+            // Display error dialog if there is an error
             if (errorMessage.isNotEmpty) {
-              // hata varsa dialog aç
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showErrorDialog(context, errorMessage);
-                loginProvider.setError(''); // Reset the error after displaying
+                loginProvider.clearError(); // Clear the error after displaying it
               });
             }
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Center(
-                  child: SizedBox(
-                    width: screenWidth * 0.5, // Set your desired width here
-                    child: TextField(
-                      // mail giriş
-                      controller: loginProvider.emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter your email',
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Center(
-                  child: SizedBox(
-                    //pw giriş
-                    width: screenWidth * 0.5,
-                    child: TextField(
-                      controller: loginProvider.passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter your password',
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed:
-                      isLoading ? null : () => loginProvider.login(context),
-                  child: isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('Login'),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const ResetPasswordPage()),
-                    );
-                  },
-                  child: const Text('Forgot Password?'),
-                ),
-                // if (errorMessage.isNotEmpty)
-                //   Padding(
-                //     padding: const EdgeInsets.only(top: 10),
-                //     child: Text(
-                //       errorMessage,
-                //       style: const TextStyle(color: Colors.red, fontSize: 16), //TODO ileride yeni login yapılmamışsa oncekinin errorunu silmek isteyebiliriz?
-                //     ),
-                //   ),
-              ],
-            );
+
+            // Show either login form or main menu after login
+            return loginProvider.isLoggedIn
+                ? _buildHomePageContent(context) // Show main menu after login
+                : _buildLoginForm(context, loginProvider, screenWidth, isLoading); // Show login form if not logged in
           },
         ),
       ),
     );
   }
 
+  // Build the login form
+  Widget _buildLoginForm(BuildContext context, LoginProvider loginProvider, double screenWidth, bool isLoading) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        // Email input
+        Center(
+          child: SizedBox(
+            width: screenWidth * 0.5,
+            child: TextField(
+              controller: loginProvider.emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'Emailinizi giriniz',
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Password input
+        Center(
+          child: SizedBox(
+            width: screenWidth * 0.5,
+            child: TextField(
+              controller: loginProvider.passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Şifrenizi giriniz',
+                labelText: 'Şifre',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: isLoading ? null : () => loginProvider.login(context),
+          child: isLoading
+              ? const CircularProgressIndicator()
+              : const Text('Giriş Yap'),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
+            );
+          },
+          child: const Text('Şifremi Unuttum'),
+        ),
+      ],
+    );
+  }
+
+  // Build the main menu after login
+  Widget _buildHomePageContent(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: <Widget>[
+        DrawerHeader(
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+          ),
+          child: const Text(
+            'Menu',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.food_bank),
+          title: const Text('Planım'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MealUploadPage()),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_today),
+          title: const Text('Randevu'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AppointmentsPage()),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.lock),
+          title: const Text('Şifre Sıfırla'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
+          ),
+        ),
+        // Add other ListTile entries here as needed...
+      ],
+    );
+  }
+
+  // Show error dialog
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -110,9 +159,9 @@ class LoginPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
+                Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('OK'),
+              child: const Text('Tamam'),
             ),
           ],
         );
