@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
+import '../appointments/admin_appointments_page.dart';
 import '../appointments/appointments_page.dart';
 import '../commons/logger.dart';
 import '../managers/login_manager.dart';
+import '../usersAndAccount/admin_create_user_page.dart';
+import 'admin_images_page.dart';
+import 'file_handler_page.dart';
 import 'meal_upload_page.dart';
 
 final Logger logger = Logger.forClass(LoginPage);
@@ -31,14 +35,16 @@ class LoginPage extends StatelessWidget {
             if (errorMessage.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _showErrorDialog(context, errorMessage);
-                loginProvider.clearError(); // Clear the error after displaying it
+                loginProvider
+                    .clearError(); // Clear the error after displaying it
               });
             }
 
             // Show either login form or main menu after login
             return loginProvider.isLoggedIn
                 ? _buildHomePageContent(context) // Show main menu after login
-                : _buildLoginForm(context, loginProvider, screenWidth, isLoading); // Show login form if not logged in
+                : _buildLoginForm(context, loginProvider, screenWidth,
+                    isLoading); // Show login form if not logged in
           },
         ),
       ),
@@ -46,7 +52,8 @@ class LoginPage extends StatelessWidget {
   }
 
   // Build the login form
-  Widget _buildLoginForm(BuildContext context, LoginProvider loginProvider, double screenWidth, bool isLoading) {
+  Widget _buildLoginForm(BuildContext context, LoginProvider loginProvider,
+      double screenWidth, bool isLoading) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
@@ -93,7 +100,8 @@ class LoginPage extends StatelessWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
+              MaterialPageRoute(
+                  builder: (context) => const ResetPasswordPage()),
             );
           },
           child: const Text('Şifremi Unuttum'),
@@ -127,6 +135,7 @@ class LoginPage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const MealUploadPage()),
           ),
         ),
+        // ListTile for "Randevu"
         ListTile(
           leading: const Icon(Icons.calendar_today),
           title: const Text('Randevu'),
@@ -135,6 +144,7 @@ class LoginPage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const AppointmentsPage()),
           ),
         ),
+        // ListTile for "Şifre Sıfırla"
         ListTile(
           leading: const Icon(Icons.lock),
           title: const Text('Şifre Sıfırla'),
@@ -143,6 +153,44 @@ class LoginPage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
           ),
         ),
+        // ListTile for "Admin Appointments"
+        ListTile(
+          leading: const Icon(Icons.assignment),
+          title: const Text('Admin Appointments'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const AdminAppointmentsPage()),
+          ),
+        ),
+        // ListTile for "Admin Images"
+        ListTile(
+          leading: const Icon(Icons.image),
+          title: const Text('Admin Images'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminImages()),
+          ),
+        ),
+        // ListTile for "Admin Liste"
+        ListTile(
+          leading: const Icon(Icons.list),
+          title: const Text('Admin Liste'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FileHandlerPage()),
+          ),
+        ),
+        // ListTile for "Admin Kullanıcı oluştur"
+        ListTile(
+          leading: const Icon(Icons.person_add),
+          title: const Text('Admin Kullanıcı oluştur'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateUserPage()),
+          ),
+        ),
+
         // Add other ListTile entries here as needed...
       ],
     );

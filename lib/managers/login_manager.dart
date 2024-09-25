@@ -37,17 +37,17 @@ class LoginProvider extends ChangeNotifier {
 
   // Sign-in function
   Future<bool> _signIn(String email, String password) async {
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _handleFirebaseAuthError(e);
-      return false;
-    } catch (_) {
-      _errorMessage = 'Beklenmeyen bir hata oluştu.';
-      return false;
-    }
-  }
+    // try {
+    //   await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+    //   return true;
+    // } on FirebaseAuthException catch (e) {
+    //   _handleFirebaseAuthError(e);
+    //   return false;
+    // } catch (_) {
+    //   _errorMessage = 'Beklenmeyen bir hata oluştu.';
+    //   return false;
+    // }
+return true;  }
 
   // Handle Firebase errors
   void _handleFirebaseAuthError(FirebaseAuthException e) {
