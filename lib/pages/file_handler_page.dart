@@ -256,7 +256,12 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
 
       // Upload to Cloud Firestore
       DocumentReference ref = FirebaseFirestore.instance.doc(documentPath);
-      await ref.set({'subtitles': dataToUpload});
+      await ref.set({
+        'uploadTime': FieldValue.serverTimestamp(), // Automatically store current server time
+        'subtitles': dataToUpload //        // Other document fields...
+      });
+      //await ref.set({'subtitles': dataToUpload});
+      documentPath = 'userinfo/$_selectedUser/currentDietList';
 
       log.info('Diet list stored successfully at path: {}', [documentPath]);
     } catch (e) {

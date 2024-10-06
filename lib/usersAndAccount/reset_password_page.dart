@@ -77,7 +77,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          MaterialPageRoute(builder: (context) =>  LoginPage()),
         );
       }
     } on FirebaseAuthException catch (e) {

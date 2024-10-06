@@ -7,6 +7,7 @@ import '../commons/logger.dart';
 import '../managers/appointment_manager.dart';
 import '../commons/common.dart';
 
+
 final auth = FirebaseAuth.instance;
 final Logger logger = Logger.forClass(AppointmentsPage);
 
@@ -68,7 +69,7 @@ class AppointmentsPage extends StatelessWidget {
                       children: availableTimes.map((time) {
                         return ValueListenableBuilder<TimeOfDay?>(
                           valueListenable:
-                              appointmentManager.selectedTimeNotifier,
+                          appointmentManager.selectedTimeNotifier,
                           builder: (context, selectedTime, child) {
                             return ChoiceChip(
                               label: Text(time.format(context)),
@@ -98,10 +99,10 @@ class AppointmentsPage extends StatelessWidget {
                         await appointmentManager.bookAppointment(Appointment(
                           id: FirebaseAuth.instance.currentUser!.uid,
                           name:
-                              FirebaseAuth.instance.currentUser!.displayName ??
-                                  'nullDisplayName',
-                          serviceType:
-                              appointmentManager.serviceTypeNotifier.value!,
+                          FirebaseAuth.instance.currentUser!.displayName ??
+                              'nullDisplayName',
+                          meetingType: appointmentManager
+                              .meetingTypeNotifier.value, // Use the enum
                           dateTime: DateTime(
                             appointmentManager.selectedDate.year,
                             appointmentManager.selectedDate.month,
@@ -158,9 +159,6 @@ class AppointmentsPage extends StatelessWidget {
                 'Randevularım',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              // Existing FutureBuilder for displaying appointments
-              // Existing FutureBuilder for displaying appointments
-// Existing FutureBuilder for displaying appointments
               FutureBuilder<List<Appointment>>(
                 future: appointmentManager.fetchCurrentUserAppointments(
                     FirebaseAuth.instance.currentUser!.uid),
@@ -178,29 +176,30 @@ class AppointmentsPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: appointments.map((appointment) {
                         return ListTile(
-                          title: Text("Görüşme: ${appointment.serviceType}"),
+                          title: Text(
+                              "Görüşme: ${appointment.meetingType.label}"),
                           subtitle: Text(
                               "Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}"),
                           trailing: IconButton(
                             icon: const Icon(Icons.cancel, color: Colors.red),
                             onPressed: () async {
-                              // Show confirmation dialog before canceling
                               bool? confirmCancel = await showDialog<bool>(
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
                                     title: const Text("Randevuyu İptal Et"),
-                                    content: const Text("Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
+                                    content: const Text(
+                                        "Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
-                                          Navigator.of(context).pop(false); // Dismisses the dialog and returns false
+                                          Navigator.of(context).pop(false);
                                         },
                                         child: const Text("Hayır"),
                                       ),
                                       TextButton(
                                         onPressed: () {
-                                          Navigator.of(context).pop(true); // Dismisses the dialog and returns true
+                                          Navigator.of(context).pop(true);
                                         },
                                         child: const Text("Evet"),
                                       ),
@@ -209,21 +208,23 @@ class AppointmentsPage extends StatelessWidget {
                                 },
                               );
 
-                              // If the user confirmed the cancellation
                               if (confirmCancel == true) {
                                 try {
-                                  await appointmentManager.cancelAppointment(appointment.id);
+                                  await appointmentManager
+                                      .cancelAppointment(appointment.id);
                                   if (context.mounted) {
                                     showDialog(
                                       context: context,
                                       builder: (BuildContext context) {
                                         return AlertDialog(
-                                         title: const Text("Başarılı"),
-                                          content: const Text("Randevu iptal edildi."),
+                                          title: const Text("Başarılı"),
+                                          content: const Text(
+                                              "Randevu iptal edildi."),
                                           actions: [
                                             TextButton(
                                               onPressed: () {
-                                                Navigator.of(context).pop(); // Dismiss the dialog
+                                                Navigator.of(context)
+                                                    .pop(); // Dismiss the dialog
                                               },
                                               child: const Text("Tamam"),
                                             ),
@@ -233,7 +234,9 @@ class AppointmentsPage extends StatelessWidget {
                                     );
                                   }
                                 } catch (e) {
-                                  logger.err('an error occurred while canceling appointment= {}', [e]);
+                                  logger.err(
+                                      'an error occurred while canceling appointment= {}',
+                                      [e]);
                                   if (context.mounted) {
                                     showDialog(
                                       context: context,
@@ -244,7 +247,8 @@ class AppointmentsPage extends StatelessWidget {
                                           actions: [
                                             TextButton(
                                               onPressed: () {
-                                                Navigator.of(context).pop(); // Dismiss the dialog
+                                                Navigator.of(context)
+                                                    .pop(); // Dismiss the dialog
                                               },
                                               child: const Text("Tamam"),
                                             ),
@@ -265,9 +269,6 @@ class AppointmentsPage extends StatelessWidget {
                   }
                 },
               ),
-
-
-
             ],
           ),
         ),
@@ -295,20 +296,19 @@ class ServiceTypeDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appointmentManager = Provider.of<AppointmentManager>(context);
-    return ValueListenableBuilder<String?>(
-      valueListenable: appointmentManager.serviceTypeNotifier,
-      builder: (context, serviceType, child) {
-        return DropdownButton<String>(
-          value: serviceType,
-          hint: const Text('Select Service Type'),
-          onChanged: (String? newValue) {
-            appointmentManager.setServiceType(newValue);
+
+    return ValueListenableBuilder<MeetingType>(
+      valueListenable: appointmentManager.meetingTypeNotifier,
+      builder: (context, meetingType, child) {
+        return DropdownButton<MeetingType>(
+          value: meetingType,
+          onChanged: (MeetingType? newValue) {
+            appointmentManager.setMeetingType(newValue);
           },
-          items: appointmentManager.meetingTypeList
-              .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
+          items: MeetingType.values.map<DropdownMenuItem<MeetingType>>((MeetingType type) {
+            return DropdownMenuItem<MeetingType>(
+              value: type,
+              child: Text(type.label),
             );
           }).toList(),
         );

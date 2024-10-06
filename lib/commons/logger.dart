@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:intl/intl.dart'; // For formatting the timestamp
 
 class Logger {
   final String name;
@@ -6,22 +7,30 @@ class Logger {
   Logger(this.name);
 
   void _log(String level, String message, {Object? error, StackTrace? stackTrace}) {
+    // Get the current time formatted as hour:minute:second
+    String currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+
+    // Include the time in the log message
     developer.log(
-      '[$level] $message',
+      '[$currentTime] [$level] $message',
       name: name,
       error: error,
       stackTrace: stackTrace,
     );
   }
+
   factory Logger.forClass(Type type) {
     return Logger(type.toString());
   }
+
   void info(String message, [List<Object>? args]) {
     _log('INFO', _format(message, args));
   }
+
   void debug(String message, [List<Object>? args]) {
     _log('DEBUG', _format(message, args));
   }
+
   void warn(String message, [List<Object>? args]) {
     _log('WARN', _format(message, args));
   }

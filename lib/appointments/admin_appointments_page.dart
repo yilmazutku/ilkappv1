@@ -22,6 +22,7 @@ class AdminAppointmentsPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            print(snapshot.error);
             return const Center(child: Text("Error fetching appointments"));
           }
 
@@ -34,7 +35,7 @@ class AdminAppointmentsPage extends StatelessWidget {
               return ExpansionTile(
                 title: Text(DateFormat('EEEE, MMM d').format(date)),
                 children: appointments.map((appointment) => ListTile(
-                  title: Text('${TimeOfDay.fromDateTime(appointment.dateTime).format(context)} - ${appointment.serviceType}- ${appointment.name}'),
+                  title: Text('${TimeOfDay.fromDateTime(appointment.dateTime).format(context)} - ${appointment.meetingType.label} - ${appointment.name}'),
                 )).toList(),
               );
             },

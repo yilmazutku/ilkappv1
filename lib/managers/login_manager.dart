@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../commons/logger.dart';
+final Logger logger = Logger.forClass(LoginProvider);
+
 class LoginProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -37,16 +40,16 @@ class LoginProvider extends ChangeNotifier {
 
   // Sign-in function
   Future<bool> _signIn(String email, String password) async {
-    // try {
-    //   await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-    //   return true;
-    // } on FirebaseAuthException catch (e) {
-    //   _handleFirebaseAuthError(e);
-    //   return false;
-    // } catch (_) {
-    //   _errorMessage = 'Beklenmeyen bir hata oluştu.';
-    //   return false;
-    // }
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _handleFirebaseAuthError(e);
+      return false;
+    } catch (_) {
+      _errorMessage = 'Beklenmeyen bir hata oluştu.';
+      return false;
+    }
 return true;  }
 
   // Handle Firebase errors
@@ -68,6 +71,7 @@ return true;  }
         _errorMessage = 'Giriş yaparken beklenmeyen bir hata oluştu.';
         break;
     }
+    logger.err('firebase auth err:{}',[e.code]);
     notifyListeners();
   }
 

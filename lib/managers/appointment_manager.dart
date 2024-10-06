@@ -1,7 +1,5 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../commons/common.dart';
 import '../commons/logger.dart';
 
@@ -9,36 +7,32 @@ final Logger logger = Logger.forClass(AppointmentManager);
 
 class AppointmentManager extends ChangeNotifier {
   final Map<DateTime, List<Appointment>> _dailyAppointments = {};
-  final meetingTypeList = MeetingType.values.map((e) => e.name).toList();
+
+  final List<MeetingType> meetingTypeList = MeetingType.values; // Use the enum directly
 
   Map<DateTime, List<Appointment>> get dailyAppointments => _dailyAppointments;
 
   DateTime _selectedDate = DateTime.now(); // Tracks the selected date
-  final ValueNotifier<String?> _serviceTypeNotifier =
-      ValueNotifier<String?>(null);
-  final ValueNotifier<TimeOfDay?> _selectedTimeNotifier =
-      ValueNotifier<TimeOfDay?>(null);
+  final ValueNotifier<MeetingType> _meetingTypeNotifier = ValueNotifier<MeetingType>(MeetingType.f2f); // Default value: f2f
+  final ValueNotifier<TimeOfDay?> _selectedTimeNotifier = ValueNotifier<TimeOfDay?>(null);
 
-  ValueNotifier<String?> get serviceTypeNotifier => _serviceTypeNotifier;
+  ValueNotifier<MeetingType> get meetingTypeNotifier => _meetingTypeNotifier; // Use MeetingType instead of String
 
   DateTime get selectedDate => _selectedDate;
 
-
   ValueNotifier<TimeOfDay?> get selectedTimeNotifier => _selectedTimeNotifier;
 
-  void setServiceType(String? newValue) {
-    // _serviceType = newValue;
-    //  notifyListeners();
-    _serviceTypeNotifier.value = newValue;
+  void setMeetingType(MeetingType? newValue) {
+    if (newValue != null) {
+      _meetingTypeNotifier.value = newValue;
+      notifyListeners();
+    }
   }
 
-  /// takvimden yeni gün seçilir, müsait vakitleri o güne göre ayarlar
   Future<void> setSelectedDate(DateTime date) async {
     _selectedDate = date;
     logger.info('updatedSelectedDate as {}', [date]);
-    await fetchAppointments(
-        selectedDate:
-            _selectedDate); // Fetch appointments for the week of the new selected date
+    await fetchAppointments(selectedDate: _selectedDate);
     notifyListeners();
   }
 
@@ -46,14 +40,11 @@ class AppointmentManager extends ChangeNotifier {
     _selectedTimeNotifier.value = time;
   }
 
-  /// belirli bir gün için müsait saatleri bulur
   Future<List<TimeOfDay>> getAvailableTimesForDate(DateTime date) async {
     logger.info('gettingAvailableTimeSlots for date={}', [date]);
-    await fetchAppointments(
-        selectedDate: date); // Make sure the appointments are up to date
+    await fetchAppointments(selectedDate: date);
     List<TimeOfDay> availableSlots = [];
 
-    // Example: Assuming appointments can be booked from 9 AM to 5 PM, every half hour //TODO bunu onlara bırakmak lazım. elle girsinler
     for (int hour = 9; hour < 19; hour++) {
       for (int minute = 0; minute < 60; minute += 30) {
         TimeOfDay time = TimeOfDay(hour: hour, minute: minute);
@@ -66,67 +57,39 @@ class AppointmentManager extends ChangeNotifier {
   }
 
   Future<List<Appointment>> fetchCurrentUserAppointments(String userId) async {
-    CollectionReference collectionRef =
-        FirebaseFirestore.instance.collection(Constants.appointments);
-    QuerySnapshot querySnapshot =
-        await collectionRef.where('id', isEqualTo: userId).get();
+    CollectionReference collectionRef = FirebaseFirestore.instance.collection('appointments');
+    QuerySnapshot querySnapshot = await collectionRef.where('id', isEqualTo: userId).get();
     List<Appointment> userAppointments = [];
+
     if (querySnapshot.docs.isNotEmpty) {
       for (var doc in querySnapshot.docs) {
-        Appointment appointment =
-            Appointment.fromJson(doc.data() as Map<String, dynamic>);
+        Appointment appointment = Appointment.fromJson(doc.data() as Map<String, dynamic>);
         if (!appointment.dateTime.isBefore(DateTime.now())) {
-          //önceki randevular gözükmesin.
-          logger.info('CurrentUser appointment found={}', [appointment]);
           userAppointments.add(appointment);
         }
       }
-    } else {
-      logger.info('no appointment found for current user.');
     }
     return userAppointments;
   }
 
-  ///1-admin tüm randevular için çağırır (null arg) 2-bookAppointment 3-getAvailableTimesForDate
   Future<void> fetchAppointments({DateTime? selectedDate}) async {
-    CollectionReference collectionRef =
-        FirebaseFirestore.instance.collection(Constants.appointments);
+    CollectionReference collectionRef = FirebaseFirestore.instance.collection('appointments');
     QuerySnapshot? querySnapshot;
 
     if (selectedDate == null) {
-      //admin çağırmış tüm appointmentları görsün.
       querySnapshot = await collectionRef.get();
     } else {
-      //getAvailableTimeSlots()'tan çağrılmış.
-      //selectedDate bugunse dk ve saat onceki saatleri almasın
-      DateTime startOfDay = DateTime.now().day == selectedDate.day
-          ? DateTime(selectedDate.year, selectedDate.month, selectedDate.day,
-              DateTime.now().hour, DateTime.now().minute)
-          : DateTime(
-              selectedDate.year, selectedDate.month, selectedDate.day, 0);
-
-      DateTime endOfDay = DateTime(
-          selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);
-      //user çağırmış, günlük saatleri dolduracak
+      DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0, 0);
+      DateTime endOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);
       querySnapshot = await collectionRef
-          .where('dateTime',
-              isGreaterThanOrEqualTo: startOfDay, isLessThan: endOfDay)
+          .where('dateTime', isGreaterThanOrEqualTo: startOfDay, isLessThanOrEqualTo: endOfDay)
           .get();
     }
-    /*
-  // Query for appointments within the specified date range
-  QuerySnapshot querySnapshot = await collectionRef
-      .where('dateTime', isGreaterThanOrEqualTo: startTimestamp)
-      .where('dateTime', isLessThanOrEqualTo: endTimestamp)
-      .get();
-     */
+
     _dailyAppointments.clear();
     for (var doc in querySnapshot.docs) {
-      Appointment appointment =
-          Appointment.fromJson(doc.data() as Map<String, dynamic>);
-      // DateTime date = appointment.dateTime;
-      DateTime date = DateTime(appointment.dateTime.year,
-          appointment.dateTime.month, appointment.dateTime.day);
+      Appointment appointment = Appointment.fromJson(doc.data() as Map<String, dynamic>);
+      DateTime date = DateTime(appointment.dateTime.year, appointment.dateTime.month, appointment.dateTime.day);
       if (!_dailyAppointments.containsKey(date)) {
         _dailyAppointments[date] = [];
       }
@@ -135,38 +98,45 @@ class AppointmentManager extends ChangeNotifier {
   }
 
   Future<void> bookAppointment(Appointment appointment) async {
-    bool isAvailable = isTimeSlotAvailable(
-        appointment.dateTime, TimeOfDay.fromDateTime(appointment.dateTime));
+    bool isAvailable = isTimeSlotAvailable(appointment.dateTime, TimeOfDay.fromDateTime(appointment.dateTime));
     if (isAvailable) {
       try {
-        await FirebaseFirestore.instance
-            .collection(Constants.appointments)
-            .doc(appointment.id)
-            .set(appointment.toJson());
-        fetchAppointments(); // Refresh the appointments after a new booking
+        await FirebaseFirestore.instance.collection('appointments').doc(appointment.id).set(appointment.toJson());
+        fetchAppointments();
         notifyListeners();
       } catch (error) {
-        logger.err('Error booking appointment:', [error]);
+        logger.err('Error booking appointment:{}', [error]);
       }
-    } else {
-      logger.warn('selected date={} is not available.', [appointment.dateTime]);
     }
-   // notifyListeners();
   }
 
   bool isTimeSlotAvailable(DateTime date, TimeOfDay time) {
-    // Convert TimeOfDay to DateTime for comparison
-    DateTime dateYmd = //year month day
-        DateTime(date.year, date.month, date.day);
-    DateTime dateTimeWithHour =
-        DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    for (var appointment in _dailyAppointments[dateYmd] ?? []) {
+    DateTime dateTimeWithHour = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    for (var appointment in _dailyAppointments[DateTime(date.year, date.month, date.day)] ?? []) {
       if (appointment.dateTime == dateTimeWithHour) {
-        return false; // Slot is not available
+        return false;
       }
     }
-    return true; // Slot is available
+    return true;
   }
 
-  cancelAppointment(String id) {}
+
+  Future<void> cancelAppointment(String id) async {
+    try {
+      // Remove the appointment from Firestore using its id
+      await FirebaseFirestore.instance.collection('appointments').doc(id).delete();
+
+      // Log success
+      logger.info('Appointment with id={} has been canceled.', [id]);
+
+      // Optionally, refresh the appointments list after cancellation
+      await fetchAppointments(); // Assuming fetchAppointments refreshes the list
+
+      notifyListeners(); // Notify listeners to update the UI after cancellation
+    } catch (error) {
+      // Log error if something goes wrong
+      logger.err('Error while canceling appointment with id={}: {}', [id, error]);
+    }
+  }
+
 }

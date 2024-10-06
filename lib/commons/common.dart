@@ -5,7 +5,15 @@ enum DateFilter { today, last3Days, last7Days, last30Days }
 
 enum ViewType { list, grid }
 
-enum MeetingType { online, f2f }
+enum MeetingType { online('Online'), f2f('Yüz yüze');
+  const MeetingType(this.label);
+  final String label;
+
+  static MeetingType fromLabel(String label) {
+    return MeetingType.values.firstWhere((e) => e.label == label);
+  }
+
+}
 
 enum Meals {
   br('Kahvaltı', 'sabah/', '09:00'),
@@ -20,6 +28,16 @@ enum Meals {
   final String label;
   final String url;
   final String defaultTime;
+
+  // Method to get enum from label
+  static Meals fromLabel(String label) {
+    return Meals.values.firstWhere((e) => e.label == label);
+  }
+
+  static Meals fromName(String name) {
+    return Meals.values.firstWhere((e) => e.name == name);
+  }
+
 }
 
 class Constants {
@@ -68,7 +86,7 @@ class MessageData {
 class Appointment {
   String id;
   String name;
-  String serviceType; // 'online' or 'face-to-face'
+  MeetingType meetingType;
   DateTime dateTime;
 
   // String date;
@@ -78,7 +96,7 @@ class Appointment {
   Appointment({
     required this.id,
     required this.name,
-    required this.serviceType,
+    required this.meetingType,
     required this.dateTime,
     // required this.time,
   });
@@ -87,7 +105,7 @@ class Appointment {
       {
         'id': id,
         'name': name,
-        'serviceType': serviceType,
+        'meetingType': meetingType.label,
         'dateTime': Timestamp.fromDate(dateTime),
         // Convert DateTime to Timestamp
       };
@@ -104,16 +122,24 @@ class Appointment {
       date.minute,
     );
 
+// Convert the String from Firestore to the MeetingType enum
+    MeetingType meetingType = MeetingType.values.firstWhere(
+          (e) => e.label == json['meetingType']
+
+      //,orElse: () => MeetingType.online, // Provide a default value if null or unrecognized
+    );
+
     return Appointment(
       id: json['id'],
       name: json['name'],
-      serviceType: json['serviceType'],
+      meetingType: meetingType,
       dateTime: dateTime,
     );
   }
 
+
   @override
   String toString() {
-    return 'Appointment{id: $id, name: $name, serviceType: $serviceType, dateTime: $dateTime}';
+    return 'Appointment{id: $id, name: $name, meetingType: $meetingType, dateTime: $dateTime}';
   }
 }

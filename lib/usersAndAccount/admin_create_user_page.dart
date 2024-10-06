@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
@@ -37,6 +38,12 @@ class _CreateUserPageState extends State<CreateUserPage> {
     final hashedPassword = hashPassword(password, salt);
 
     try {
+
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
       // Create user document with username, email, hashed password, and salt
       await _firestore.collection('userinfo').doc(username).set({
         'username': username,
@@ -44,11 +51,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
         'hashedpw': hashedPassword,
         'saltkey': salt,
       });
-
       // Create dietlists subcollection
       await _firestore.collection('$userPath/dietlists').add({
         'initialDiet': [],
       });
+
 
       setState(() {
         _statusMessage = 'User $username created successfully!';
