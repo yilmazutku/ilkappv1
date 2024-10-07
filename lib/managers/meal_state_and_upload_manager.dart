@@ -1,78 +1,68 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../commons/common.dart';
 import '../commons/logger.dart';
+
 final Logger logger = Logger.forClass(MealStateManager);
+
 class MealStateManager extends ChangeNotifier {
   final Map<Meals, bool> _checkedStates = {
     for (var meal in Meals.values) meal: false,
   };
-  SharedPreferences? prefs; // Make prefs nullable to check if initialized
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late String _userId;
+
   Map<Meals, bool> get checkedStates => _checkedStates;
 
   MealStateManager() {
-    initPrefs();
-  }
-
-  Future<void> initPrefs() async {
-    prefs = await SharedPreferences.getInstance();
-    await resetMealStatesIfDifferentDay();
-    _loadMealStates();
-  //  notifyListeners();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _userId = user.uid;
+      _loadMealStates();
+    } else {
+      logger.err('User not authenticated.');
+    }
   }
 
   void setMealCheckedState(Meals meal, bool isChecked) async {
     _checkedStates[meal] = isChecked;
-    //notifyListeners(); // Notify listeners to rebuild the widgets that depend on this state
-    // Save the state to SharedPreferences
-    await prefs?.setBool(meal.label, isChecked);
-   bool? isSuccessfullySet= await prefs?.setInt(
-        Constants.saveTime, DateTime.now().millisecondsSinceEpoch);
-    logger.info('isSuccessfullySet={} for meal={}, isChecked={}', [ isSuccessfullySet! ,meal, isChecked]);
+    notifyListeners();
+
+    String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    await _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('mealStates')
+        .doc(date)
+        .set({
+      meal.name: isChecked,
+    }, SetOptions(merge: true));
   }
 
-  void _loadMealStates() {
-    for (var meal in Meals.values) {
-      bool? boolMeal = prefs?.getBool(meal.label);
-      bool isChecked = boolMeal ?? false;
-      _checkedStates[meal] = isChecked;
-    }
-  }
+  void _loadMealStates() async {
+    String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-  Future<Map<Meals, bool>> initMealStates() async {
-    await resetMealStatesIfDifferentDay();
-    final Map<Meals, bool> loadedStates = {};
-    for (var meal in Meals.values) {
-      bool? boolMeal = prefs?.getBool(meal.label);
-      bool isChecked = boolMeal ?? false;
-      loadedStates[meal] = isChecked;
-    }
-    return loadedStates;
-  }
+    final doc = await _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('mealStates')
+        .doc(date)
+        .get();
 
-  Future<void> resetMealStatesIfDifferentDay() async {
-    int? lastSaveTime = prefs?.getInt(Constants.saveTime);
-    if (lastSaveTime == null) {
-      setMealsFalse();
-      return;
+    if (doc.exists) {
+      final data = doc.data()!;
+      for (var meal in Meals.values) {
+        _checkedStates[meal] = data[meal.name] ?? false;
+      }
+    } else {
+      // Initialize meal states for the day
+      for (var meal in Meals.values) {
+        _checkedStates[meal] = false;
+      }
     }
-    DateTime lastSaveDateTime =
-        DateTime.fromMillisecondsSinceEpoch(lastSaveTime);
-    var now = DateTime.now();
-    bool isDifferentDay = lastSaveDateTime.day != now.day ||
-        lastSaveDateTime.month != now.month ||
-        lastSaveDateTime.year != now.year;
-    if (isDifferentDay) {
-      setMealsFalse();
-    }
-  }
-
-  void setMealsFalse() {
-    for (var meal in Meals.values) {
-      prefs?.setBool(meal.label, false);
-      _checkedStates[meal] = false;
-    }
-    //notifyListeners();
+    notifyListeners();
   }
 }

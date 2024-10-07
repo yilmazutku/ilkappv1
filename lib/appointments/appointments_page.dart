@@ -1,14 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../commons/logger.dart';
+import '../commons/userclass.dart';
 import '../managers/appointment_manager.dart';
 import '../commons/common.dart';
 
-
-final auth = FirebaseAuth.instance;
 final Logger logger = Logger.forClass(AppointmentsPage);
 
 class AppointmentsPage extends StatelessWidget {
@@ -18,7 +18,7 @@ class AppointmentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final appointmentManager = Provider.of<AppointmentManager>(context);
     final screenWidth = MediaQuery.of(context).size.width; // Get screen width
-    logger.info('Building BookingPage...');
+    logger.info('Building AppointmentsPage...');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Book Appointment')),
@@ -75,8 +75,8 @@ class AppointmentsPage extends StatelessWidget {
                               label: Text(time.format(context)),
                               selected: selectedTime == time,
                               onSelected: (bool selected) {
-                                appointmentManager
-                                    .setSelectedTime(selected ? time : null);
+                                appointmentManager.setSelectedTime(
+                                    selected ? time : null);
                               },
                             );
                           },
@@ -92,26 +92,43 @@ class AppointmentsPage extends StatelessWidget {
               const SizedBox(height: 16),
               Center(
                 child: SizedBox(
-                  width: screenWidth * 0.35, // 50% of the screen width
+                  width: screenWidth * 0.35, // 35% of the screen width
                   child: ElevatedButton(
                     onPressed: () async {
                       try {
-                        await appointmentManager.bookAppointment(Appointment(
-                          id: FirebaseAuth.instance.currentUser!.uid,
-                          name:
-                          FirebaseAuth.instance.currentUser!.displayName ??
-                              'nullDisplayName',
-                          meetingType: appointmentManager
-                              .meetingTypeNotifier.value, // Use the enum
-                          dateTime: DateTime(
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          logger.err('User not authenticated.');
+                          return;
+                        }
+                        final userId = user.uid;
+                        final appointmentId = FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .collection('appointments')
+                            .doc()
+                            .id;
+
+                        AppointmentModel appointment = AppointmentModel(
+                          appointmentId: appointmentId,
+                          userId: userId,
+                          meetingType:
+                          appointmentManager.meetingTypeNotifier.value,
+                          appointmentDateTime: DateTime(
                             appointmentManager.selectedDate.year,
                             appointmentManager.selectedDate.month,
                             appointmentManager.selectedDate.day,
-                            appointmentManager.selectedTimeNotifier.value!.hour,
+                            appointmentManager
+                                .selectedTimeNotifier.value!.hour,
                             appointmentManager
                                 .selectedTimeNotifier.value!.minute,
                           ),
-                        ));
+                          status: 'scheduled',
+                          createdAt: DateTime.now(),
+                        );
+
+                        await appointmentManager.bookAppointment(appointment);
+
                         if (context.mounted) {
                           showDialog(
                             context: context,
@@ -128,7 +145,7 @@ class AppointmentsPage extends StatelessWidget {
                                     },
                                     child: const Text(
                                       "Tamam",
-                                      selectionColor: Colors.blue,
+                                      style: TextStyle(color: Colors.blue),
                                     ),
                                   ),
                                 ],
@@ -138,7 +155,7 @@ class AppointmentsPage extends StatelessWidget {
                         }
                       } catch (e) {
                         logger.err(
-                            'an error occurred while making appointment= {}',
+                            'An error occurred while making appointment: {}',
                             [e]);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -159,7 +176,7 @@ class AppointmentsPage extends StatelessWidget {
                 'Randevularım',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              FutureBuilder<List<Appointment>>(
+              FutureBuilder<List<AppointmentModel>>(
                 future: appointmentManager.fetchCurrentUserAppointments(
                     FirebaseAuth.instance.currentUser!.uid),
                 builder: (context, snapshot) {
@@ -179,15 +196,17 @@ class AppointmentsPage extends StatelessWidget {
                           title: Text(
                               "Görüşme: ${appointment.meetingType.label}"),
                           subtitle: Text(
-                              "Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.dateTime)}"),
+                              "Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}"),
                           trailing: IconButton(
-                            icon: const Icon(Icons.cancel, color: Colors.red),
+                            icon:
+                            const Icon(Icons.cancel, color: Colors.red),
                             onPressed: () async {
                               bool? confirmCancel = await showDialog<bool>(
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: const Text("Randevuyu İptal Et"),
+                                    title:
+                                    const Text("Randevuyu İptal Et"),
                                     content: const Text(
                                         "Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
                                     actions: [
@@ -210,8 +229,9 @@ class AppointmentsPage extends StatelessWidget {
 
                               if (confirmCancel == true) {
                                 try {
-                                  await appointmentManager
-                                      .cancelAppointment(appointment.id);
+                                  await appointmentManager.cancelAppointment(
+                                      appointment.userId,
+                                      appointment.appointmentId);
                                   if (context.mounted) {
                                     showDialog(
                                       context: context,
@@ -235,7 +255,7 @@ class AppointmentsPage extends StatelessWidget {
                                   }
                                 } catch (e) {
                                   logger.err(
-                                      'an error occurred while canceling appointment= {}',
+                                      'An error occurred while canceling appointment: {}',
                                       [e]);
                                   if (context.mounted) {
                                     showDialog(
@@ -243,7 +263,8 @@ class AppointmentsPage extends StatelessWidget {
                                       builder: (BuildContext context) {
                                         return AlertDialog(
                                           title: const Text("Hata"),
-                                          content: Text("Hata: ${e.toString()}"),
+                                          content:
+                                          Text("Hata: ${e.toString()}"),
                                           actions: [
                                             TextButton(
                                               onPressed: () {
@@ -276,26 +297,13 @@ class AppointmentsPage extends StatelessWidget {
     );
   }
 }
-/*
-  Here's a summary of how this setup works:
-
-Dropdown for Service Type: Allows the user to select the type of meeting (e.g., online or face-to-face) from a dropdown list.
-
-Date Picker: Lets the user pick a date for the appointment. Upon selecting a date, it updates the selectedDate in the AppointmentManager, which, in turn, can trigger fetching of available time slots for that date.
-
-FutureBuilder for Time Slots: Utilizes a FutureBuilder to asynchronously fetch and display available time slots based on the selected date. It shows a loading indicator while fetching and provides options for the user to select a time slot.
-
-Booking Button: Upon clicking, it validates the input fields, creates a new Appointment object with the selected details, and calls bookAppointment on the AppointmentManager to save the appointment. If successful, it displays a confirmation message.
-
-This architecture helps to keep your UI code clean and maintainable, facilitating easy updates or changes to the state management logic without requiring significant changes to your UI code.
-   */
-
 class ServiceTypeDropdown extends StatelessWidget {
   const ServiceTypeDropdown({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final appointmentManager = Provider.of<AppointmentManager>(context);
+    final appointmentManager =
+    Provider.of<AppointmentManager>(context, listen: false);
 
     return ValueListenableBuilder<MeetingType>(
       valueListenable: appointmentManager.meetingTypeNotifier,
@@ -305,7 +313,8 @@ class ServiceTypeDropdown extends StatelessWidget {
           onChanged: (MeetingType? newValue) {
             appointmentManager.setMeetingType(newValue);
           },
-          items: MeetingType.values.map<DropdownMenuItem<MeetingType>>((MeetingType type) {
+          items: MeetingType.values
+              .map<DropdownMenuItem<MeetingType>>((MeetingType type) {
             return DropdownMenuItem<MeetingType>(
               value: type,
               child: Text(type.label),

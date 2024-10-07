@@ -3,137 +3,70 @@ import 'package:flutter/material.dart';
 
 
 import '../commons/common.dart';
+import '../commons/userclass.dart';
 import 'admin_user_images_page.dart';
 //TODO bir sayfada tum fotograflari gormek istiyor.
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'admin_user_images_page.dart';
+
 class AdminImages extends StatefulWidget {
   const AdminImages({super.key});
 
   @override
-  State<AdminImages> createState() {
-    return _AdminImagesState();
-  }
+  State<AdminImages> createState() => _AdminImagesState();
 }
 
 class _AdminImagesState extends State<AdminImages> {
-  List<String> newImageUrls = [];
-  List<String> folders = [];
-  ListView? listview;
-  DateFilter selectedDateFilter =
-      DateFilter.last30Days; // default filter option
-  String currentFolder = '';
+  List<UserModel> users = [];
+  bool isLoading = true;
 
-  void updateDateFilter(DateFilter filter) {
-    setState(() {
-      selectedDateFilter = filter;
-    });
-  }
-
-  // TODO: Add state and methods to fetch and display user images
   @override
-  initState() {
+  void initState() {
     super.initState();
+    fetchUsers();
   }
 
-  Future<List<String>> fetchUserFolderNames() async {
-    print('Fetching UserFolders...');
-    final ref = FirebaseStorage.instance.ref('users');
-    final ListResult result = await ref.listAll();
-    List<String> folderNames =
-        result.prefixes.map((folderRef) => folderRef.name).toList();
-    print('Fetching UserFolderNames  complete.');
-    return folderNames;
+  Future<void> fetchUsers() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').get();
+      setState(() {
+        users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      // Handle error
+      print('Error fetching users: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Panel'),
+        title: const Text('Admin Panel - Users'),
       ),
-      // body: listview,
-
-      body: FutureBuilder<List<String>>(
-          future: fetchUserFolderNames(),
-          builder: (context, snapshot) {
-            // Check the state of the snapshot
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              // If there's an error loading the data, show an error message
-              return const Center(child: Text("Error loading user folders"));
-            }
-            folders.addAll(snapshot.data!);
-            return ListView(
-                children: folders
-                    .map((folderName) => ListTile(
-                          title: Text(folderName),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => UserImagesPage(
-                                  folderName: folderName,
-                                  // selectedDateFilter: selectedDateFilter,
-                                ),
-                              ),
-                            );
-                          },
-                        ))
-                    .toList());
-          }),
-
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () {
-      //     fetchUserFolderNames();
-      //   },
-      //   child: const Icon(Icons.refresh),
-      // ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+        children: users.map((user) {
+          return ListTile(
+            title: Text(user.name),
+            subtitle: Text(user.email),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => UserImagesPage(userId: user.userId),
+                ),
+              );
+            },
+          );
+        }).toList(),
+      ),
     );
   }
 }
-// import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import 'admin_user_images_page.dart';
-// import 'package:untitled/managers/admin_images_manager.dart';
-// // Uses the provider to fetch and display the initial list of user folders.
-// // Navigates to UserImagesPage on folder tap.
-// class AdminImages extends StatelessWidget {
-//   const AdminImages({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Admin Panel'),
-//       ),
-//       body: Consumer<AdminImagesProvider>(
-//         builder: (context, provider, child) {
-//           return FutureBuilder(
-//             future: provider.fetchUserFolderNames(),
-//             builder: (context, snapshot) {
-//               if (snapshot.connectionState == ConnectionState.waiting) {
-//                 return const Center(child: CircularProgressIndicator());
-//               } else if (snapshot.hasError) {
-//                 return const Center(child: Text("Error loading user folders"));
-//               }
-//               return ListView(
-//                 children: provider.folders
-//                     .map((folderName) => ListTile(
-//                   title: Text(folderName),
-//                   onTap: () {
-//                     provider.navigateToFolder(folderName);
-//                     Navigator.of(context).push(
-//                       MaterialPageRoute(
-//                         builder: (context) => UserImagesPage(),
-//                       ),
-//                     );
-//                   },
-//                 ))
-//                     .toList(),
-//               );
-//             },
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
+
