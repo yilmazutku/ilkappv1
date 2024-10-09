@@ -1,15 +1,10 @@
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-
-
-import '../commons/common.dart';
-import '../commons/userclass.dart';
-import 'admin_user_images_page.dart';
-//TODO bir sayfada tum fotograflari gormek istiyor.
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../commons/logger.dart';
+import '../commons/userclass.dart';
 import 'admin_user_images_page.dart';
-
+import 'customer_sum.dart';
+final Logger logger = Logger.forClass(AdminImages);
 class AdminImages extends StatefulWidget {
   const AdminImages({super.key});
 
@@ -36,7 +31,7 @@ class _AdminImagesState extends State<AdminImages> {
       });
     } catch (e) {
       // Handle error
-      print('Error fetching users: $e');
+      logger.err('Error fetching users: {}',[e]);
       setState(() {
         isLoading = false;
       });
@@ -59,7 +54,7 @@ class _AdminImagesState extends State<AdminImages> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => UserImagesPage(userId: user.userId),
+                  builder: (context) => CustomerSummaryPage(userId: user.userId),
                 ),
               );
             },
@@ -69,4 +64,3 @@ class _AdminImagesState extends State<AdminImages> {
     );
   }
 }
-

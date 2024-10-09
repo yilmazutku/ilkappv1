@@ -62,6 +62,7 @@ class AppointmentsPage extends StatelessWidget {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const CircularProgressIndicator();
                   } else if (snapshot.hasError) {
+                    logger.err('snaphot error:{}',[snapshot.error!]);
                     return Text("Error: ${snapshot.error}");
                   } else if (snapshot.hasData) {
                     var availableTimes = snapshot.data!;

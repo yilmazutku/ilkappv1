@@ -7,7 +7,6 @@ import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/pages/login_page.dart';
 
 import 'commons/logger.dart';
-import 'managers/admin_images_manager.dart';
 import 'managers/appointment_manager.dart';
 import 'managers/login_manager.dart';
 import 'managers/meal_state_and_upload_manager.dart';
@@ -62,7 +61,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => MealStateManager()),
         ChangeNotifierProvider(create: (context) => AppointmentManager()),
         ChangeNotifierProvider(create: (_) => LoginProvider()),
-        ChangeNotifierProvider(create: (_) => AdminImagesProvider()),
+        //ChangeNotifierProvider(create: (_) => AdminImagesProvider()),
       ],
       child: MaterialApp(
         theme: ThemeData(

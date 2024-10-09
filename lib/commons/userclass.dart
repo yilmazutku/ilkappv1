@@ -2,7 +2,45 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'common.dart';
 
+class TestModel {
+  final String testId;
+  final String userId;
+  final String testName;
+  final String? testDescription;
+  final DateTime testDate;
+  final String? testFileUrl; // URL to the uploaded test file (image, PDF)
 
+  TestModel({
+    required this.testId,
+    required this.userId,
+    required this.testName,
+    this.testDescription,
+    required this.testDate,
+    this.testFileUrl,
+  });
+
+  factory TestModel.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return TestModel(
+      testId: doc.id,
+      userId: data['userId'],
+      testName: data['testName'],
+      testDescription: data['testDescription'],
+      testDate: (data['testDate'] as Timestamp).toDate(),
+      testFileUrl: data['testFileUrl'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'testName': testName,
+      'testDescription': testDescription,
+      'testDate': Timestamp.fromDate(testDate),
+      'testFileUrl': testFileUrl,
+    };
+  }
+}
 class MeasurementModel {
   final String measurementId;
   final String userId;
@@ -107,27 +145,26 @@ class DietModel {
     };
   }
 }
+
 class PaymentModel {
   final String paymentId;
   final String userId;
   final double amount;
-  final String currency;
-  final DateTime paymentDate;
-  final String paymentMethod;
-  final String status; // 'completed', 'pending', 'failed'
-  final String? notes; // Optional
-  final DateTime createdAt;
+  final DateTime paymentDate; // Date when the payment was made
+  final String status;
+  final String? dekontUrl;
+  final DateTime? dueDate; // For future payments
+  final List<int>? notificationTimes; // New field for notification times in hours
 
   PaymentModel({
     required this.paymentId,
     required this.userId,
     required this.amount,
-    required this.currency,
     required this.paymentDate,
-    required this.paymentMethod,
     required this.status,
-    this.notes,
-    required this.createdAt,
+    this.dekontUrl,
+    this.dueDate,
+    this.notificationTimes,
   });
 
   factory PaymentModel.fromDocument(DocumentSnapshot doc) {
@@ -135,13 +172,16 @@ class PaymentModel {
     return PaymentModel(
       paymentId: doc.id,
       userId: data['userId'],
-      amount: data['amount'],
-      currency: data['currency'],
+      amount: data['amount'].toDouble(),
       paymentDate: (data['paymentDate'] as Timestamp).toDate(),
-      paymentMethod: data['paymentMethod'],
       status: data['status'],
-      notes: data['notes'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      dekontUrl: data['dekontUrl'],
+      dueDate: data['dueDate'] != null
+          ? (data['dueDate'] as Timestamp).toDate()
+          : null,
+      notificationTimes: data['notificationTimes'] != null
+          ? List<int>.from(data['notificationTimes'])
+          : null,
     );
   }
 
@@ -149,15 +189,16 @@ class PaymentModel {
     return {
       'userId': userId,
       'amount': amount,
-      'currency': currency,
       'paymentDate': Timestamp.fromDate(paymentDate),
-      'paymentMethod': paymentMethod,
       'status': status,
-      'notes': notes,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'dekontUrl': dekontUrl,
+      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
+      'notificationTimes': notificationTimes,
     };
   }
 }
+
+
 
 class AppointmentModel {
   final String appointmentId;

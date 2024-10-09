@@ -1,15 +1,8 @@
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:untitled/managers/admin_images_manager.dart';
-
-import '../commons/common.dart';
-
-/// Admin Images Page kullanır, bir kullanıcının fotoğraflarını görmek için klasör halinde.
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../commons/logger.dart';
 import '../commons/userclass.dart';
+final Logger logger = Logger.forClass(UserImagesPage);
 
 class UserImagesPage extends StatefulWidget {
   final String userId;
@@ -44,7 +37,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching user meals: $e');
+      logger.err('Error fetching user meals:{}',[e]);
       setState(() {
         isLoading = false;
       });
@@ -62,7 +55,7 @@ class _UserImagesPageState extends State<UserImagesPage> {
         return UserModel.fromDocument(doc);
       }
     } catch (e) {
-      print('Error fetching user details: $e');
+      logger.err('Error fetching user details:{}',[e]);
     }
     return null;
   }
