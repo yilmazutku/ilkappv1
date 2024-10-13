@@ -1,11 +1,12 @@
 import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../commons/common.dart';
 import '../commons/logger.dart';
+import '../commons/userclass.dart';
 
 class UploadResult {
   final String? downloadUrl;

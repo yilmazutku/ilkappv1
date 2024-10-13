@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../commons/common.dart';
+
 import '../commons/logger.dart';
+import '../commons/userclass.dart';
 
 final Logger logger = Logger.forClass(MealStateManager);
 

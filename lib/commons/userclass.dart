@@ -1,7 +1,43 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'common.dart';
+enum DateFilter { today, last3Days, last7Days, last30Days }
 
+enum ViewType { list, grid }
+enum ActiveStatus {active,completed}
+enum MeetingType { online('Online'), f2f('Yüz yüze');
+  const MeetingType(this.label);
+  final String label;
+
+  static MeetingType fromLabel(String label) {
+    return MeetingType.values.firstWhere((e) => e.label == label);
+  }
+
+}
+
+enum Meals {
+  br('Kahvaltı', 'sabah/', '09:00'),
+  firstmid('sabah ara öğün', 'ilkara/', '10:30'),
+  lunch('Öğle', 'oglen/', '12:30'),
+  secondmid('Öğle Ara Öğün', 'ikinciara/', '16:00'),
+  dinner('Akşam', 'aksam/', '19:00'),
+  thirdmid('Gece Ara Öğün', 'ucuncuara/', '21:00');
+
+  const Meals(this.label, this.url, this.defaultTime);
+
+  final String label;
+  final String url;
+  final String defaultTime;
+
+  // Method to get enum from label
+  static Meals fromLabel(String label) {
+    return Meals.values.firstWhere((e) => e.label == label);
+  }
+
+  static Meals fromName(String name) {
+    return Meals.values.firstWhere((e) => e.name == name);
+  }
+
+}
 class TestModel {
   final String testId;
   final String userId;
@@ -145,20 +181,25 @@ class DietModel {
     };
   }
 }
+// payment_model.dart
+
+
 
 class PaymentModel {
   final String paymentId;
   final String userId;
+  final String subscriptionId; // Added subscriptionId
   final double amount;
-  final DateTime paymentDate; // Date when the payment was made
+  final DateTime paymentDate;
   final String status;
   final String? dekontUrl;
-  final DateTime? dueDate; // For future payments
-  final List<int>? notificationTimes; // New field for notification times in hours
+  final DateTime? dueDate;
+  final List<int>? notificationTimes;
 
   PaymentModel({
     required this.paymentId,
     required this.userId,
+    required this.subscriptionId, // Added subscriptionId
     required this.amount,
     required this.paymentDate,
     required this.status,
@@ -172,6 +213,7 @@ class PaymentModel {
     return PaymentModel(
       paymentId: doc.id,
       userId: data['userId'],
+      subscriptionId: data['subscriptionId'], // Fetch subscriptionId
       amount: data['amount'].toDouble(),
       paymentDate: (data['paymentDate'] as Timestamp).toDate(),
       status: data['status'],
@@ -188,6 +230,7 @@ class PaymentModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
+      'subscriptionId': subscriptionId, // Include subscriptionId
       'amount': amount,
       'paymentDate': Timestamp.fromDate(paymentDate),
       'status': status,
@@ -198,21 +241,101 @@ class PaymentModel {
   }
 }
 
+// subscription_model.dart
+
+
+class SubscriptionModel {
+  final String subscriptionId;
+  final String userId;
+  final String packageName; // Added packageName
+  final DateTime startDate;
+  DateTime endDate;
+  final int totalMeetings;
+  int meetingsCompleted;
+  int meetingsRemaining;
+  int meetingsBurned;
+  int postponementsUsed;
+  final int allowedPostponementsPerMonth;
+  final double totalAmount;
+  double amountPaid;
+  String status; // 'active', 'completed', 'canceled'
+
+  SubscriptionModel({
+    required this.subscriptionId,
+    required this.userId,
+    required this.packageName, // Added packageName
+    required this.startDate,
+    required this.endDate,
+    required this.totalMeetings,
+    this.meetingsCompleted = 0,
+    required this.meetingsRemaining,
+    this.meetingsBurned = 0,
+    this.postponementsUsed = 0,
+    this.allowedPostponementsPerMonth = 1,
+    required this.totalAmount,
+    this.amountPaid = 0.0,
+    this.status = 'active',
+  });
+
+  factory SubscriptionModel.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return SubscriptionModel(
+      subscriptionId: doc.id,
+      userId: data['userId'],
+      packageName: data['packageName'], // Fetch packageName
+      startDate: (data['startDate'] as Timestamp).toDate(),
+      endDate: (data['endDate'] as Timestamp).toDate(),
+      totalMeetings: data['totalMeetings'],
+      meetingsCompleted: data['meetingsCompleted'] ?? 0,
+      meetingsRemaining: data['meetingsRemaining'],
+      meetingsBurned: data['meetingsBurned'] ?? 0,
+      postponementsUsed: data['postponementsUsed'] ?? 0,
+      allowedPostponementsPerMonth: data['allowedPostponementsPerMonth'],
+      totalAmount: data['totalAmount'].toDouble(),
+      amountPaid: data['amountPaid'].toDouble(),
+      status: data['status'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'packageName': packageName, // Include packageName
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': Timestamp.fromDate(endDate),
+      'totalMeetings': totalMeetings,
+      'meetingsCompleted': meetingsCompleted,
+      'meetingsRemaining': meetingsRemaining,
+      'meetingsBurned': meetingsBurned,
+      'postponementsUsed': postponementsUsed,
+      'allowedPostponementsPerMonth': allowedPostponementsPerMonth,
+      'totalAmount': totalAmount,
+      'amountPaid': amountPaid,
+      'status': status,
+    };
+  }
+}
+
+
+
+// appointment_model.dart
 
 
 class AppointmentModel {
   final String appointmentId;
   final String userId;
+  final String subscriptionId; // Added subscriptionId
   final MeetingType meetingType;
   final DateTime appointmentDateTime;
-  final String status; // 'scheduled', 'completed', 'canceled'
-  final String? notes; // Optional
+  final String status; // 'scheduled', 'completed', 'postponed', 'burned'
+  final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   AppointmentModel({
     required this.appointmentId,
     required this.userId,
+    required this.subscriptionId,
     required this.meetingType,
     required this.appointmentDateTime,
     required this.status,
@@ -226,6 +349,7 @@ class AppointmentModel {
     return AppointmentModel(
       appointmentId: doc.id,
       userId: data['userId'],
+      subscriptionId: data['subscriptionId'], // Fetch subscriptionId
       meetingType: MeetingType.fromLabel(data['meetingType']),
       appointmentDateTime: (data['appointmentDateTime'] as Timestamp).toDate(),
       status: data['status'],
@@ -240,16 +364,17 @@ class AppointmentModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
+      'subscriptionId': subscriptionId, // Include subscriptionId
       'meetingType': meetingType.label,
       'appointmentDateTime': Timestamp.fromDate(appointmentDateTime),
       'status': status,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt':
-      updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
   }
 }
+
 class MealModel {
   final String mealId;
   final Meals mealType;

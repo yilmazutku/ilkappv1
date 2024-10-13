@@ -1,19 +1,24 @@
+// customer_summary_page.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../commons/logger.dart';
 import '../commons/userclass.dart';
 import '../dialogs/add_appointment_dialog.dart';
+import '../dialogs/add_payment_dialog.dart';
+import '../dialogs/add_sub_dialog.dart';
 import '../dialogs/add_test_dialog.dart';
-import '../dialogs/payment_dialog.dart';
+import '../dialogs/dekont_viewer_page.dart';
+import '../dialogs/edit_payment_dialog.dart';
 
-
+//TODO images ve tests de package göre gösterilebilir, ama all seçenmeği de eklenmelidir.
 final Logger logger = Logger.forClass(CustomerSummaryPage);
 
 class CustomerSummaryPage extends StatefulWidget {
   final String userId;
 
-  const CustomerSummaryPage({Key? key, required this.userId}) : super(key: key);
+  const CustomerSummaryPage({super.key, required this.userId});
 
   @override
   _CustomerSummaryPageState createState() => _CustomerSummaryPageState();
@@ -27,7 +32,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   List<AppointmentModel> appointments = [];
   List<PaymentModel> payments = [];
   List<MealModel> meals = [];
+  List<TestModel> tests = [];
   bool isLoading = true;
+
+  List<SubscriptionModel> subscriptions = [];
+  SubscriptionModel? selectedSubscription;
 
   @override
   void initState() {
@@ -42,11 +51,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     });
     await Future.wait([
       fetchUserDetails(),
+      fetchUserSubscriptions(),
       fetchUserAppointments(),
       fetchUserPayments(),
       fetchUserMeals(),
-      fetchUserTests(), // Fetch tests data
-
+      fetchUserTests(),
     ]);
     setState(() {
       isLoading = false;
@@ -68,33 +77,60 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     }
   }
 
-  Future<void> fetchUserAppointments() async {
+  Future<void> fetchUserSubscriptions() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
-          .collection('appointments')
-          .orderBy('appointmentDateTime', descending: true)
+          .collection('subscriptions')
+          .orderBy('startDate', descending: true)
           .get();
 
-      appointments =
-          snapshot.docs.map((doc) => AppointmentModel.fromDocument(doc)).toList();
+      subscriptions = snapshot.docs.map((doc) => SubscriptionModel.fromDocument(doc)).toList();
+
+      if (subscriptions.isNotEmpty) {
+        selectedSubscription = subscriptions.first;
+      }
+    } catch (e) {
+      logger.err('Error fetching user subscriptions: {}', [e]);
+    }
+  }
+
+// Update fetchUserAppointments and fetchUserPayments to use selectedSubscription
+  Future<void> fetchUserAppointments() async {
+    try {
+      if (selectedSubscription != null) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .collection('appointments')
+            .where('subscriptionId', isEqualTo: selectedSubscription!.subscriptionId)
+            .orderBy('appointmentDateTime', descending: true)
+            .get();
+
+        appointments = snapshot.docs.map((doc) => AppointmentModel.fromDocument(doc)).toList();
+      } else {
+        appointments = [];
+      }
     } catch (e) {
       logger.err('Error fetching user appointments: {}', [e]);
     }
   }
-
   Future<void> fetchUserPayments() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('payments')
-          .orderBy('paymentDate', descending: true)
-          .get();
+      if (selectedSubscription != null) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .collection('payments')
+            .where('subscriptionId', isEqualTo: selectedSubscription!.subscriptionId)
+            .orderBy('paymentDate', descending: true)
+            .get();
 
-      payments =
-          snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
+        payments = snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
+      } else {
+        payments = [];
+      }
     } catch (e) {
       logger.err('Error fetching user payments: {}', [e]);
     }
@@ -115,7 +151,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     }
   }
 
-// Fetch test results
   Future<void> fetchUserTests() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -132,7 +167,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     String title = 'Customer Summary';
@@ -143,6 +177,34 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        actions: [
+          if (subscriptions.isNotEmpty)
+            DropdownButton<SubscriptionModel>(
+              value: selectedSubscription,
+              onChanged: (SubscriptionModel? newValue) {
+                setState(() {
+                  selectedSubscription = newValue;
+                  // Reload data associated with the selected subscription
+                  appointments = [];
+                  payments = [];
+                  fetchUserAppointments();
+                  fetchUserPayments();
+                });
+              },
+              items: subscriptions.map<DropdownMenuItem<SubscriptionModel>>((SubscriptionModel sub) {
+                return DropdownMenuItem<SubscriptionModel>(
+                  value: sub,
+                  child: Text('${sub.packageName} (${sub.startDate.toLocal().toString().split(' ')[0]})'),
+                );
+              }).toList(),
+            ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              _showAddSubscriptionDialog();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -150,7 +212,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             Tab(text: 'Appointments'),
             Tab(text: 'Payments'),
             Tab(text: 'Images'),
-            Tab(text: 'Tests'), // New tab
+            Tab(text: 'Tests'),
           ],
         ),
       ),
@@ -163,19 +225,33 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           buildAppointmentsTab(),
           buildPaymentsTab(),
           buildImagesTab(),
-          buildTestsTab(), // New method for Tests tab
-
+          buildTestsTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _onAddButtonPressed(),
-        label: const Text('Ekle'),
+        label: const Text('Add'),
         icon: const Icon(Icons.add),
       ),
     );
   }
-  List<TestModel> tests = [];
 
+  void _showAddSubscriptionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddSubscriptionDialog(
+          userId: widget.userId,
+          onSubscriptionAdded: () async {
+            await fetchUserSubscriptions();
+            if (mounted) {
+              setState(() {});
+            }
+          },
+        );
+      },
+    );
+  }
 
   void _onAddButtonPressed() {
     // Determine which tab is currently selected and show the corresponding add dialog or page
@@ -186,10 +262,22 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         break;
       case 1:
       // Appointments tab
+        if (selectedSubscription == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a subscription package.')),
+          );
+          return;
+        }
         _showAddAppointmentDialog();
         break;
       case 2:
       // Payments tab
+        if (selectedSubscription == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a subscription package.')),
+          );
+          return;
+        }
         _showAddPaymentDialog();
         break;
       case 3:
@@ -204,6 +292,151 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         break;
     }
   }
+
+  Widget buildDetailsTab() {
+    if (user == null) {
+      return const Center(child: Text('No user details available.'));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView(
+        children: [
+          ListTile(
+            title: const Text('Name'),
+            subtitle: Text(user!.name),
+          ),
+          ListTile(
+            title: const Text('Email'),
+            subtitle: Text(user!.email),
+          ),
+          // Add more user details as needed
+        ],
+      ),
+    );
+  }
+
+  Widget buildAppointmentsTab() {
+    if (appointments.isEmpty) {
+      return const Center(child: Text('No appointments found.'));
+    }
+
+    return ListView.builder(
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        AppointmentModel appointment = appointments[index];
+        return ListTile(
+          title: Text('Date: ${appointment.appointmentDateTime.toLocal()}'),
+          subtitle: Text('Type: ${appointment.meetingType.label}'),
+          trailing: Text('Status: ${appointment.status}'),
+        );
+      },
+    );
+  }
+
+  Widget buildPaymentsTab() {
+    if (selectedSubscription == null) {
+      return const Center(child: Text('No active subscription found.'));
+    }
+
+    final amountRemaining =
+        selectedSubscription!.totalAmount - selectedSubscription!.amountPaid;
+
+    return Column(
+      children: [
+        if (amountRemaining > 0)
+          Container(
+            color: Colors.redAccent,
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Remaining Amount to be Paid: \$${amountRemaining.toStringAsFixed(2)}',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        Expanded(
+          child: (payments.isEmpty)
+              ? const Center(child: Text('No payments found.'))
+              : ListView.builder(
+            itemCount: payments.length,
+            itemBuilder: (context, index) {
+              PaymentModel payment = payments[index];
+
+              String paymentDateText = payment.paymentDate != null
+                  ? payment.paymentDate.toLocal().toString().split(' ')[0]
+                  : '-';
+
+              String dueDateText = payment.dueDate != null
+                  ? payment.dueDate!.toLocal().toString().split(' ')[0]
+                  : '-';
+
+              String statusText =
+              payment.status.isNotEmpty ? payment.status : '-';
+
+              String amountText =
+              payment.amount != null ? payment.amount.toString() : '-';
+
+              return ListTile(
+                title: Text('Amount: $amountText'),
+                subtitle:
+                Text('Payment Date: $paymentDateText\nDue Date: $dueDateText'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Status: $statusText'),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        _showEditPaymentDialog(payment);
+                      },
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  if (payment.dekontUrl != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DekontViewerPage(
+                          dekontUrl: payment.dekontUrl!,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildImagesTab() {
+    if (meals.isEmpty) {
+      return const Center(child: Text('No images found.'));
+    }
+
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4.0,
+        mainAxisSpacing: 4.0,
+      ),
+      itemCount: meals.length,
+      itemBuilder: (context, index) {
+        MealModel meal = meals[index];
+        return InkWell(
+          onTap: () {
+            showFullImage(context, meal.imageUrl, meal);
+          },
+          child: Image.network(
+            meal.imageUrl,
+            fit: BoxFit.cover,
+          ),
+        );
+      },
+    );
+  }
+
   Widget buildTestsTab() {
     if (tests.isEmpty) {
       return const Center(child: Text('No tests found.'));
@@ -215,10 +448,64 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         TestModel test = tests[index];
         return ListTile(
           title: Text(test.testName),
-          subtitle: Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
+          subtitle:
+          Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
           onTap: () {
             if (test.testFileUrl != null) {
               showTestFile(context, test);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddAppointmentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddAppointmentDialog(
+          userId: widget.userId,
+          onAppointmentAdded: () async {
+            await fetchUserAppointments();
+            if (mounted) {
+              setState(() {});
+            }
+          },
+          subscription: selectedSubscription!,
+        );
+      },
+    );
+  }
+
+  void _showAddPaymentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddPaymentDialog(
+          userId: widget.userId,
+          onPaymentAdded: () async {
+            await fetchUserPayments();
+            if (mounted) {
+              setState(() {});
+            }
+          },
+          subscription: selectedSubscription!,
+        );
+      },
+    );
+  }
+
+  void _showEditPaymentDialog(PaymentModel payment) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return EditPaymentDialog(
+          payment: payment,
+          onPaymentUpdated: () async {
+            await fetchUserPayments();
+            if (mounted) {
+              setState(() {}); // Refresh the payments tab
             }
           },
         );
@@ -234,8 +521,35 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           userId: widget.userId,
           onTestAdded: () async {
             await fetchUserTests();
-            setState(() {}); // Refresh the tests tab
+            if (mounted) {
+              setState(() {}); // Refresh the tests tab
+            }
           },
+        );
+      },
+    );
+  }
+
+  void showFullImage(BuildContext context, String imageUrl, MealModel meal) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.network(imageUrl),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Meal Type: ${meal.mealType.label}\n'
+                      'Timestamp: ${meal.timestamp}\n'
+                      'Description: ${meal.description ?? 'N/A'}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -273,221 +587,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         );
       }
     }
-  }
-  // Build methods for viewing data (same as before)
-  Widget buildDetailsTab() {
-    // ... (same as before)
-    if (user == null) {
-      return const Center(child: Text('No user details available.'));
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
-        children: [
-          ListTile(
-            title: const Text('Name'),
-            subtitle: Text(user!.name),
-          ),
-          ListTile(
-            title: const Text('Email'),
-            subtitle: Text(user!.email),
-          ),
-          // Add more user details as needed
-        ],
-      ),
-    );
-  }
-
-  Widget buildAppointmentsTab() {
-    // ... (same as before)
-    if (appointments.isEmpty) {
-      return const Center(child: Text('No appointments found.'));
-    }
-
-    return ListView.builder(
-      itemCount: appointments.length,
-      itemBuilder: (context, index) {
-        AppointmentModel appointment = appointments[index];
-        return ListTile(
-          title:
-          Text('Date: ${appointment.appointmentDateTime.toLocal().toString()}'),
-          subtitle: Text('Type: ${appointment.meetingType.label}'),
-          trailing: Text('Status: ${appointment.status}'),
-        );
-      },
-    );
-  }
-
-  Widget buildPaymentsTab() {
-    if (payments.isEmpty) {
-      return const Center(child: Text('No payments found.'));
-    }
-
-    return ListView.builder(
-      itemCount: payments.length,
-      itemBuilder: (context, index) {
-        PaymentModel payment = payments[index];
-
-        String paymentDateText = payment.paymentDate != null
-            ? payment.paymentDate.toLocal().toString().split(' ')[0]
-            : '-';
-
-        String dueDateText = payment.dueDate != null
-            ? payment.dueDate!.toLocal().toString().split(' ')[0]
-            : '-';
-
-        String statusText = payment.status.isNotEmpty ? payment.status : '-';
-
-        String amountText = payment.amount != null ? payment.amount.toString() : '-';
-
-        return ListTile(
-          title: Text('Amount: $amountText'),
-          subtitle: Text('Payment Date: $paymentDateText\nDue Date: $dueDateText'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Status: $statusText'),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  _showEditPaymentDialog(payment);
-                },
-              ),
-            ],
-          ),
-          onTap: () {
-            if (payment.dekontUrl != null) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => DekontViewerPage(
-                    dekontUrl: payment.dekontUrl!,
-                  ),
-                ),
-              );
-            }
-          },
-        );
-      },
-    );
-  }
-
-
-  void _showEditPaymentDialog(PaymentModel payment) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return EditPaymentDialog(
-          payment: payment,
-          onPaymentUpdated: () async {
-            await fetchUserPayments();
-            setState(() {}); // Refresh the payments tab
-          },
-        );
-      },
-    );
-  }
-
-
-  Widget buildImagesTab() {
-    // ... (same as before)
-    if (meals.isEmpty) {
-      return const Center(child: Text('No images found.'));
-    }
-
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 4.0,
-        mainAxisSpacing: 4.0,
-      ),
-      itemCount: meals.length,
-      itemBuilder: (context, index) {
-        MealModel meal = meals[index];
-        return InkWell(
-          onTap: () {
-            showFullImage(context, meal.imageUrl, meal);
-          },
-          child: Image.network(
-            meal.imageUrl,
-            fit: BoxFit.cover,
-          ),
-        );
-      },
-    );
-  }
-
-  // Implement the add dialogs
-  void _showAddAppointmentDialog() {
-    // Implement the UI and functionality to add an appointment
-    // You can use a dialog or navigate to a new page
-    // For simplicity, let's use a dialog here
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AddAppointmentDialog(
-          userId: widget.userId,
-          onAppointmentAdded: () async {
-            await fetchUserAppointments();
-            setState(() {}); // Refresh the appointments tab
-          },
-        );
-      },
-    );
-  }
-
-  void _showAddPaymentDialog() {
-    // Implement the UI and functionality to add a payment
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AddPaymentDialog(
-          userId: widget.userId,
-          onPaymentAdded: () async {
-            await fetchUserPayments();
-            setState(() {}); // Refresh the payments tab
-          },
-        );
-      },
-    );
-  }
-
-  void showFullImage(BuildContext context, String imageUrl, MealModel meal) {
-    // ... (same as before)
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.network(imageUrl),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  'Meal Type: ${meal.mealType.label}\n'
-                      'Timestamp: ${meal.timestamp}\n'
-                      'Description: ${meal.description ?? 'N/A'}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void showReceiptImage(BuildContext context, String imageUrl) {
-    // ... (same as before)
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Image.network(imageUrl),
-        );
-      },
-    );
   }
 
   @override

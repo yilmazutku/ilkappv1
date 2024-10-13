@@ -1,22 +1,25 @@
+// add_appointment_dialog.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../commons/common.dart';
 import '../commons/logger.dart';
 import '../commons/userclass.dart';
 
 class AddAppointmentDialog extends StatefulWidget {
   final String userId;
   final Function onAppointmentAdded;
+  final SubscriptionModel subscription;
 
   const AddAppointmentDialog({
-    Key? key,
+    super.key,
     required this.userId,
     required this.onAppointmentAdded,
-  }) : super(key: key);
+    required this.subscription,
+  });
 
   @override
-  _AddAppointmentDialogState createState() => _AddAppointmentDialogState();
+   createState() => _AddAppointmentDialogState();
 }
 
 class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
@@ -24,8 +27,9 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  MeetingType _meetingType = MeetingType.online;
+  MeetingType _meetingType = MeetingType.f2f;
   bool _isLoading = false;
+  bool _isPastAppointment = false; // New variable
 
   @override
   Widget build(BuildContext context) {
@@ -34,17 +38,34 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       content: SingleChildScrollView(
         child: ListBody(
           children: [
+            SwitchListTile(
+              title: const Text('Add Past Appointment'),
+              value: _isPastAppointment,
+              onChanged: (value) {
+                setState(() {
+                  _isPastAppointment = value;
+                });
+              },
+            ),
             ListTile(
               title: Text(_selectedDate == null
                   ? 'Select Date'
                   : 'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}'),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
+                DateTime firstDate = _isPastAppointment
+                    ? DateTime.now().subtract(const Duration(days: 30))
+                    : DateTime.now();
+                DateTime initialDate = /*_isPastAppointment
+                    ? DateTime.now().subtract(const Duration(days: 30))
+                    : */DateTime.now();
+                DateTime lastDate = DateTime.now().add(const Duration(days: 365));
+
                 DateTime? pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: _selectedDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  initialDate: _selectedDate ?? initialDate,
+                  firstDate: firstDate,
+                  lastDate: lastDate,
                 );
                 if (pickedDate != null) {
                   setState(() {
@@ -97,7 +118,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : () => _addAppointment(),
+          onPressed: _isLoading ? null : _addAppointment,
           child: _isLoading
               ? const CircularProgressIndicator()
               : const Text('Add Appointment'),
@@ -109,9 +130,11 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
   Future<void> _addAppointment() async {
     if (_selectedDate == null || _selectedTime == null) {
       logger.err('Please select date and time.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select date and time.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select date and time.')),
+        );
+      }
       return;
     }
 
@@ -138,6 +161,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       AppointmentModel appointmentModel = AppointmentModel(
         appointmentId: appointmentDocRef.id,
         userId: widget.userId,
+        subscriptionId: widget.subscription.subscriptionId,
         meetingType: _meetingType,
         appointmentDateTime: appointmentDateTime,
         status: 'scheduled',
@@ -147,8 +171,30 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       await appointmentDocRef.set(appointmentModel.toMap());
       logger.info('Appointment added successfully for user {}', [widget.userId]);
 
+      // Update the subscription's meetingsRemaining and meetingsCompleted
+      if (appointmentDateTime.isBefore(DateTime.now())) {
+        // Past appointment
+        widget.subscription.meetingsCompleted += 1;
+      } else {
+        // Future appointment
+        widget.subscription.meetingsRemaining -= 1;
+      }
+
+      // Update the subscription in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('subscriptions')
+          .doc(widget.subscription.subscriptionId)
+          .update({
+        'meetingsRemaining': widget.subscription.meetingsRemaining,
+        'meetingsCompleted': widget.subscription.meetingsCompleted,
+      });
+
       // Notify parent widget to refresh data
       widget.onAppointmentAdded();
+
+      if (!mounted) return;
 
       setState(() {
         _isLoading = false;
@@ -161,6 +207,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       );
     } catch (e) {
       logger.err('Error adding appointment: {}', [e]);
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

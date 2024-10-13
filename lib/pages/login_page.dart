@@ -18,7 +18,7 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    logger.info('Building LoginPage');
+   // logger.info('Building LoginPage');
 
     return Scaffold(
       appBar: AppBar(

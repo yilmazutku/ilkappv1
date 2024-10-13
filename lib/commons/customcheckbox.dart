@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+import 'package:untitled/commons/userclass.dart';
 
-import '../commons/common.dart';
 
 import '../managers/meal_state_and_upload_manager.dart';
 //TODO bu class sadece meal state için var, bunu generalize edilebilşir hale getirmek gerekebilir ileride.

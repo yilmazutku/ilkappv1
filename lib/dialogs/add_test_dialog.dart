@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -14,13 +13,13 @@ class AddTestDialog extends StatefulWidget {
   final Function onTestAdded;
 
   const AddTestDialog({
-    Key? key,
+    super.key,
     required this.userId,
     required this.onTestAdded,
-  }) : super(key: key);
+  });
 
   @override
-  _AddTestDialogState createState() => _AddTestDialogState();
+  createState() => _AddTestDialogState();
 }
 
 class _AddTestDialogState extends State<AddTestDialog> {
@@ -28,7 +27,8 @@ class _AddTestDialogState extends State<AddTestDialog> {
 
   // Controllers and variables
   final TextEditingController _testNameController = TextEditingController();
-  final TextEditingController _testDescriptionController = TextEditingController();
+  final TextEditingController _testDescriptionController =
+      TextEditingController();
   DateTime? _selectedTestDate;
   File? _testFile;
   final ImagePicker _picker = ImagePicker();
@@ -91,7 +91,9 @@ class _AddTestDialogState extends State<AddTestDialog> {
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : () => _addTest(),
-          child: _isLoading ? const CircularProgressIndicator() : const Text('Add Test'),
+          child: _isLoading
+              ? const CircularProgressIndicator()
+              : const Text('Add Test'),
         ),
       ],
     );
@@ -113,7 +115,9 @@ class _AddTestDialogState extends State<AddTestDialog> {
   }
 
   Future<void> _addTest() async {
-    if (_testNameController.text.isEmpty || _selectedTestDate == null || _testFile == null) {
+    if (_testNameController.text.isEmpty ||
+        _selectedTestDate == null ||
+        _testFile == null) {
       logger.err('Please fill all required fields.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
@@ -150,7 +154,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
 
       // Notify parent widget to refresh data
       widget.onTestAdded();
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -162,6 +166,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
       );
     } catch (e) {
       logger.err('Error adding test: {}', [e]);
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -173,7 +178,8 @@ class _AddTestDialogState extends State<AddTestDialog> {
 
   Future<String> _uploadTestFile() async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${_testFile!.path.split('/').last}';
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${_testFile!.path.split('/').last}';
       final ref = FirebaseStorage.instance
           .ref()
           .child('users/${widget.userId}/tests/$fileName');
