@@ -162,7 +162,7 @@ class AppointmentManager extends ChangeNotifier {
         subscriptionId: subscription.subscriptionId,
         meetingType: _meetingTypeNotifier.value,
         appointmentDateTime: appointmentDateTime,
-        status: 'scheduled',
+        status: MeetingStatus.scheduled,
         createdAt: DateTime.now(),
       );
 

@@ -172,7 +172,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
         allowedPostponementsPerMonth: 1,
         totalAmount: double.parse(_totalAmountController.text),
         amountPaid: 0.0,
-        status: 'active',
+        status: SubActiveStatus.active,
       );
 
       await FirebaseFirestore.instance

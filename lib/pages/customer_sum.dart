@@ -10,6 +10,7 @@ import '../dialogs/add_payment_dialog.dart';
 import '../dialogs/add_sub_dialog.dart';
 import '../dialogs/add_test_dialog.dart';
 import '../dialogs/dekont_viewer_page.dart';
+import '../dialogs/edit_appointment_dialog.dart';
 import '../dialogs/edit_payment_dialog.dart';
 
 //TODO images ve tests de package göre gösterilebilir, ama all seçenmeği de eklenmelidir.
@@ -21,12 +22,13 @@ class CustomerSummaryPage extends StatefulWidget {
   const CustomerSummaryPage({super.key, required this.userId});
 
   @override
-  _CustomerSummaryPageState createState() => _CustomerSummaryPageState();
+  createState() => _CustomerSummaryPageState();
 }
 
 class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool showAllImages = false; // Default to showing all images
 
   UserModel? user;
   List<AppointmentModel> appointments = [];
@@ -42,6 +44,9 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuilds the AppBar when the tab index changes
+    });
     fetchData();
   }
 
@@ -86,7 +91,9 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           .orderBy('startDate', descending: true)
           .get();
 
-      subscriptions = snapshot.docs.map((doc) => SubscriptionModel.fromDocument(doc)).toList();
+      subscriptions = snapshot.docs
+          .map((doc) => SubscriptionModel.fromDocument(doc))
+          .toList();
 
       if (subscriptions.isNotEmpty) {
         selectedSubscription = subscriptions.first;
@@ -96,7 +103,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     }
   }
 
-// Update fetchUserAppointments and fetchUserPayments to use selectedSubscription
+/*
+* This assumes that when
+*  selectedSubscription is null,
+* you want to see appointments not associated with any subscription.
+* */
   Future<void> fetchUserAppointments() async {
     try {
       if (selectedSubscription != null) {
@@ -104,18 +115,33 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             .collection('users')
             .doc(widget.userId)
             .collection('appointments')
-            .where('subscriptionId', isEqualTo: selectedSubscription!.subscriptionId)
+            .where('subscriptionId',
+                isEqualTo: selectedSubscription!.subscriptionId)
             .orderBy('appointmentDateTime', descending: true)
             .get();
 
-        appointments = snapshot.docs.map((doc) => AppointmentModel.fromDocument(doc)).toList();
+        appointments = snapshot.docs
+            .map((doc) => AppointmentModel.fromDocument(doc))
+            .toList();
       } else {
-        appointments = [];
+        // Fetch appointments without a subscriptionId
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .collection('appointments')
+            .where('subscriptionId', isNull: true)
+            .orderBy('appointmentDateTime', descending: true)
+            .get();
+
+        appointments = snapshot.docs
+            .map((doc) => AppointmentModel.fromDocument(doc))
+            .toList();
       }
     } catch (e) {
       logger.err('Error fetching user appointments: {}', [e]);
     }
   }
+
   Future<void> fetchUserPayments() async {
     try {
       if (selectedSubscription != null) {
@@ -123,11 +149,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             .collection('users')
             .doc(widget.userId)
             .collection('payments')
-            .where('subscriptionId', isEqualTo: selectedSubscription!.subscriptionId)
+            .where('subscriptionId',
+                isEqualTo: selectedSubscription!.subscriptionId)
             .orderBy('paymentDate', descending: true)
             .get();
 
-        payments = snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
+        payments =
+            snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
       } else {
         payments = [];
       }
@@ -138,18 +166,25 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
   Future<void> fetchUserMeals() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
+      Query mealsQuery = FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
           .collection('meals')
-          .orderBy('timestamp', descending: true)
-          .get();
+          .orderBy('timestamp', descending: true);
+
+      if (!showAllImages && selectedSubscription != null) {
+        mealsQuery = mealsQuery
+            .where('subscriptionId', isEqualTo: selectedSubscription!.subscriptionId);
+      }
+      final snapshot = await mealsQuery.get();
 
       meals = snapshot.docs.map((doc) => MealModel.fromDocument(doc)).toList();
     } catch (e) {
       logger.err('Error fetching user meals: {}', [e]);
     }
   }
+
+
 
   Future<void> fetchUserTests() async {
     try {
@@ -161,7 +196,8 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           .get();
 
       tests = snapshot.docs.map((doc) => TestModel.fromDocument(doc)).toList();
-      logger.info('Fetched {} tests for user {}', [tests.length, widget.userId]);
+      logger
+          .info('Fetched {} tests for user {}', [tests.length, widget.userId]);
     } catch (e) {
       logger.err('Error fetching user tests: {}', [e]);
     }
@@ -184,11 +220,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
               onChanged: (SubscriptionModel? newValue) {
                 setState(() {
                   selectedSubscription = newValue;
-                  // Reload data associated with the selected subscription
-                  appointments = [];
-                  payments = [];
+                  appointments=[];
+                  payments=[];
                   fetchUserAppointments();
                   fetchUserPayments();
+                  fetchUserMeals(); // Fetch meals when subscription changes
                 });
               },
               items: subscriptions.map<DropdownMenuItem<SubscriptionModel>>((SubscriptionModel sub) {
@@ -204,6 +240,24 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
               _showAddSubscriptionDialog();
             },
           ),
+          if (_tabController.index == 3) // Index 3 is Images tab
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Row(
+                children: [
+                  Text(showAllImages ? 'All Images' : 'Subscription Images'),
+                  Switch(
+                    value: showAllImages,
+                    onChanged: (value) {
+                      setState(() {
+                        showAllImages = value;
+                        fetchUserMeals();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -216,18 +270,20 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           ],
         ),
       ),
+
+
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
-        controller: _tabController,
-        children: [
-          buildDetailsTab(),
-          buildAppointmentsTab(),
-          buildPaymentsTab(),
-          buildImagesTab(),
-          buildTestsTab(),
-        ],
-      ),
+              controller: _tabController,
+              children: [
+                buildDetailsTab(),
+                buildAppointmentsTab(),
+                buildPaymentsTab(),
+                buildImagesTab(),
+                buildTestsTab(),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _onAddButtonPressed(),
         label: const Text('Add'),
@@ -257,35 +313,37 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     // Determine which tab is currently selected and show the corresponding add dialog or page
     switch (_tabController.index) {
       case 0:
-      // Details tab - perhaps for editing user details
-      // You can implement an edit functionality here if needed
+        // Details tab - perhaps for editing user details
+        // You can implement an edit functionality here if needed
         break;
       case 1:
-      // Appointments tab
+        // Appointments tab
         if (selectedSubscription == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription package.')),
+            const SnackBar(
+                content: Text('Please select a subscription package.')),
           );
           return;
         }
         _showAddAppointmentDialog();
         break;
       case 2:
-      // Payments tab
+        // Payments tab
         if (selectedSubscription == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription package.')),
+            const SnackBar(
+                content: Text('Please select a subscription package.')),
           );
           return;
         }
         _showAddPaymentDialog();
         break;
       case 3:
-      // Images tab
-      // You might want to allow the admin to upload images on behalf of the user
+        // Images tab
+        // You might want to allow the admin to upload images on behalf of the user
         break;
       case 4:
-      // Tests tab
+        // Tests tab
         _showAddTestDialog();
         break;
       default:
@@ -328,7 +386,18 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         return ListTile(
           title: Text('Date: ${appointment.appointmentDateTime.toLocal()}'),
           subtitle: Text('Type: ${appointment.meetingType.label}'),
-          trailing: Text('Status: ${appointment.status}'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Status: ${appointment.status.label}'),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  _showEditAppointmentDialog(appointment);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -357,51 +426,99 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           child: (payments.isEmpty)
               ? const Center(child: Text('No payments found.'))
               : ListView.builder(
-            itemCount: payments.length,
-            itemBuilder: (context, index) {
-              PaymentModel payment = payments[index];
+                  itemCount: payments.length,
+                  itemBuilder: (context, index) {
+                    PaymentModel payment = payments[index];
 
-              String paymentDateText = payment.paymentDate != null
-                  ? payment.paymentDate.toLocal().toString().split(' ')[0]
-                  : '-';
+                    String paymentDateText = payment.paymentDate != null
+                        ? payment.paymentDate.toLocal().toString().split(' ')[0]
+                        : '-';
 
-              String dueDateText = payment.dueDate != null
-                  ? payment.dueDate!.toLocal().toString().split(' ')[0]
-                  : '-';
+                    String dueDateText = payment.dueDate != null
+                        ? payment.dueDate!.toLocal().toString().split(' ')[0]
+                        : '-';
 
-              String statusText =
-              payment.status.isNotEmpty ? payment.status : '-';
+                    String statusText =
+                        payment.status.isNotEmpty ? payment.status : '-';
 
-              String amountText =
-              payment.amount != null ? payment.amount.toString() : '-';
+                    String amountText = payment.amount != null
+                        ? payment.amount.toString()
+                        : '-';
 
-              return ListTile(
-                title: Text('Amount: $amountText'),
-                subtitle:
-                Text('Payment Date: $paymentDateText\nDue Date: $dueDateText'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Status: $statusText'),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        _showEditPaymentDialog(payment);
-                      },
-                    ),
-                  ],
-                ),
-                onTap: () {
-                  if (payment.dekontUrl != null) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => DekontViewerPage(
-                          dekontUrl: payment.dekontUrl!,
-                        ),
+                    return ListTile(
+                      title: Text('Amount: $amountText'),
+                      subtitle: Text(
+                          'Payment Date: $paymentDateText\nDue Date: $dueDateText'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Status: $statusText'),
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              _showEditPaymentDialog(payment);
+                            },
+                          ),
+                        ],
                       ),
+                      onTap: () {
+                        if (payment.dekontUrl != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => DekontViewerPage(
+                                dekontUrl: payment.dekontUrl!,
+                              ),
+                            ),
+                          );
+                        }
+                      },
                     );
-                  }
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+  Widget buildImagesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Text('Show All Images'),
+              Switch(
+                value: showAllImages,
+                onChanged: (value) {
+                  setState(() {
+                    showAllImages = value;
+                    fetchUserMeals();
+                  });
                 },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: meals.isEmpty
+              ? const Center(child: Text('No images found.'))
+              : GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 4.0,
+              mainAxisSpacing: 4.0,
+            ),
+            itemCount: meals.length,
+            itemBuilder: (context, index) {
+              MealModel meal = meals[index];
+              return InkWell(
+                onTap: () {
+                  showFullImage(context, meal.imageUrl, meal);
+                },
+                child: Image.network(
+                  meal.imageUrl,
+                  fit: BoxFit.cover,
+                ),
               );
             },
           ),
@@ -410,32 +527,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     );
   }
 
-  Widget buildImagesTab() {
-    if (meals.isEmpty) {
-      return const Center(child: Text('No images found.'));
-    }
-
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 4.0,
-        mainAxisSpacing: 4.0,
-      ),
-      itemCount: meals.length,
-      itemBuilder: (context, index) {
-        MealModel meal = meals[index];
-        return InkWell(
-          onTap: () {
-            showFullImage(context, meal.imageUrl, meal);
-          },
-          child: Image.network(
-            meal.imageUrl,
-            fit: BoxFit.cover,
-          ),
-        );
-      },
-    );
-  }
 
   Widget buildTestsTab() {
     if (tests.isEmpty) {
@@ -449,7 +540,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         return ListTile(
           title: Text(test.testName),
           subtitle:
-          Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
+              Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
           onTap: () {
             if (test.testFileUrl != null) {
               showTestFile(context, test);
@@ -513,6 +604,23 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     );
   }
 
+  void _showEditAppointmentDialog(AppointmentModel appointment) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return EditAppointmentDialog(
+          appointment: appointment,
+          onAppointmentUpdated: () async {
+            await fetchUserAppointments();
+            if (mounted) {
+              setState(() {}); // Refresh the appointments tab
+            }
+          },
+        );
+      },
+    );
+  }
+
   void _showAddTestDialog() {
     showDialog(
       context: context,
@@ -543,8 +651,8 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   'Meal Type: ${meal.mealType.label}\n'
-                      'Timestamp: ${meal.timestamp}\n'
-                      'Description: ${meal.description ?? 'N/A'}',
+                  'Timestamp: ${meal.timestamp}\n'
+                  'Description: ${meal.description ?? 'N/A'}',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -575,8 +683,8 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
                       '${test.testName}\n'
-                          'Date: ${test.testDate.toLocal().toString().split(' ')[0]}\n'
-                          'Description: ${test.testDescription ?? 'N/A'}',
+                      'Date: ${test.testDate.toLocal().toString().split(' ')[0]}\n'
+                      'Description: ${test.testDescription ?? 'N/A'}',
                       textAlign: TextAlign.center,
                     ),
                   ),

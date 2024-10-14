@@ -164,7 +164,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
         subscriptionId: widget.subscription.subscriptionId,
         meetingType: _meetingType,
         appointmentDateTime: appointmentDateTime,
-        status: 'scheduled',
+        status: MeetingStatus.scheduled,
         createdAt: DateTime.now(),
       );
 

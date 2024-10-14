@@ -40,7 +40,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
 
   // New variables for notifications
   bool _enableNotifications = false;
-  List<bool> _notificationOptions = [false, false, false, false];
+  final List<bool> _notificationOptions = [false, false, false, false];
   final List<int> _notificationTimes = [72, 48, 24, 6]; // Hours before due date
 
   @override

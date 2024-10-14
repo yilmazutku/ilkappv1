@@ -3,15 +3,45 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum DateFilter { today, last3Days, last7Days, last30Days }
 
 enum ViewType { list, grid }
-enum ActiveStatus {active,completed}
-enum MeetingType { online('Online'), f2f('Yüz yüze');
+
+enum SubActiveStatus {
+  active('active'), completed('completed');
+  const SubActiveStatus(this.label);
+
+  final String label;
+
+  static SubActiveStatus fromLabel(String label) {
+    return SubActiveStatus.values.firstWhere((e) => e.label == label);
+  }
+}
+
+enum MeetingStatus {
+  completed('Yapıldı'),
+  scheduled('Planlandı'),
+  burned('Yakıldı'),
+  canceled('Iptal edildi'),
+  postponed('Ertelendi');
+
+  const MeetingStatus(this.label);
+
+  final String label;
+
+  static MeetingStatus fromLabel(String label) {
+    return MeetingStatus.values.firstWhere((e) => e.label == label);
+  }
+}
+
+enum MeetingType {
+  online('Online'),
+  f2f('Yüz yüze');
+
   const MeetingType(this.label);
+
   final String label;
 
   static MeetingType fromLabel(String label) {
     return MeetingType.values.firstWhere((e) => e.label == label);
   }
-
 }
 
 enum Meals {
@@ -36,8 +66,8 @@ enum Meals {
   static Meals fromName(String name) {
     return Meals.values.firstWhere((e) => e.name == name);
   }
-
 }
+
 class TestModel {
   final String testId;
   final String userId;
@@ -77,6 +107,7 @@ class TestModel {
     };
   }
 }
+
 class MeasurementModel {
   final String measurementId;
   final String userId;
@@ -174,16 +205,13 @@ class DietModel {
       'userId': userId,
       'dietPlanUrl': dietPlanUrl,
       'assignedAt': Timestamp.fromDate(assignedAt),
-      'validFrom':
-      validFrom != null ? Timestamp.fromDate(validFrom!) : null,
+      'validFrom': validFrom != null ? Timestamp.fromDate(validFrom!) : null,
       'validTo': validTo != null ? Timestamp.fromDate(validTo!) : null,
       'notes': notes,
     };
   }
 }
 // payment_model.dart
-
-
 
 class PaymentModel {
   final String paymentId;
@@ -213,7 +241,8 @@ class PaymentModel {
     return PaymentModel(
       paymentId: doc.id,
       userId: data['userId'],
-      subscriptionId: data['subscriptionId'], // Fetch subscriptionId
+      subscriptionId: data['subscriptionId'],
+      // Fetch subscriptionId
       amount: data['amount'].toDouble(),
       paymentDate: (data['paymentDate'] as Timestamp).toDate(),
       status: data['status'],
@@ -243,7 +272,6 @@ class PaymentModel {
 
 // subscription_model.dart
 
-
 class SubscriptionModel {
   final String subscriptionId;
   final String userId;
@@ -258,7 +286,7 @@ class SubscriptionModel {
   final int allowedPostponementsPerMonth;
   final double totalAmount;
   double amountPaid;
-  String status; // 'active', 'completed', 'canceled'
+  SubActiveStatus status; // 'active', 'completed'
 
   SubscriptionModel({
     required this.subscriptionId,
@@ -274,7 +302,7 @@ class SubscriptionModel {
     this.allowedPostponementsPerMonth = 1,
     required this.totalAmount,
     this.amountPaid = 0.0,
-    this.status = 'active',
+    this.status = SubActiveStatus.active,
   });
 
   factory SubscriptionModel.fromDocument(DocumentSnapshot doc) {
@@ -282,7 +310,8 @@ class SubscriptionModel {
     return SubscriptionModel(
       subscriptionId: doc.id,
       userId: data['userId'],
-      packageName: data['packageName'], // Fetch packageName
+      packageName: data['packageName'],
+      // Fetch packageName
       startDate: (data['startDate'] as Timestamp).toDate(),
       endDate: (data['endDate'] as Timestamp).toDate(),
       totalMeetings: data['totalMeetings'],
@@ -293,7 +322,7 @@ class SubscriptionModel {
       allowedPostponementsPerMonth: data['allowedPostponementsPerMonth'],
       totalAmount: data['totalAmount'].toDouble(),
       amountPaid: data['amountPaid'].toDouble(),
-      status: data['status'],
+      status: SubActiveStatus.fromLabel(data['status']),
     );
   }
 
@@ -311,15 +340,12 @@ class SubscriptionModel {
       'allowedPostponementsPerMonth': allowedPostponementsPerMonth,
       'totalAmount': totalAmount,
       'amountPaid': amountPaid,
-      'status': status,
+      'status': status.label,
     };
   }
 }
 
-
-
 // appointment_model.dart
-
 
 class AppointmentModel {
   final String appointmentId;
@@ -327,7 +353,7 @@ class AppointmentModel {
   final String subscriptionId; // Added subscriptionId
   final MeetingType meetingType;
   final DateTime appointmentDateTime;
-  final String status; // 'scheduled', 'completed', 'postponed', 'burned'
+  final MeetingStatus status; // 'scheduled', 'completed', 'postponed', 'burned'
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -349,10 +375,11 @@ class AppointmentModel {
     return AppointmentModel(
       appointmentId: doc.id,
       userId: data['userId'],
-      subscriptionId: data['subscriptionId'], // Fetch subscriptionId
+      subscriptionId: data['subscriptionId'],
+      // Fetch subscriptionId
       meetingType: MeetingType.fromLabel(data['meetingType']),
       appointmentDateTime: (data['appointmentDateTime'] as Timestamp).toDate(),
-      status: data['status'],
+      status: MeetingStatus.fromLabel(data['status']),
       notes: data['notes'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
@@ -367,7 +394,7 @@ class AppointmentModel {
       'subscriptionId': subscriptionId, // Include subscriptionId
       'meetingType': meetingType.label,
       'appointmentDateTime': Timestamp.fromDate(appointmentDateTime),
-      'status': status,
+      'status': status.label,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -379,6 +406,7 @@ class MealModel {
   final String mealId;
   final Meals mealType;
   final String imageUrl;
+  final String subscriptionId;
   final String? description;
   final DateTime timestamp;
   final int? calories; // Optional
@@ -388,6 +416,7 @@ class MealModel {
     required this.mealId,
     required this.mealType,
     required this.imageUrl,
+    required this.subscriptionId,
     this.description,
     required this.timestamp,
     this.calories,
@@ -400,6 +429,7 @@ class MealModel {
       mealId: doc.id,
       mealType: Meals.values.firstWhere((e) => e.name == data['mealType']),
       imageUrl: data['imageUrl'],
+      subscriptionId: data['subscriptionId'],
       description: data['description'],
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       calories: data['calories'],
@@ -411,6 +441,7 @@ class MealModel {
     return {
       'mealType': mealType.name, // Store the enum's name or label
       'imageUrl': imageUrl,
+      'subscriptionId': subscriptionId, // Include subscriptionId
       'description': description,
       'timestamp': Timestamp.fromDate(timestamp),
       'calories': calories,
@@ -418,6 +449,7 @@ class MealModel {
     };
   }
 }
+
 class UserModel {
   final String userId;
   final String name;
