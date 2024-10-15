@@ -1,219 +1,163 @@
-// add_appointment_dialog.dart
+// dialogs/add_appointment_dialog.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-import '../commons/logger.dart';
+import 'package:provider/provider.dart';
+import '../managers/appointment_manager.dart';
 import '../commons/userclass.dart';
 
 class AddAppointmentDialog extends StatefulWidget {
-  final String userId;
-  final Function onAppointmentAdded;
-  final SubscriptionModel subscription;
+  final VoidCallback onAppointmentAdded;
 
-  const AddAppointmentDialog({
-    super.key,
-    required this.userId,
-    required this.onAppointmentAdded,
-    required this.subscription,
-  });
+  const AddAppointmentDialog({super.key, required this.onAppointmentAdded});
 
   @override
    createState() => _AddAppointmentDialogState();
 }
 
 class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
-  final Logger logger = Logger.forClass(AddAppointmentDialog);
-
-  DateTime? _selectedDate;
+  DateTime _selectedDate = DateTime.now();
   TimeOfDay? _selectedTime;
   MeetingType _meetingType = MeetingType.f2f;
+
   bool _isLoading = false;
-  bool _isPastAppointment = false; // New variable
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Add Appointment'),
       content: SingleChildScrollView(
-        child: ListBody(
+        child: Column(
           children: [
-            SwitchListTile(
-              title: const Text('Add Past Appointment'),
-              value: _isPastAppointment,
-              onChanged: (value) {
-                setState(() {
-                  _isPastAppointment = value;
-                });
-              },
-            ),
+            // Date Picker
             ListTile(
-              title: Text(_selectedDate == null
-                  ? 'Select Date'
-                  : 'Date: ${_selectedDate!.toLocal().toString().split(' ')[0]}'),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                DateTime firstDate = _isPastAppointment
-                    ? DateTime.now().subtract(const Duration(days: 30))
-                    : DateTime.now();
-                DateTime initialDate = /*_isPastAppointment
-                    ? DateTime.now().subtract(const Duration(days: 30))
-                    : */DateTime.now();
-                DateTime lastDate = DateTime.now().add(const Duration(days: 365));
-
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate ?? initialDate,
-                  firstDate: firstDate,
-                  lastDate: lastDate,
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    _selectedDate = pickedDate;
-                  });
-                }
-              },
+              title: const Text('Select Date'),
+              subtitle: Text(_selectedDate.toLocal().toString().split(' ')[0]),
+              trailing: IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: _pickDate,
+              ),
             ),
+            // Time Picker
             ListTile(
-              title: Text(_selectedTime == null
-                  ? 'Select Time'
-                  : 'Time: ${_selectedTime!.format(context)}'),
-              trailing: const Icon(Icons.access_time),
-              onTap: () async {
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: _selectedTime ?? TimeOfDay.now(),
-                );
-                if (pickedTime != null) {
-                  setState(() {
-                    _selectedTime = pickedTime;
-                  });
-                }
-              },
+              title: const Text('Select Time'),
+              subtitle: Text(_selectedTime != null
+                  ? _selectedTime!.format(context)
+                  : 'No time selected'),
+              trailing: IconButton(
+                icon: const Icon(Icons.access_time),
+                onPressed: _pickTime,
+              ),
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<MeetingType>(
+            // Meeting Type
+            DropdownButton<MeetingType>(
               value: _meetingType,
+              onChanged: (MeetingType? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _meetingType = newValue;
+                  });
+                }
+              },
               items: MeetingType.values.map((MeetingType type) {
                 return DropdownMenuItem<MeetingType>(
                   value: type,
                   child: Text(type.label),
                 );
               }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _meetingType = newValue!;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'Meeting Type'),
             ),
+            if (_errorMessage != null)
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
           ],
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(); // Close the dialog
-          },
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _addAppointment,
           child: _isLoading
-              ? const CircularProgressIndicator()
-              : const Text('Add Appointment'),
+              ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : const Text('Add'),
         ),
       ],
     );
   }
 
+  Future<void> _pickDate() async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(), // No past dates
+      lastDate: DateTime(DateTime.now().year + 1), // One year from now
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    TimeOfDay? picked =
+    await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+      });
+    }
+  }
+
   Future<void> _addAppointment() async {
-    if (_selectedDate == null || _selectedTime == null) {
-      logger.err('Please select date and time.');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select date and time.')),
-        );
-      }
+    if (_selectedTime == null) {
+      setState(() {
+        _errorMessage = 'Please select a time.';
+      });
       return;
     }
 
-    try {
-      setState(() {
-        _isLoading = true;
-      });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
+    try {
       DateTime appointmentDateTime = DateTime(
-        _selectedDate!.year,
-        _selectedDate!.month,
-        _selectedDate!.day,
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
         _selectedTime!.hour,
         _selectedTime!.minute,
       );
 
-      // Create a new appointment document
-      final appointmentDocRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('appointments')
-          .doc(); // Generate a new appointment ID
+      final appointmentManager =
+      Provider.of<AppointmentManager>(context, listen: false);
 
-      AppointmentModel appointmentModel = AppointmentModel(
-        appointmentId: appointmentDocRef.id,
-        userId: widget.userId,
-        subscriptionId: widget.subscription.subscriptionId,
-        meetingType: _meetingType,
+      // Call the bookAppointment method
+      await appointmentManager.bookAppointment(
         appointmentDateTime: appointmentDateTime,
-        status: MeetingStatus.scheduled,
-        createdAt: DateTime.now(),
+        meetingType: _meetingType,
       );
 
-      await appointmentDocRef.set(appointmentModel.toMap());
-      logger.info('Appointment added successfully for user {}', [widget.userId]);
-
-      // Update the subscription's meetingsRemaining and meetingsCompleted
-      if (appointmentDateTime.isBefore(DateTime.now())) {
-        // Past appointment
-        widget.subscription.meetingsCompleted += 1;
-      } else {
-        // Future appointment
-        widget.subscription.meetingsRemaining -= 1;
-      }
-
-      // Update the subscription in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('subscriptions')
-          .doc(widget.subscription.subscriptionId)
-          .update({
-        'meetingsRemaining': widget.subscription.meetingsRemaining,
-        'meetingsCompleted': widget.subscription.meetingsCompleted,
-      });
-
-      // Notify parent widget to refresh data
       widget.onAppointmentAdded();
-
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      Navigator.of(context).pop(); // Close the dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appointment added successfully.')),
-      );
+      Navigator.of(context).pop();
     } catch (e) {
-      logger.err('Error adding appointment: {}', [e]);
-      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding appointment: $e')),
-      );
     }
   }
 }
