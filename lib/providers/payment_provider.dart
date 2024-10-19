@@ -1,9 +1,8 @@
 // providers/payment_provider.dart
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../commons/userclass.dart';
+import '../models/payment_model.dart';
 import '../tabs/basetab.dart';
 
 class PaymentProvider extends ChangeNotifier with Loadable {
@@ -11,13 +10,18 @@ class PaymentProvider extends ChangeNotifier with Loadable {
   bool _isLoading = false;
   bool _showAllPayments = false;
 
+  String? _userId;
   String? _selectedSubscriptionId;
 
   List<PaymentModel> get payments => _payments;
+  @override
   bool get isLoading => _isLoading;
   bool get showAllPayments => _showAllPayments;
 
-  PaymentProvider() {
+  PaymentProvider();
+
+  void setUserId(String userId) {
+    _userId = userId;
     fetchPayments();
   }
 
@@ -38,12 +42,12 @@ class PaymentProvider extends ChangeNotifier with Loadable {
     notifyListeners();
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      final userId = _userId;
+
+      if (userId == null) {
         // Handle error
         return;
       }
-      final userId = user.uid;
 
       Query query = FirebaseFirestore.instance
           .collection('users')

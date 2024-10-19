@@ -2,13 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../managers/appointment_manager.dart';
-import '../commons/userclass.dart';
+import '../models/appointment_model.dart';
+import '../providers/appointment_manager.dart';
 
 class AddAppointmentDialog extends StatefulWidget {
+  final String userId;
+  final String subscriptionId;
   final VoidCallback onAppointmentAdded;
 
-  const AddAppointmentDialog({super.key, required this.onAppointmentAdded});
+  const AddAppointmentDialog({
+    super.key,
+    required this.userId,
+    required this.subscriptionId,
+    required this.onAppointmentAdded,
+  });
 
   @override
    createState() => _AddAppointmentDialogState();
@@ -97,8 +104,8 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(), // No past dates
-      lastDate: DateTime(DateTime.now().year + 1), // One year from now
+      firstDate: DateTime.now(),
+      lastDate: DateTime(DateTime.now().year + 1),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -131,24 +138,19 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     });
 
     try {
-      DateTime appointmentDateTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _selectedTime!.hour,
-        _selectedTime!.minute,
-      );
-
       final appointmentManager =
       Provider.of<AppointmentManager>(context, listen: false);
 
-      // Call the bookAppointment method
-      await appointmentManager.bookAppointment(
-        appointmentDateTime: appointmentDateTime,
-        meetingType: _meetingType,
-      );
+      appointmentManager.setUserId(widget.userId);
+      appointmentManager.setSelectedSubscriptionId(widget.subscriptionId);
+      appointmentManager.setSelectedDate(_selectedDate);
+      appointmentManager.setSelectedTime(_selectedTime);
+      appointmentManager.setMeetingType(_meetingType);
+
+      await appointmentManager.bookAppointmentForCurrentUser();
 
       widget.onAppointmentAdded();
+      if(!context.mounted)return;
       Navigator.of(context).pop();
     } catch (e) {
       setState(() {

@@ -5,8 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
-import '../managers/appointment_manager.dart';
+import '../models/appointment_model.dart';
+import '../models/subs_model.dart';
+import '../providers/appointment_manager.dart';
 
 final Logger logger = Logger.forClass(AppointmentsPage);
 
@@ -38,10 +39,6 @@ class AppointmentsPage extends StatelessWidget {
                     'Meetings Remaining: ${subscription.meetingsRemaining}',
                     style: const TextStyle(fontSize: 16),
                   ),
-                  // Text(
-                  //   'Meetings Burned: ${subscription.meetingsBurned}',
-                  //   style: const TextStyle(fontSize: 16),
-                  // ),
                   const SizedBox(height: 16),
                   const Row(
                     children: [
@@ -64,16 +61,17 @@ class AppointmentsPage extends StatelessWidget {
                       );
                       if (picked != null &&
                           picked != appointmentManager.selectedDate) {
-                        await appointmentManager.setSelectedDate(picked);
+                        appointmentManager.setSelectedDate(picked);
                       }
                     },
                   ),
                   const SizedBox(height: 16),
                   FutureBuilder<List<TimeOfDay>>(
-                    future: appointmentManager
-                        .getAvailableTimesForDate(appointmentManager.selectedDate),
+                    future: appointmentManager.getAvailableTimesForDate(
+                        appointmentManager.selectedDate),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return const CircularProgressIndicator();
                       } else if (snapshot.hasError) {
                         logger.err('Snapshot error: {}', [snapshot.error!]);
@@ -117,12 +115,14 @@ class AppointmentsPage extends StatelessWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text('Appointment booked successfully.')),
+                                  content: Text(
+                                      'Appointment booked successfully.')),
                             );
                           }
                         } catch (e) {
                           logger.err(
-                              'An error occurred while booking appointment: {}', [e]);
+                              'An error occurred while booking appointment: {}',
+                              [e]);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(e.toString())),
@@ -136,12 +136,15 @@ class AppointmentsPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'My Appointments',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style:
+                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   FutureBuilder<List<AppointmentModel>>(
-                    future: appointmentManager.fetchCurrentUserAppointments(),
+                    future:
+                    appointmentManager.fetchCurrentUserAppointments(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return const CircularProgressIndicator();
                       } else if (snapshot.hasError) {
                         return Text("Error: ${snapshot.error}");
@@ -159,8 +162,8 @@ class AppointmentsPage extends StatelessWidget {
                               subtitle: Text(
                                   "Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}"),
                               trailing: IconButton(
-                                icon:
-                                const Icon(Icons.cancel, color: Colors.red),
+                                icon: const Icon(Icons.cancel,
+                                    color: Colors.red),
                                 onPressed: () async {
                                   bool? confirmCancel = await showDialog<bool>(
                                     context: context,
@@ -180,8 +183,7 @@ class AppointmentsPage extends StatelessWidget {
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              Navigator.of(context)
-                                                  .pop(true);
+                                              Navigator.of(context).pop(true);
                                             },
                                             child: const Text("Yes"),
                                           ),
@@ -192,13 +194,15 @@ class AppointmentsPage extends StatelessWidget {
 
                                   if (confirmCancel == true) {
                                     try {
-                                      await appointmentManager.cancelAppointment(
+                                      await appointmentManager
+                                          .cancelAppointment(
                                           appointment.appointmentId);
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           const SnackBar(
-                                              content:
-                                              Text('Appointment canceled.')),
+                                              content: Text(
+                                                  'Appointment canceled.')),
                                         );
                                       }
                                     } catch (e) {
@@ -206,8 +210,10 @@ class AppointmentsPage extends StatelessWidget {
                                           'An error occurred while canceling appointment: {}',
                                           [e]);
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(e.toString())),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(e.toString())),
                                         );
                                       }
                                     }
@@ -226,7 +232,8 @@ class AppointmentsPage extends StatelessWidget {
               ),
             );
           } else {
-            return const Center(child: Text('No active subscription found.'));
+            return const Center(
+                child: Text('No active subscription found.'));
           }
         },
       ),

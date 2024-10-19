@@ -1,20 +1,28 @@
+// meal_upload_page.dart
+
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../commons/customcheckbox.dart';
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
-import '../managers/image_manager.dart';
-import '../managers/meal_state_and_upload_manager.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../models/meal_model.dart';
+import '../providers/image_manager.dart';
+import '../providers/meal_state_and_upload_manager.dart';
 
 final Logger logger = Logger.forClass(MealUploadPage);
 
 class MealUploadPage extends StatefulWidget {
-  const MealUploadPage({super.key});
+  final String userId;
+  final String subscriptionId;
+
+  const MealUploadPage({
+    super.key,
+    required this.userId,
+    required this.subscriptionId,
+  });
 
   @override
   State<MealUploadPage> createState() => _MealUploadPageState();
@@ -26,19 +34,17 @@ class _MealUploadPageState extends State<MealUploadPage> {
   };
   Map<Meals, List<String>> mealContents = {};
   bool _isUploading = false;
-  String? _currentSubscriptionId;
 
   @override
   void initState() {
     super.initState();
     _initMealStates();
-    _fetchUserMealList(); // Fetch user meal list from Firestore
-    _fetchCurrentSubscription(); // Fetch current subscription
+    _fetchUserMealList();
   }
 
   Future<void> _initMealStates() async {
     final mealStateManager =
-        Provider.of<MealStateManager>(context, listen: false);
+    Provider.of<MealStateManager>(context, listen: false);
     final states = mealStateManager.checkedStates;
     setState(() {
       checkedStates.addAll(states);
@@ -47,84 +53,33 @@ class _MealUploadPageState extends State<MealUploadPage> {
 
   Future<void> _fetchUserMealList() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        logger.err('User not authenticated.');
-        return;
-      }
-      final userId = user.uid;
-
-      // Fetch the current diet plan
-      final dietsCollection = FirebaseFirestore.instance
+      // Fetch the meal contents for the user
+      final dietDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
-          .collection('diets');
+          .doc(widget.userId)
+          .collection('diets')
+          .doc(widget.subscriptionId)
+          .get();
 
-      // Assume that the current diet has a field 'isCurrent' set to true
-      final querySnapshot =
-          await dietsCollection.where('isCurrent', isEqualTo: true).get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final doc = querySnapshot.docs.first;
-        final data = doc.data();
-
-        // Assuming that the diet plan contains meal contents structured in a certain way
-        // Adjust as per your actual data structure
-        setState(() {
-          mealContents = data['mealContents'] != null
-              ? (data['mealContents'] as Map<String, dynamic>)
-                  .map((key, value) {
-                  return MapEntry(
-                    Meals.fromName(key),
-                    List<String>.from(value as List<dynamic>),
-                  );
-                })
-              : {};
-        });
-
-        logger.info('Fetched meal list: {}', [mealContents]);
+      if (dietDoc.exists) {
+        final data = dietDoc.data();
+        if (data != null && data['mealContents'] != null) {
+          setState(() {
+            mealContents = (data['mealContents'] as Map<String, dynamic>).map(
+                  (key, value) {
+                return MapEntry(
+                  Meals.fromName(key),
+                  List<String>.from(value as List<dynamic>),
+                );
+              },
+            );
+          });
+        }
       } else {
-        logger.warn('No current diet found for the user.');
+        logger.warn('No diet found for the subscription.');
       }
     } catch (e) {
       logger.err('Error fetching meal list: {}', [e.toString()]);
-    }
-  }
-
-  Future<void> _fetchCurrentSubscription() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        logger.err('User not authenticated.');
-        return;
-      }
-      final userId = user.uid;
-
-      // Fetch the current active subscription
-      final subscriptionsCollection = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('subscriptions');
-
-      // Assuming the current subscription has a field 'status' set to 'active'
-      final querySnapshot = await subscriptionsCollection
-          .where('status', isEqualTo: 'active')
-          .orderBy('startDate', descending: true)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final doc = querySnapshot.docs.first;
-        final subscriptionId = doc.id;
-        setState(() {
-          _currentSubscriptionId = subscriptionId;
-        });
-        logger.info('Fetched current subscription ID: $_currentSubscriptionId');
-      } else {
-        logger.warn('No active subscription found for the user.');
-      }
-    } catch (e) {
-      logger.err('Error fetching current subscription: {}', [e.toString()]);
     }
   }
 
@@ -133,7 +88,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
     logger.info('Building MealUploadPage');
     final imageManager = Provider.of<ImageManager>(context, listen: false);
     final mealStateManager =
-        Provider.of<MealStateManager>(context, listen: false);
+    Provider.of<MealStateManager>(context, listen: false);
     XFile? image;
     ImagePicker picker = ImagePicker();
 
@@ -196,6 +151,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                               final result = await imageManager.uploadFile(
                                 File(image!.path),
                                 meal: mealCategory,
+                                userId: widget.userId,
                               );
 
                               if (!mounted) return;
@@ -207,15 +163,9 @@ class _MealUploadPageState extends State<MealUploadPage> {
                               if (result.isUploadOk &&
                                   result.downloadUrl != null) {
                                 // Create a new MealModel and save to Firestore
-                                final user = FirebaseAuth.instance.currentUser;
-                                if (user == null) {
-                                  logger.err('User not authenticated.');
-                                  return;
-                                }
-                                final userId = user.uid;
                                 final mealDocRef = FirebaseFirestore.instance
                                     .collection('users')
-                                    .doc(userId)
+                                    .doc(widget.userId)
                                     .collection('meals')
                                     .doc(); // Generate a new meal ID
 
@@ -223,7 +173,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                   mealId: mealDocRef.id,
                                   mealType: mealCategory,
                                   imageUrl: result.downloadUrl!,
-                                  subscriptionId: _currentSubscriptionId ?? '',
+                                  subscriptionId: widget.subscriptionId,
                                   timestamp: DateTime.now(),
                                   description: null,
                                   calories: null,
@@ -235,15 +185,17 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                 // Update meal checked state
                                 mealStateManager.setMealCheckedState(
                                     mealCategory, true);
-
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                       content:
-                                          Text('Fotoğraf başarıyla yüklendi.')),
+                                      Text('Photo uploaded successfully.')),
                                 );
                               } else if (result.errorMessage != null) {
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(result.errorMessage!)),
+                                  SnackBar(
+                                      content: Text(result.errorMessage!)),
                                 );
                               }
                             }

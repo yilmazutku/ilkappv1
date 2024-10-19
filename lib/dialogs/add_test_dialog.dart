@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
+import '../models/test_model.dart';
 
 class AddTestDialog extends StatefulWidget {
   final String userId;

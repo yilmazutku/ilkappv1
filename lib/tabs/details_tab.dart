@@ -2,8 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../managers/user_provider.dart';
+import '../providers/user_provider.dart';
 
 class DetailsTab extends StatelessWidget {
   final String userId;

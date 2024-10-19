@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
+import '../models/payment_model.dart';
 
 class EditPaymentDialog extends StatefulWidget {
   final PaymentModel payment;

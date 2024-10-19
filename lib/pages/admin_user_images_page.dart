@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
+import '../models/meal_model.dart';
+import '../models/user_model.dart';
 final Logger logger = Logger.forClass(UserImagesPage);
 
 class UserImagesPage extends StatefulWidget {
@@ -10,7 +11,7 @@ class UserImagesPage extends StatefulWidget {
   const UserImagesPage({super.key, required this.userId});
 
   @override
-  _UserImagesPageState createState() => _UserImagesPageState();
+   createState() => _UserImagesPageState();
 }
 
 class _UserImagesPageState extends State<UserImagesPage> {

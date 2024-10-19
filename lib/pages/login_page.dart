@@ -1,10 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
 import '../appointments/admin_appointments_page.dart';
 import '../appointments/appointments_page.dart';
 import '../commons/logger.dart';
-import '../managers/login_manager.dart';
+import '../providers/login_manager.dart';
 import '../usersAndAccount/admin_create_user_page.dart';
 import 'admin_images_page.dart';
 import 'file_handler_page.dart';
@@ -14,6 +16,26 @@ final Logger logger = Logger.forClass(LoginPage);
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
+
+  Future<String?> getCurrentSubscriptionId(String userId) async {
+    final subscriptionsCollection = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('subscriptions');
+
+    final querySnapshot = await subscriptionsCollection
+        .where('status', isEqualTo: 'active')
+        .orderBy('startDate', descending: true)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final doc = querySnapshot.docs.first;
+      return doc.id;
+    } else {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,10 +152,35 @@ class LoginPage extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.food_bank),
           title: const Text('Planım'),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MealUploadPage()),
-          ),
+          onTap: () async {
+            final userId = FirebaseAuth.instance.currentUser?.uid;
+
+            if (userId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User not logged in')),
+              );
+              return;
+            }
+
+            final subscriptionId = await getCurrentSubscriptionId(userId);
+
+            if (subscriptionId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No active subscription found')),
+              );
+              return;
+            }
+            if(!context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MealUploadPage(
+                  userId: userId,
+                  subscriptionId: subscriptionId,
+                ),
+              ),
+            );
+          },
         ),
         // ListTile for "Randevu"
         ListTile(

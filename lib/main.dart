@@ -2,14 +2,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'package:untitled/managers/image_manager.dart';
 import 'package:untitled/pages/login_page.dart';
+import 'package:untitled/providers/appointment_manager.dart';
+import 'package:untitled/providers/image_manager.dart';
+import 'package:untitled/providers/login_manager.dart';
+import 'package:untitled/providers/meal_state_and_upload_manager.dart';
+import 'package:untitled/providers/user_provider.dart';
+import 'package:untitled/providers/payment_provider.dart';
+import 'package:untitled/providers/test_provider.dart';
+import 'package:untitled/providers/test_provider.dart';
 
 import 'commons/logger.dart';
-import 'managers/appointment_manager.dart';
-import 'managers/login_manager.dart';
-import 'managers/meal_state_and_upload_manager.dart';
 import 'firebase_options.dart';
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';
@@ -49,19 +52,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // return MediaQuery(
-    //   data: const MediaQueryData(alwaysUse24HourFormat: true), // Set 24-hour format globally
     return MultiProvider(
-    // child: MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ImageManager()),
-        // ChangeNotifierProxyProvider<ImageManager, ChatManager>(
-        //   create: (context) => ChatManager(imageManager:Provider.of<ImageManager>(context, listen: false)),
-        //   update: (context, imageManager, previousChatManager) => ChatManager(imageManager:imageManager),
-        // ),
         ChangeNotifierProvider(create: (context) => MealStateManager()),
         ChangeNotifierProvider(create: (context) => AppointmentManager()),
         ChangeNotifierProvider(create: (_) => LoginProvider()),
-        //ChangeNotifierProvider(create: (_) => AdminImagesProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => TestProvider()),
       ],
       child: MaterialApp(
         theme: ThemeData(
@@ -69,8 +68,6 @@ class MyApp extends StatelessWidget {
         ),
        home: const HomePage(), // Your initial route or home widget
 
-        // Define other properties as needed
-        // Your MaterialApp configuration
       ),
     // ),
     );

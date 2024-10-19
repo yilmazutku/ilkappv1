@@ -1,12 +1,13 @@
+// image_manager.dart
+
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
+import '../models/meal_model.dart';
 
 class UploadResult {
   final String? downloadUrl;
@@ -20,19 +21,13 @@ class UploadResult {
 class ImageManager extends ChangeNotifier {
   final Logger logger = Logger.forClass(ImageManager);
 
-  Future<UploadResult> uploadFile(File? imageFile, {Meals? meal}) async {
+  Future<UploadResult> uploadFile(File? imageFile,
+      {Meals? meal, required String userId}) async {
     if (imageFile == null) {
       return UploadResult(errorMessage: 'No image selected for upload.');
     }
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        logger.err('User not authenticated.');
-        return UploadResult(errorMessage: 'User not authenticated.');
-      }
-      final userId = user.uid;
-
       String fileName = imageFile.path.split('/').last;
       String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
       String path;
@@ -47,12 +42,6 @@ class ImageManager extends ChangeNotifier {
       logger.debug('Uploading file to path: $path');
 
       UploadTask uploadTask = ref.putFile(imageFile);
-
-      // Optional: Listen to upload progress
-      // uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-      //   double progress = snapshot.bytesTransferred / snapshot.totalBytes;
-      //   // Update UI with progress if needed
-      // });
 
       await uploadTask;
 

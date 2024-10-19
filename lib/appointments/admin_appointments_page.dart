@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../commons/userclass.dart';
+
+import '../models/appointment_model.dart';
+import '../models/user_model.dart';
+
 
 class AdminAppointmentsPage extends StatefulWidget {
   const AdminAppointmentsPage({super.key});
 
   @override
-  _AdminAppointmentsPageState createState() => _AdminAppointmentsPageState();
+   createState() => _AdminAppointmentsPageState();
 }
 
 class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {

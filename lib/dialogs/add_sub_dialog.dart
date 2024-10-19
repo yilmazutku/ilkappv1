@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../commons/userclass.dart';
+import '../models/subs_model.dart';
 
 class AddSubscriptionDialog extends StatefulWidget {
   final String userId;

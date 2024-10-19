@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../commons/userclass.dart';
-import '../managers/meal_state_and_upload_manager.dart';
+import '../models/meal_model.dart';
+import '../providers/meal_state_and_upload_manager.dart';
 import 'basetab.dart';
 
 class ImagesTab extends BaseTab<MealStateManager> {

@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
+import '../models/payment_model.dart';
+import '../models/subs_model.dart';
 
 class AddPaymentDialog extends StatefulWidget {
   final String userId;

@@ -2,9 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../commons/userclass.dart';
-import '../managers/payment_provider.dart';
+import '../providers/payment_provider.dart';
+import '../models/payment_model.dart';
 import 'basetab.dart';
 
 class PaymentsTab extends BaseTab<PaymentProvider> {

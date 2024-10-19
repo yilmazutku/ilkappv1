@@ -1,10 +1,9 @@
-// managers/meal_state_and_upload_manager.dart
+// providers/meal_state_and_upload_manager.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../models/meal_model.dart';
 import '../commons/logger.dart';
-import '../commons/userclass.dart';
 import '../tabs/basetab.dart';
 
 final Logger logger = Logger.forClass(MealStateManager);
@@ -14,14 +13,22 @@ class MealStateManager extends ChangeNotifier with Loadable {
   bool _isLoading = false;
   bool _showAllImages = false;
 
+  String? _userId;
   String? _selectedSubscriptionId;
+
+  Map<Meals, bool> checkedStates = {
+    for (var meal in Meals.values) meal: false,
+  };
 
   List<MealModel> get meals => _meals;
   @override
   bool get isLoading => _isLoading;
   bool get showAllImages => _showAllImages;
 
-  MealStateManager() {
+  MealStateManager();
+
+  void setUserId(String userId) {
+    _userId = userId;
     fetchMeals();
   }
 
@@ -37,17 +44,22 @@ class MealStateManager extends ChangeNotifier with Loadable {
     }
   }
 
+  void setMealCheckedState(Meals meal, bool isChecked) {
+    checkedStates[meal] = isChecked;
+    notifyListeners();
+  }
+
   Future<void> fetchMeals() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        logger.err('User not authenticated.');
+      final userId = _userId;
+
+      if (userId == null) {
+        logger.err('User ID not set.');
         return;
       }
-      final userId = user.uid;
 
       Query query = FirebaseFirestore.instance
           .collection('users')
@@ -61,10 +73,12 @@ class MealStateManager extends ChangeNotifier with Loadable {
 
       final snapshot = await query.get();
 
-      _meals = snapshot.docs
-          .map((doc) => MealModel.fromDocument(doc))
-          .toList();
-
+      _meals = snapshot.docs.map((doc) {
+        final meal = MealModel.fromDocument(doc);
+        // Update checkedStates based on meals fetched
+        checkedStates[meal.mealType] = true;
+        return meal;
+      }).toList();
     } catch (e) {
       logger.err('Error fetching meals: {}', [e]);
     } finally {
