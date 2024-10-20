@@ -1,9 +1,12 @@
 // providers/payment_provider.dart
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../commons/logger.dart';
 import '../models/payment_model.dart';
 import '../tabs/basetab.dart';
+final Logger logger = Logger.forClass(PaymentProvider);
 
 class PaymentProvider extends ChangeNotifier with Loadable {
   List<PaymentModel> _payments = [];
@@ -14,8 +17,10 @@ class PaymentProvider extends ChangeNotifier with Loadable {
   String? _selectedSubscriptionId;
 
   List<PaymentModel> get payments => _payments;
+
   @override
   bool get isLoading => _isLoading;
+
   bool get showAllPayments => _showAllPayments;
 
   PaymentProvider();
@@ -32,6 +37,7 @@ class PaymentProvider extends ChangeNotifier with Loadable {
 
   void setShowAllPayments(bool value) {
     if (_showAllPayments != value) {
+      logger.info('setShowAllPayments is called with isShowAllPayments={}',[value]);
       _showAllPayments = value;
       fetchPayments();
     }
@@ -39,7 +45,7 @@ class PaymentProvider extends ChangeNotifier with Loadable {
 
   Future<void> fetchPayments() async {
     _isLoading = true;
-    notifyListeners();
+    // Do not call notifyListeners here
 
     try {
       final userId = _userId;
@@ -56,25 +62,20 @@ class PaymentProvider extends ChangeNotifier with Loadable {
           .orderBy('paymentDate', descending: true);
 
       if (!_showAllPayments && _selectedSubscriptionId != null) {
-        query = query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
+        query =
+            query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
       }
 
       final snapshot = await query.get();
 
-      _payments = snapshot.docs
-          .map((doc) => PaymentModel.fromDocument(doc))
-          .toList();
+      _payments =
+          snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
 
     } catch (e) {
-      // Handle error
+      // Handle error TODO
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  void clearPayments() {
-    _payments = [];
-    notifyListeners();
   }
 }

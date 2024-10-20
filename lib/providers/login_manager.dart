@@ -18,10 +18,11 @@ class LoginProvider extends ChangeNotifier {
 
   // Login function
   Future<bool> login(BuildContext context) async {
-    if (!_validateInputs()) {
-      notifyListeners();
-      return false;
-    }
+    //TODO gerçek logine çevirmek icin comemnten çıkar
+    // if (!_validateInputs()) {
+    //   notifyListeners();
+    //   return false;
+    // }
 
     _setLoadingState(true);
     _errorMessage = '';
@@ -41,7 +42,9 @@ class LoginProvider extends ChangeNotifier {
   // Sign-in function
   Future<bool> _signIn(String email, String password) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      //TODO gerçek logine çevirmek icin comemnte al 2.yi birinciyi de çıkar
+      // await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: 'utkuyy97@gmail.com', password: '612009aa');
       return true;
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);

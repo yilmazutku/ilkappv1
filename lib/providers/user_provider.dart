@@ -1,16 +1,19 @@
-// providers/user_provider.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../commons/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
 import '../tabs/basetab.dart';
+
+final Logger logger = Logger.forClass(UserProvider);
 
 class UserProvider extends ChangeNotifier with Loadable {
   UserModel? _user;
   List<SubscriptionModel> _subscriptions = [];
   SubscriptionModel? _selectedSubscription;
   bool _isLoading = false;
+  bool showAllSubscriptions = false;
+  String? _userId;
 
   UserModel? get user => _user;
   List<SubscriptionModel> get subscriptions => _subscriptions;
@@ -19,48 +22,82 @@ class UserProvider extends ChangeNotifier with Loadable {
   @override
   bool get isLoading => _isLoading;
 
-  Future<void> fetchUserDetails(String userId) async {
+  void setUserId(String userId) {
+    _userId = userId;
     _isLoading = true;
+    // notifyListeners();
+    _fetchData();
+  }
 
+  Future<void> _fetchData() async {
+    await fetchUserDetails();
+    await fetchSubscriptions();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> fetchUserDetails() async {
     try {
+      if (_userId == null) {
+        logger.err('User ID not set.');
+        return;
+      }
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(_userId)
           .get();
 
       if (doc.exists) {
         _user = UserModel.fromDocument(doc);
-        await fetchUserSubscriptions(userId);
       }
     } catch (e) {
-      // Handle errors as needed
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      logger.err('Error fetching user details: {}', [e]);
     }
   }
 
-  Future<void> fetchUserSubscriptions(String userId) async {
+  Future<void> fetchSubscriptions() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('subscriptions')
-          .orderBy('startDate', descending: true)
-          .get();
-
-      _subscriptions = snapshot.docs.map((doc) => SubscriptionModel.fromDocument(doc)).toList();
-
-      // Automatically select the most recent subscription if available
-      if (_subscriptions.isNotEmpty) {
-        _selectedSubscription = _subscriptions.first;
-      } else {
-        _selectedSubscription = null;
+      if (_userId == null) {
+        logger.err('User ID not set.');
+        return;
       }
 
-      notifyListeners();
+      Query query = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('subscriptions')
+          .orderBy('startDate', descending: true);
+
+      if (!showAllSubscriptions) {
+        query = query.where('status', isEqualTo: SubActiveStatus.active.label);
+      }
+
+      final snapshot = await query.get();
+
+      _subscriptions = snapshot.docs
+          .map((doc) => SubscriptionModel.fromDocument(doc))
+          .toList();
+
+      // Set selectedSubscription if it's null or not in the list
+      if (_selectedSubscription == null ||
+          !_subscriptions.contains(_selectedSubscription)) {
+        _selectedSubscription = _subscriptions.isNotEmpty ? _subscriptions.first : null;
+      }
     } catch (e) {
-      // Handle errors as needed
+      logger.err('Error fetching subscriptions: {}', [e]);
+    }
+  }
+
+
+  void setShowAllSubscriptions(bool value) {
+    if (showAllSubscriptions != value) {
+      showAllSubscriptions = value;
+      _isLoading = true;
+      notifyListeners();
+      fetchSubscriptions().then((_) {
+        _isLoading = false;
+        notifyListeners();
+      });
     }
   }
 

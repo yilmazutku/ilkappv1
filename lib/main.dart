@@ -10,7 +10,6 @@ import 'package:untitled/providers/meal_state_and_upload_manager.dart';
 import 'package:untitled/providers/user_provider.dart';
 import 'package:untitled/providers/payment_provider.dart';
 import 'package:untitled/providers/test_provider.dart';
-import 'package:untitled/providers/test_provider.dart';
 
 import 'commons/logger.dart';
 import 'firebase_options.dart';

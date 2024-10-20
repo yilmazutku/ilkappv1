@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../commons/logger.dart';
 import '../models/user_model.dart';
 import 'customer_sum.dart';
+
 final Logger logger = Logger.forClass(AdminImages);
+
 class AdminImages extends StatefulWidget {
-  const AdminImages({super.key});
+  const AdminImages({Key? key}) : super(key: key);
 
   @override
   State<AdminImages> createState() => _AdminImagesState();
@@ -29,8 +31,7 @@ class _AdminImagesState extends State<AdminImages> {
         isLoading = false;
       });
     } catch (e) {
-      // Handle error
-      logger.err('Error fetching users: {}',[e]);
+      logger.err('Error fetching users: {}', [e]);
       setState(() {
         isLoading = false;
       });
@@ -45,8 +46,10 @@ class _AdminImagesState extends State<AdminImages> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-        children: users.map((user) {
+          : ListView.builder(
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          final user = users[index];
           return ListTile(
             title: Text(user.name),
             subtitle: Text(user.email),
@@ -58,7 +61,7 @@ class _AdminImagesState extends State<AdminImages> {
               );
             },
           );
-        }).toList(),
+        },
       ),
     );
   }

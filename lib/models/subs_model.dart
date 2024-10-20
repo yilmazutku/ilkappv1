@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SubscriptionModel {
   final String subscriptionId;
   final String userId;
-  final String packageName; // Added packageName
+  final String packageName;
   final DateTime startDate;
   DateTime endDate;
   final int totalMeetings;
@@ -14,12 +14,12 @@ class SubscriptionModel {
   final int allowedPostponementsPerMonth;
   final double totalAmount;
   double amountPaid;
-  SubActiveStatus status; // 'active', 'completed'
+  SubActiveStatus status;
 
   SubscriptionModel({
     required this.subscriptionId,
     required this.userId,
-    required this.packageName, // Added packageName
+    required this.packageName,
     required this.startDate,
     required this.endDate,
     required this.totalMeetings,
@@ -39,7 +39,6 @@ class SubscriptionModel {
       subscriptionId: doc.id,
       userId: data['userId'],
       packageName: data['packageName'],
-      // Fetch packageName
       startDate: (data['startDate'] as Timestamp).toDate(),
       endDate: (data['endDate'] as Timestamp).toDate(),
       totalMeetings: data['totalMeetings'],
@@ -56,8 +55,9 @@ class SubscriptionModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'subscriptionId': subscriptionId,
       'userId': userId,
-      'packageName': packageName, // Include packageName
+      'packageName': packageName,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
       'totalMeetings': totalMeetings,
@@ -71,11 +71,22 @@ class SubscriptionModel {
       'status': status.label,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is SubscriptionModel &&
+              runtimeType == other.runtimeType &&
+              subscriptionId == other.subscriptionId;
+
+  @override
+  int get hashCode => subscriptionId.hashCode;
 }
 
-
 enum SubActiveStatus {
-  active('active'), completed('completed');
+  active('active'),
+  completed('completed');
+
   const SubActiveStatus(this.label);
 
   final String label;

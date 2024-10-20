@@ -51,7 +51,7 @@ class MealStateManager extends ChangeNotifier with Loadable {
 
   Future<void> fetchMeals() async {
     _isLoading = true;
-    notifyListeners();
+    // notifyListeners();
 
     try {
       final userId = _userId;

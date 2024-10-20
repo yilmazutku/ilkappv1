@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 
+import '../commons/logger.dart';
+import '../models/subs_model.dart';
+import '../models/user_model.dart';
+final Logger logger = Logger.forClass(CreateUserPage);
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
 
@@ -33,39 +37,65 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   Future<void> createUser(String username, String email, String password) async {
-    String userPath = 'userinfo/$username';
     final salt = generateSalt();
     final hashedPassword = hashPassword(password, salt);
 
     try {
-
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Create user with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      final userId = userCredential.user?.uid;
 
-      // Create user document with username, email, hashed password, and salt
-      await _firestore.collection('userinfo').doc(username).set({
-        'username': username,
-        'email': email,
-        'hashedpw': hashedPassword,
-        'saltkey': salt,
-      });
-      // Create dietlists subcollection
-      await _firestore.collection('$userPath/dietlists').add({
-        'initialDiet': [],
-      });
+      if (userId == null) {
+        throw Exception('User creation failed: userId is null.');
+      }
 
+      // Create UserModel instance
+      final newUser = UserModel(
+        userId: userId,
+        name: username,
+        email: email,
+        role: 'customer', // Default role for new users
+        createdAt: DateTime.now(),
+      );
+
+      // Store user data in Firestore
+      await _firestore.collection('users').doc(userId).set(newUser.toMap());
+
+      // Create a default SubscriptionModel instance with a dummy package
+      final defaultSubscription = SubscriptionModel(
+        subscriptionId: _firestore.collection('subscriptions').doc().id,
+        userId: userId,
+        packageName: 'temporary_package', // Dummy package
+        startDate: DateTime.now(),
+        endDate: DateTime.now().add(Duration(days: 30)), // Example: 30 days trial
+        totalMeetings: 10,
+        meetingsRemaining: 10,
+        totalAmount: 0.0,
+      );
+
+      // Store subscription data in Firestore
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('subscriptions')
+          .doc(defaultSubscription.subscriptionId)
+          .set(defaultSubscription.toMap());
 
       setState(() {
         _statusMessage = 'User $username created successfully!';
       });
+      logger.info('User created: {}.',[newUser,defaultSubscription]) ;
     } catch (e) {
+      logger.err('Failed to create user: {}',[e]);
       setState(() {
         _statusMessage = 'Failed to create user: $e';
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

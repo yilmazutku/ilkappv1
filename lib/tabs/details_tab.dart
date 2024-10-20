@@ -15,7 +15,7 @@ class DetailsTab extends StatelessWidget {
 
     // Fetch user details if not already fetched
     if (userProvider.user == null && !userProvider.isLoading) {
-      userProvider.fetchUserDetails(userId);
+      userProvider.fetchUserDetails();
     }
 
     if (userProvider.isLoading) {

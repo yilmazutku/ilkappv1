@@ -69,7 +69,7 @@ class AppointmentManager extends ChangeNotifier with Loadable {
     if (_userId == null) return;
 
     _isLoading = true;
-    notifyListeners();
+    // notifyListeners();
 
     try {
       Query query = FirebaseFirestore.instance

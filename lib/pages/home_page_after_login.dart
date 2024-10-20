@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
 
 import '../commons/logger.dart';
-import '../appointments/admin_appointments_page.dart';
+import 'admin_appointments_page.dart';
 import '../usersAndAccount/admin_create_user_page.dart';
 import 'admin_images_page.dart';
-import '../appointments/appointments_page.dart';
+import 'appointments_page.dart';
 import 'file_handler_page.dart';
 import 'meal_upload_page.dart';
 

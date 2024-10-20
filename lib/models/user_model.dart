@@ -26,8 +26,14 @@ class UserModel {
     );
   }
 
+  @override
+  String toString() {
+    return 'UserModel{userId: $userId, name: $name, email: $email, role: $role, createdAt: $createdAt}';
+  }
+
   Map<String, dynamic> toMap() {
     return {
+      'userId':userId,
       'name': name,
       'email': email,
       'role': role,
