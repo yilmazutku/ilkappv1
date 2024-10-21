@@ -89,9 +89,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
       });
       logger.info('User created: {}.',[newUser,defaultSubscription]) ;
     } catch (e) {
-      logger.err('Failed to create user: {}',[e]);
+      logger.err('Failed to create user: {}',[  e.toString()]);
+
       setState(() {
-        _statusMessage = 'Failed to create user: $e';
+        _statusMessage = 'Failed:${e}';
       });
     }
   }
@@ -104,7 +105,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
         title: const Text('Create New User'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -115,7 +116,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -124,7 +125,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
               ),
               keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             TextField(
               controller: _passwordController,
               decoration: const InputDecoration(
@@ -133,7 +134,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
               ),
               obscureText: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
                 final username = _usernameController.text.trim();
@@ -148,9 +149,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
                   });
                 }
               },
-              child: const Text('Create User'),
+             child: const Text('Create User'),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 0),
             Text(
               _statusMessage,
               style: TextStyle(
