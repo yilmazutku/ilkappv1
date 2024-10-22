@@ -43,12 +43,12 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       userProvider.setUserId(widget.userId);
-      logger.info('User ID set for userProvider = {}', [widget.userId]);
 
       Provider.of<AppointmentManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<MealStateManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<PaymentProvider>(context, listen: false).setUserId(widget.userId);
-      logger.info('User ID set for all providers = {}', [widget.userId]);
+      //logger.info('User ID set for all providers = {}', [widget.userId]);
+      logger.info('User ID set for providers = {}, user mail={}', [widget.userId,userProvider.user!.email]);
 
       _tabController.addListener(() {
         try {

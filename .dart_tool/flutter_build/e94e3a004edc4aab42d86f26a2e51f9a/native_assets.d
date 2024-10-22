@@ -1,1 +1,0 @@
- C:\\Users\\utku\\StudioProjects\\ilkappv1\\.dart_tool\\flutter_build\\e94e3a004edc4aab42d86f26a2e51f9a\\native_assets.yaml: 

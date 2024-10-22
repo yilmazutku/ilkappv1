@@ -68,9 +68,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
       final defaultSubscription = SubscriptionModel(
         subscriptionId: _firestore.collection('subscriptions').doc().id,
         userId: userId,
-        packageName: 'temporary_package', // Dummy package
+        packageName: 'Mevcut_Degil', // Dummy package
         startDate: DateTime.now(),
-        endDate: DateTime.now().add(Duration(days: 30)), // Example: 30 days trial
+        endDate: DateTime.now().add(const Duration(days: 30)), // Example: 30 days trial
         totalMeetings: 10,
         meetingsRemaining: 10,
         totalAmount: 0.0,
@@ -92,7 +92,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
       logger.err('Failed to create user: {}',[  e.toString()]);
 
       setState(() {
-        _statusMessage = 'Failed:${e}';
+        _statusMessage = 'Failed:$e';
       });
     }
   }

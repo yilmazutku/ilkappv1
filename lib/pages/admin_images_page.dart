@@ -7,7 +7,7 @@ import 'customer_sum.dart';
 final Logger logger = Logger.forClass(AdminImages);
 
 class AdminImages extends StatefulWidget {
-  const AdminImages({Key? key}) : super(key: key);
+  const AdminImages({super.key});
 
   @override
   State<AdminImages> createState() => _AdminImagesState();

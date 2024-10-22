@@ -46,7 +46,7 @@ class UserProvider extends ChangeNotifier with Loadable {
           .collection('users')
           .doc(_userId)
           .get();
-
+  logger.info('Fetching user details for user id={}',[_userId!]);
       if (doc.exists) {
         _user = UserModel.fromDocument(doc);
       }
