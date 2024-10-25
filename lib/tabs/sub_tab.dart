@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../providers/user_provider.dart';
 import 'basetab.dart';

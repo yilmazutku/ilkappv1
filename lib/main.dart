@@ -11,7 +11,7 @@ import 'package:untitled/providers/user_provider.dart';
 import 'package:untitled/providers/payment_provider.dart';
 import 'package:untitled/providers/test_provider.dart';
 
-import 'commons/logger.dart';
+import 'models/logger.dart';
 import 'firebase_options.dart';
 String email = 'utkuyy97@gmail.com';
 String password = '612009aa';

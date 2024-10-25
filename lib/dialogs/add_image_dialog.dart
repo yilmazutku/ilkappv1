@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/meal_model.dart';
 import '../providers/image_manager.dart';
 import '../providers/meal_state_and_upload_manager.dart';

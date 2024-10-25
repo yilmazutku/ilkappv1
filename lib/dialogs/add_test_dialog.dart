@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/test_model.dart';
 
 class AddTestDialog extends StatefulWidget {
@@ -119,6 +119,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
         _selectedTestDate == null ||
         _testFile == null) {
       logger.err('Please fill all required fields.');
+      if(!context.mounted)return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
       );

@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import 'admin_appointments_page.dart';
 import '../usersAndAccount/admin_create_user_page.dart';
 import 'admin_images_page.dart';
@@ -70,6 +70,7 @@ class HomePageAfterLogin extends StatelessWidget {
                 final userId = FirebaseAuth.instance.currentUser?.uid;
 
                 if (userId == null) {
+                  if(!context.mounted)return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('User not logged in')),
                   );

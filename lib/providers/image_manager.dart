@@ -6,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/meal_model.dart';
 
 class UploadResult {

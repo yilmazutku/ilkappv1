@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/payment_model.dart';
 import '../tabs/basetab.dart';
 final Logger logger = Logger.forClass(PaymentProvider);

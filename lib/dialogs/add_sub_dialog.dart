@@ -120,6 +120,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       actions: [
         TextButton(
           onPressed: () {
+            if(!context.mounted)return;
             Navigator.of(context).pop(); // Close the dialog
           },
           child: const Text('Cancel'),
@@ -190,6 +191,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       setState(() {
         _isLoading = false;
       });
+      if(!context.mounted)return;
 
       Navigator.of(context).pop(); // Close the dialog
 

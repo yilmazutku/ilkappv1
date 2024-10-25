@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/appointment_model.dart';
 import '../models/subs_model.dart';
 import '../providers/appointment_manager.dart';

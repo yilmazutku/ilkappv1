@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:untitled/usersAndAccount/reset_password_page.dart';
 import 'admin_appointments_page.dart';
 import 'appointments_page.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../providers/login_manager.dart';
 import '../usersAndAccount/admin_create_user_page.dart';
 import 'admin_images_page.dart';
@@ -156,6 +156,7 @@ class LoginPage extends StatelessWidget {
             final userId = FirebaseAuth.instance.currentUser?.uid;
 
             if (userId == null) {
+              if(!context.mounted)return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('User not logged in')),
               );
@@ -165,6 +166,7 @@ class LoginPage extends StatelessWidget {
             final subscriptionId = await getCurrentSubscriptionId(userId);
 
             if (subscriptionId == null) {
+              if(!context.mounted)return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('No active subscription found')),
               );

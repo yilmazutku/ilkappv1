@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/meal_model.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../tabs/basetab.dart';
 
 final Logger logger = Logger.forClass(MealStateManager);

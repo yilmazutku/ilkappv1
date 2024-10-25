@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 final Logger logger = Logger.forClass(LoginProvider);
 
 class LoginProvider extends ChangeNotifier {

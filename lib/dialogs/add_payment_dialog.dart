@@ -7,7 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/payment_model.dart';
 import '../models/subs_model.dart';
 

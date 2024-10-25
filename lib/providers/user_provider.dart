@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
 import '../tabs/basetab.dart';
@@ -19,8 +19,27 @@ class UserProvider extends ChangeNotifier with Loadable {
   List<SubscriptionModel> get subscriptions => _subscriptions;
   SubscriptionModel? get selectedSubscription => _selectedSubscription;
 
+
+  List<UserModel> _users = [];
+  List<UserModel> get users => _users;
+
+
   @override
   bool get isLoading => _isLoading;
+
+  Future<void> fetchUsers() async {
+    _isLoading = true;
+    // notifyListeners();
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').get();
+      _users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
+    } catch (e) {
+      logger.err('Error fetching users: {}', [e]);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   void setUserId(String userId) {
     _userId = userId;

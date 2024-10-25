@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../dialogs/add_appointment_dialog.dart';
 import '../dialogs/add_image_dialog.dart';
 import '../dialogs/add_payment_dialog.dart';
@@ -23,6 +23,7 @@ final Logger logger = Logger.forClass(CustomerSummaryPage);
 class CustomerSummaryPage extends StatefulWidget {
   final String userId;
 
+  /// Bu constructor, admin bir kişinin özetine bastığında çağrılır.
   const CustomerSummaryPage({super.key, required this.userId});
 
   @override
@@ -32,7 +33,6 @@ class CustomerSummaryPage extends StatefulWidget {
 class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  // Removed isLoading variable
 
   @override
   void initState() {
@@ -47,7 +47,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       Provider.of<AppointmentManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<MealStateManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<PaymentProvider>(context, listen: false).setUserId(widget.userId);
-      //logger.info('User ID set for all providers = {}', [widget.userId]);
       logger.info('User ID set for providers = {}, user mail={}', [widget.userId,userProvider.user!.email]);
 
       _tabController.addListener(() {

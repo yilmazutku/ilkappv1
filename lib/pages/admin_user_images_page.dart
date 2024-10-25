@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../models/meal_model.dart';
 import '../models/user_model.dart';
 final Logger logger = Logger.forClass(UserImagesPage);

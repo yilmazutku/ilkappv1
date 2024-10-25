@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../commons/logger.dart';
+import '../models/logger.dart';
 import '../pages/login_page.dart';
 
 final Logger logger = Logger.forClass(ResetPasswordPage);
