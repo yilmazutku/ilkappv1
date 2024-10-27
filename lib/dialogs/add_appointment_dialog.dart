@@ -1,5 +1,6 @@
 // dialogs/add_appointment_dialog.dart
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/appointment_model.dart';
@@ -87,7 +88,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _addAppointment,
+          onPressed: _isLoading ? null : _addAppointment, //TODO test setstate ve return err msglar
           child: _isLoading
               ? const SizedBox(
             width: 16,
@@ -141,16 +142,47 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       final appointmentManager =
       Provider.of<AppointmentManager>(context, listen: false);
 
-      appointmentManager.setUserId(widget.userId);
-      appointmentManager.setSelectedSubscriptionId(widget.subscriptionId);
-      appointmentManager.setSelectedDate(_selectedDate);
-      appointmentManager.setSelectedTime(_selectedTime);
-      appointmentManager.setMeetingType(_meetingType);
+      DateTime appointmentDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
 
-      await appointmentManager.bookAppointmentForCurrentUser();
+      bool isAvailable = appointmentManager.isTimeSlotAvailable(
+          _selectedDate, _selectedTime!);
 
+      if (!isAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selected time slot is not available.')),
+        );
+        setState(() {
+          _errorMessage = 'Selected time slot is not available.';
+        });
+        return;
+      }
+
+      AppointmentModel newAppointment = AppointmentModel(
+        appointmentId: FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .collection('appointments')
+            .doc()
+            .id,
+        userId: widget.userId,
+        subscriptionId: widget.subscriptionId,
+        meetingType: _meetingType,
+        appointmentDateTime: appointmentDateTime,
+        status: MeetingStatus.scheduled,
+        createdAt: DateTime.now(),
+        createdBy: 'admin',
+      );
+
+      await appointmentManager.addAppointment(newAppointment);
       widget.onAppointmentAdded();
-      if(!context.mounted)return;
+
+      if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
       setState(() {

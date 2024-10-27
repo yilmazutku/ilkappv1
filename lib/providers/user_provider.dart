@@ -33,6 +33,7 @@ class UserProvider extends ChangeNotifier with Loadable {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('users').get();
       _users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
+      logger.info('fetchUsers _users={}',[_users]);
     } catch (e) {
       logger.err('Error fetching users: {}', [e]);
     } finally {
@@ -41,16 +42,14 @@ class UserProvider extends ChangeNotifier with Loadable {
     }
   }
 
-  void setUserId(String userId) {
+  void setUserId(String userId) async {
     _userId = userId;
     _isLoading = true;
+   // notifyListeners();
     // notifyListeners();
-    _fetchData();
-  }
-
-  Future<void> _fetchData() async {
     await fetchUserDetails();
     await fetchSubscriptions();
+    logger.info('fetchData after setUserId is completed.');
     _isLoading = false;
     notifyListeners();
   }

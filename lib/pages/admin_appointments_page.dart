@@ -1,84 +1,72 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/appointment_model.dart';
-import '../models/user_model.dart';
+import '../models/logger.dart';
+import '../providers/appointment_manager.dart';
 
+final Logger logger = Logger.forClass(AdminAppointmentsPage);
 
 class AdminAppointmentsPage extends StatefulWidget {
-  const AdminAppointmentsPage({super.key});
+  const AdminAppointmentsPage({Key? key}) : super(key: key);
 
   @override
-   createState() => _AdminAppointmentsPageState();
+  _AdminAppointmentsPageState createState() => _AdminAppointmentsPageState();
 }
 
 class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
-  Map<DateTime, List<Map<String, dynamic>>> dailyAppointments = {};
   bool isLoading = true;
+  List<AppointmentModel> appointments = [];
 
   @override
   void initState() {
     super.initState();
-    fetchAppointments();
+    fetchAllAppointments();
   }
 
-  Future<void> fetchAppointments() async {
+  Future<void> fetchAllAppointments() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
-      // Fetch all appointments from all users
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collectionGroup('appointments')
           .get();
 
-      List<AppointmentModel> appointments = snapshot.docs
+      List<AppointmentModel> fetchedAppointments = snapshot.docs
           .map((doc) => AppointmentModel.fromDocument(doc))
           .toList();
 
-      // Fetch user details
-      Set<String> userIds = appointments.map((a) => a.userId).toSet();
-      Map<String, UserModel> userMap = {};
-
-      for (String userId in userIds) {
-        DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-          userMap[userId] = UserModel.fromDocument(userDoc);
-        }
-      }
-
-      // Organize appointments by date
-      Map<DateTime, List<Map<String, dynamic>>> appointmentsByDate = {};
-
-      for (var appointment in appointments) {
-        DateTime date = DateTime(
-            appointment.appointmentDateTime.year,
-            appointment.appointmentDateTime.month,
-            appointment.appointmentDateTime.day);
-
-        if (!appointmentsByDate.containsKey(date)) {
-          appointmentsByDate[date] = [];
-        }
-
-        appointmentsByDate[date]!.add({
-          'appointment': appointment,
-          'user': userMap[appointment.userId],
-        });
-      }
-
       setState(() {
-        dailyAppointments = appointmentsByDate;
+        appointments = fetchedAppointments;
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching appointments: $e');
+      logger.err('Error fetching appointments: {}', [e]);
       setState(() {
         isLoading = false;
       });
     }
   }
 
-  String formatDateTime(DateTime dateTime) {
-    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+  Future<void> _cancelAppointment(AppointmentModel appointment) async {
+    try {
+      AppointmentManager appointmentManager = AppointmentManager();
+      appointmentManager.setUserId(appointment.userId);
+      await appointmentManager.cancelAppointment(appointment.appointmentId, canceledBy: 'admin');
+       if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment canceled.')),
+      );
+
+      fetchAllAppointments();
+    } catch (e) {
+      logger.err('Error canceling appointment: {}', [e]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error canceling appointment: $e')),
+      );
+    }
   }
 
   @override
@@ -89,26 +77,49 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : dailyAppointments.isEmpty
+          : appointments.isEmpty
           ? const Center(child: Text('No appointments found.'))
           : ListView.builder(
-        itemCount: dailyAppointments.keys.length,
+        itemCount: appointments.length,
         itemBuilder: (context, index) {
-          DateTime date = dailyAppointments.keys.elementAt(index);
-          List<Map<String, dynamic>> appointments = dailyAppointments[date]!;
+          AppointmentModel appointment = appointments[index];
+          return ListTile(
+            title: Text(
+                'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+            subtitle: Text(
+                'User ID: ${appointment.userId}\nType: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              onPressed: () async {
+                bool? confirmCancel = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text("Cancel Appointment"),
+                      content: const Text("Are you sure you want to cancel this appointment?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                          child: const Text("No"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                          child: const Text("Yes"),
+                        ),
+                      ],
+                    );
+                  },
+                );
 
-          return ExpansionTile(
-            title: Text(DateFormat('EEEE, MMM d').format(date)),
-            children: appointments.map((data) {
-              AppointmentModel appointment = data['appointment'];
-              UserModel? user = data['user'];
-              return ListTile(
-                title: Text(
-                    '${formatDateTime(appointment.appointmentDateTime)} - ${appointment.meetingType.label}'),
-                subtitle: Text(
-                    'User: ${user?.name ?? 'Unknown'} (${appointment.userId})\nStatus: ${appointment.status}'),
-              );
-            }).toList(),
+                if (confirmCancel == true) {
+                  _cancelAppointment(appointment);
+                }
+              },
+            ),
           );
         },
       ),

@@ -1,18 +1,159 @@
-// appointments_page.dart
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../models/logger.dart';
 import '../models/appointment_model.dart';
-import '../models/subs_model.dart';
 import '../providers/appointment_manager.dart';
+import '../providers/user_provider.dart';
 
 final Logger logger = Logger.forClass(AppointmentsPage);
 
-class AppointmentsPage extends StatelessWidget {
-  const AppointmentsPage({super.key});
+class AppointmentsPage extends StatefulWidget {
+  const AppointmentsPage({Key? key}) : super(key: key);
+
+  @override
+  _AppointmentsPageState createState() => _AppointmentsPageState();
+}
+
+class _AppointmentsPageState extends State<AppointmentsPage> {
+  DateTime _selectedDate = DateTime.now();
+  MeetingType _selectedMeetingType = MeetingType.f2f;
+  TimeOfDay? _selectedTime;
+  bool _isLoading = false;
+  List<TimeOfDay> _availableTimes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAvailableTimes();
+    _fetchUserAppointments();
+  }
+
+  Future<void> _fetchAvailableTimes() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+      await appointmentManager.fetchAppointmentsForDate(_selectedDate);
+      List<TimeOfDay> availableTimes =
+      await appointmentManager.getAvailableTimesForDate(_selectedDate);
+      setState(() {
+        _availableTimes = availableTimes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      logger.err('Error fetching available times: {}', [e]);
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchUserAppointments() async {
+    final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+    await appointmentManager.fetchUserAppointments();
+  }
+
+  Future<void> _bookAppointment() async {
+    if (_selectedTime == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a time slot.')),
+      );
+      return;
+    }
+
+    try {
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      String? userId = appointmentManager.userId;
+      String? subscriptionId = userProvider.selectedSubscription?.subscriptionId;
+
+      if (userId == null || subscriptionId == null) {
+        throw Exception('User ID or Subscription ID is not set.');
+      }
+
+      DateTime appointmentDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      bool isAvailable =
+      appointmentManager.isTimeSlotAvailable(_selectedDate, _selectedTime!);
+
+      if (!mounted) return;
+      if (!isAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selected time slot is not available.')),
+        );
+        return;
+      }
+
+      String appointmentId = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('appointments')
+          .doc()
+          .id;
+
+      AppointmentModel appointment = AppointmentModel(
+        appointmentId: appointmentId,
+        userId: userId,
+        subscriptionId: subscriptionId,
+        meetingType: _selectedMeetingType,
+        appointmentDateTime: appointmentDateTime,
+        status: MeetingStatus.scheduled,
+        createdAt: DateTime.now(),
+        createdBy: 'user',
+      );
+
+      await appointmentManager.addAppointment(appointment);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment booked successfully.')),
+      );
+
+      // Refresh available times and user's appointments
+      await _fetchAvailableTimes();
+      await _fetchUserAppointments();
+    } catch (e) {
+      logger.err('Error booking appointment: {}', [e]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error booking appointment: $e')),
+      );
+    }
+  }
+
+  Future<void> _cancelAppointment(String appointmentId) async {
+    try {
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+
+      await appointmentManager.cancelAppointment(appointmentId, canceledBy: 'user');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment canceled.')),
+      );
+
+      // Refresh available times and user's appointments
+      await _fetchAvailableTimes();
+      await _fetchUserAppointments();
+    } catch (e) {
+      logger.err('Error canceling appointment: {}', [e]);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error canceling appointment: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,252 +161,142 @@ class AppointmentsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Appointments')),
-      body: FutureBuilder<SubscriptionModel?>(
-        future: appointmentManager.getCurrentSubscription(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            logger.err('Error fetching subscription: {}', [snapshot.error!]);
-            return Text('Error: ${snapshot.error}');
-          } else if (snapshot.hasData && snapshot.data != null) {
-            SubscriptionModel subscription = snapshot.data!;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Meetings Remaining: ${subscription.meetingsRemaining}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  const Row(
-                    children: [
-                      Text('Meeting Type:'),
-                      SizedBox(width: 16),
-                      ServiceTypeDropdown(),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    title: Text(DateFormat('dd/MM/yyyy')
-                        .format(appointmentManager.selectedDate)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: appointmentManager.selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 45)),
-                      );
-                      if (picked != null &&
-                          picked != appointmentManager.selectedDate) {
-                        appointmentManager.setSelectedDate(picked);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  FutureBuilder<List<TimeOfDay>>(
-                    future: appointmentManager.getAvailableTimesForDate(
-                        appointmentManager.selectedDate),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        logger.err('Snapshot error: {}', [snapshot.error!]);
-                        return Text("Error: ${snapshot.error}");
-                      } else if (snapshot.hasData) {
-                        var availableTimes = snapshot.data!;
-                        if (availableTimes.isEmpty) {
-                          return const Text(
-                              'No available time slots for the selected date.');
-                        }
-                        return Wrap(
-                          children: availableTimes.map((time) {
-                            return ValueListenableBuilder<TimeOfDay?>(
-                              valueListenable:
-                              appointmentManager.selectedTimeNotifier,
-                              builder: (context, selectedTime, child) {
-                                return ChoiceChip(
-                                  label: Text(time.format(context)),
-                                  selected: selectedTime == time,
-                                  onSelected: (bool selected) {
-                                    appointmentManager.setSelectedTime(
-                                        selected ? time : null);
-                                  },
-                                );
-                              },
-                            );
-                          }).toList(),
-                        );
-                      } else {
-                        return const Text(
-                            'No available time slots for the selected date.');
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          await appointmentManager.bookAppointmentForCurrentUser();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Appointment booked successfully.')),
-                            );
-                          }
-                        } catch (e) {
-                          logger.err(
-                              'An error occurred while booking appointment: {}',
-                              [e]);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(e.toString())),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Book Appointment'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'My Appointments',
-                    style:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  FutureBuilder<List<AppointmentModel>>(
-                    future:
-                    appointmentManager.fetchCurrentUserAppointments(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text("Error: ${snapshot.error}");
-                      } else if (snapshot.hasData) {
-                        var appointments = snapshot.data!;
-                        if (appointments.isEmpty) {
-                          return const Text("No upcoming appointments.");
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: appointments.map((appointment) {
-                            return ListTile(
-                              title: Text(
-                                  "Meeting: ${appointment.meetingType.label}"),
-                              subtitle: Text(
-                                  "Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}"),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.cancel,
-                                    color: Colors.red),
-                                onPressed: () async {
-                                  bool? confirmCancel = await showDialog<bool>(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title:
-                                        const Text("Cancel Appointment"),
-                                        content: const Text(
-                                            "Are you sure you want to cancel this appointment?"),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context)
-                                                  .pop(false);
-                                            },
-                                            child: const Text("No"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop(true);
-                                            },
-                                            child: const Text("Yes"),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-
-                                  if (confirmCancel == true) {
-                                    try {
-                                      await appointmentManager
-                                          .cancelAppointment(
-                                          appointment.appointmentId);
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                              content: Text(
-                                                  'Appointment canceled.')),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      logger.err(
-                                          'An error occurred while canceling appointment: {}',
-                                          [e]);
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content: Text(e.toString())),
-                                        );
-                                      }
-                                    }
-                                  }
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      } else {
-                        return const Text("No upcoming appointments.");
-                      }
-                    },
-                  ),
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Meeting Type:'),
+                const SizedBox(width: 16),
+                DropdownButton<MeetingType>(
+                  value: _selectedMeetingType,
+                  onChanged: (MeetingType? newValue) {
+                    setState(() {
+                      _selectedMeetingType = newValue!;
+                    });
+                  },
+                  items: MeetingType.values
+                      .map<DropdownMenuItem<MeetingType>>((MeetingType type) {
+                    return DropdownMenuItem<MeetingType>(
+                      value: type,
+                      child: Text(type.label),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              title: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 45)),
+                );
+                if (picked != null && picked != _selectedDate) {
+                  setState(() {
+                    _selectedDate = picked;
+                    _selectedTime = null;
+                  });
+                  await _fetchAvailableTimes();
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : _availableTimes.isEmpty
+                ? const Text('No available time slots for the selected date.')
+                : Wrap(
+              spacing: 8.0,
+              children: _availableTimes.map((time) {
+                return ChoiceChip(
+                  label: Text(time.format(context)),
+                  selected: _selectedTime == time,
+                  onSelected: (bool selected) {
+                    setState(() {
+                      _selectedTime = selected ? time : null;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ElevatedButton(
+                onPressed: _bookAppointment,
+                child: const Text('Book Appointment'),
               ),
-            );
-          } else {
-            return const Center(
-                child: Text('No active subscription found.'));
-          }
-        },
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'My Appointments',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            appointmentManager.isLoading
+                ? const CircularProgressIndicator()
+                : _buildAppointmentsList(appointmentManager.appointments),
+          ],
+        ),
       ),
     );
   }
-}
 
-class ServiceTypeDropdown extends StatelessWidget {
-  const ServiceTypeDropdown({super.key});
+  Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
+    final upcomingAppointments = appointments.where((appointment) {
+      return appointment.appointmentDateTime.isAfter(DateTime.now()) &&
+          appointment.status != MeetingStatus.canceled;
+    }).toList();
 
-  @override
-  Widget build(BuildContext context) {
-    final appointmentManager =
-    Provider.of<AppointmentManager>(context, listen: false);
+    if (upcomingAppointments.isEmpty) {
+      return const Text('No upcoming appointments.');
+    }
 
-    return ValueListenableBuilder<MeetingType>(
-      valueListenable: appointmentManager.meetingTypeNotifier,
-      builder: (context, meetingType, child) {
-        return DropdownButton<MeetingType>(
-          value: meetingType,
-          onChanged: (MeetingType? newValue) {
-            appointmentManager.setMeetingType(newValue);
-          },
-          items: MeetingType.values
-              .map<DropdownMenuItem<MeetingType>>((MeetingType type) {
-            return DropdownMenuItem<MeetingType>(
-              value: type,
-              child: Text(type.label),
-            );
-          }).toList(),
+    return Column(
+      children: upcomingAppointments.map((appointment) {
+        return ListTile(
+          title: Text(
+              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+          subtitle: Text('Type: ${appointment.meetingType.label}'),
+          trailing: IconButton(
+            icon: const Icon(Icons.cancel, color: Colors.red),
+            onPressed: () async {
+              bool? confirmCancel = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Cancel Appointment"),
+                    content: const Text("Are you sure you want to cancel this appointment?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: const Text("No"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true);
+                        },
+                        child: const Text("Yes"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (confirmCancel == true) {
+                await _cancelAppointment(appointment.appointmentId);
+              }
+            },
+          ),
         );
-      },
+      }).toList(),
     );
   }
 }

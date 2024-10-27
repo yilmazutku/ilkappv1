@@ -33,7 +33,7 @@ class CustomerSummaryPage extends StatefulWidget {
 class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
+  int _previousTabIndex = 0; // Track the previous index
   @override
   void initState() {
     super.initState();
@@ -42,17 +42,21 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
+      logger.info('setting userId={}',[widget.userId]);
       userProvider.setUserId(widget.userId);
 
       Provider.of<AppointmentManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<MealStateManager>(context, listen: false).setUserId(widget.userId);
       Provider.of<PaymentProvider>(context, listen: false).setUserId(widget.userId);
-      logger.info('User ID set for providers = {}, user mail={}', [widget.userId,userProvider.user!.email]);
+      logger.info('User ID set for providers = {}', [widget.userId]);
 
       _tabController.addListener(() {
         try {
-          setState(() {});
-          //logger.info('Tab index changed to = {}', [_tabController.index]);
+          if (_tabController.index != _previousTabIndex) {
+            logger.info('Tab index changed to = {}', [_tabController.index]);
+            _previousTabIndex =
+                _tabController.index; // Update the previous index
+          }
         } catch (e) {
           logger.err('Error handling tab change = {}', [e]);
         }
@@ -136,12 +140,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
     try {
       if (userProvider.isLoading) {
+        logger.info('userProvider is currently loading.');
         return const CircularProgressIndicator();
       }
       if (userProvider.subscriptions.isEmpty) {
         return Container(); // Or any placeholder widget
       }
-
+      logger.info('userProvider is not loading. Starting to build.');
       return DropdownButton<String>(
         value: userProvider.selectedSubscription?.subscriptionId,
         onChanged: (String? newValue) {

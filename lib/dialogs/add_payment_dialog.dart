@@ -1,15 +1,14 @@
-// add_payment_dialog.dart
+// dialogs/add_payment_dialog.dart
 
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../models/logger.dart';
-import '../models/payment_model.dart';
 import '../models/subs_model.dart';
+import '../providers/payment_provider.dart';
 
 class AddPaymentDialog extends StatefulWidget {
   final String userId;
@@ -17,14 +16,14 @@ class AddPaymentDialog extends StatefulWidget {
   final SubscriptionModel subscription;
 
   const AddPaymentDialog({
-    super.key,
+    Key? key,
     required this.userId,
     required this.onPaymentAdded,
     required this.subscription,
-  });
+  }) : super(key: key);
 
   @override
-   createState() => _AddPaymentDialogState();
+  _AddPaymentDialogState createState() => _AddPaymentDialogState();
 }
 
 class _AddPaymentDialogState extends State<AddPaymentDialog> {
@@ -194,9 +193,8 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : () => _addPayment(),
-          child:
-          _isLoading ? const CircularProgressIndicator() : const Text('Add Payment'),
+          onPressed: _isLoading ? null : () => _addPayment(context),
+          child: _isLoading ? const CircularProgressIndicator() : const Text('Add Payment'),
         ),
       ],
     );
@@ -214,7 +212,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
     });
   }
 
-  Future<void> _addPayment() async {
+  Future<void> _addPayment(BuildContext context) async {
     if (_amountController.text.isEmpty) {
       logger.err('Amount is required.');
       if (mounted) {
@@ -235,27 +233,10 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
       return;
     }
 
-    // if (_selectedPaymentDate != null && _dekontImage == null) {
-    //   logger.err('Dekont image is required when Payment Date is selected.');
-    //   if (mounted) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text('Please upload a dekont image.')),
-    //     );
-    //   }
-    //   return;
-    // }
-
     try {
       setState(() {
         _isLoading = true;
       });
-
-      String? dekontUrl;
-
-      // Upload the dekont image if it exists
-      if (_dekontImage != null) {
-        dekontUrl = await _uploadDekontImage();
-      }
 
       // Prepare notification times if enabled
       List<int>? notificationTimes;
@@ -280,40 +261,18 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
         }
       }
 
-      // Create a new payment document
-      final paymentDocRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('payments')
-          .doc(); // Generate a new payment ID
+      final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
 
-      PaymentModel paymentModel = PaymentModel(
-        paymentId: paymentDocRef.id,
+      await paymentProvider.addPayment(
         userId: widget.userId,
-        subscriptionId: widget.subscription.subscriptionId, // Associate with subscription
+        subscription: widget.subscription,
         amount: double.parse(_amountController.text),
-        paymentDate: _selectedPaymentDate ?? DateTime.now(),
+        paymentDate: _selectedPaymentDate,
         status: _paymentStatus,
-        dekontUrl: dekontUrl,
+        dekontImage: _dekontImage,
         dueDate: _selectedDueDate,
         notificationTimes: notificationTimes,
       );
-
-      await paymentDocRef.set(paymentModel.toMap());
-      logger.info('Payment added successfully for user ${widget.userId}');
-
-      // Update the subscription's amountPaid
-      widget.subscription.amountPaid += paymentModel.amount;
-
-      // Update the subscription in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('subscriptions')
-          .doc(widget.subscription.subscriptionId)
-          .update({
-        'amountPaid': widget.subscription.amountPaid,
-      });
 
       // Notify parent widget to refresh data
       widget.onPaymentAdded();
@@ -323,7 +282,6 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
       setState(() {
         _isLoading = false;
       });
-
       Navigator.of(context).pop(); // Close the dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -338,26 +296,6 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error adding payment: $e')),
       );
-    }
-  }
-
-  Future<String> _uploadDekontImage() async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('users/${widget.userId}/dekont/$fileName');
-      final uploadTask = ref.putFile(_dekontImage!);
-
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      logger.info('Dekont image uploaded to $downloadUrl');
-
-      return downloadUrl;
-    } catch (e) {
-      logger.err('Error uploading dekont image: $e');
-      throw Exception('Error uploading dekont image: $e');
     }
   }
 

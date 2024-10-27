@@ -1,16 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class AppointmentModel {
   final String appointmentId;
   final String userId;
-  final String subscriptionId; // Added subscriptionId
+  final String subscriptionId;
   final MeetingType meetingType;
   final DateTime appointmentDateTime;
-  final MeetingStatus status; // 'scheduled', 'completed', 'postponed', 'burned'
+  MeetingStatus status;
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? createdBy; // 'user' or 'admin'
+  String? canceledBy; // 'user' or 'admin'
+  DateTime? canceledAt;
 
   AppointmentModel({
     required this.appointmentId,
@@ -22,6 +24,9 @@ class AppointmentModel {
     this.notes,
     required this.createdAt,
     this.updatedAt,
+    this.createdBy,
+    this.canceledBy,
+    this.canceledAt,
   });
 
   factory AppointmentModel.fromDocument(DocumentSnapshot doc) {
@@ -30,7 +35,6 @@ class AppointmentModel {
       appointmentId: doc.id,
       userId: data['userId'],
       subscriptionId: data['subscriptionId'],
-      // Fetch subscriptionId
       meetingType: MeetingType.fromLabel(data['meetingType']),
       appointmentDateTime: (data['appointmentDateTime'] as Timestamp).toDate(),
       status: MeetingStatus.fromLabel(data['status']),
@@ -39,23 +43,35 @@ class AppointmentModel {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : null,
+      createdBy: data['createdBy'],
+      canceledBy: data['canceledBy'],
+      canceledAt: data['canceledAt'] != null
+          ? (data['canceledAt'] as Timestamp).toDate()
+          : null,
     );
+  }
+
+  @override
+  String toString() {
+    return 'AppointmentModel{appointmentId: $appointmentId, userId: $userId, subscriptionId: $subscriptionId, meetingType: $meetingType, appointmentDateTime: $appointmentDateTime, status: $status, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt, createdBy: $createdBy, canceledBy: $canceledBy, canceledAt: $canceledAt}';
   }
 
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
-      'subscriptionId': subscriptionId, // Include subscriptionId
+      'subscriptionId': subscriptionId,
       'meetingType': meetingType.label,
       'appointmentDateTime': Timestamp.fromDate(appointmentDateTime),
       'status': status.label,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'createdBy': createdBy,
+      'canceledBy': canceledBy,
+      'canceledAt': canceledAt != null ? Timestamp.fromDate(canceledAt!) : null,
     };
   }
 }
-
 
 enum MeetingStatus {
   completed('Yapıldı'),

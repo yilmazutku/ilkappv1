@@ -1,6 +1,5 @@
-// tabs/appointments_tab.dart
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/appointment_model.dart';
 import '../providers/appointment_manager.dart';
@@ -20,7 +19,7 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
   }
 
   @override
-  List<AppointmentModel> getDataList(AppointmentManager provider) {
+  List<dynamic> getDataList(AppointmentManager provider) {
     return provider.appointments;
   }
 
@@ -43,27 +42,21 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
         AppointmentModel appointment = appointments[index];
         return ListTile(
           title: Text(
-              'Date: ${appointment.appointmentDateTime.toLocal().toString().split(' ')[0]}'),
-          subtitle: Text('Type: ${appointment.meetingType.label}'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Status: ${appointment.status.label}'),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  _showEditAppointmentDialog(context, appointment);
-                },
-              ),
-            ],
+              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+          subtitle: Text(
+              'Type: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
+          trailing: IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              _showEditAppointmentDialog(context, appointment);
+            },
           ),
         );
       },
     );
   }
 
-  void _showEditAppointmentDialog(
-      BuildContext context, AppointmentModel appointment) {
+  void _showEditAppointmentDialog(BuildContext context, AppointmentModel appointment) {
     showDialog(
       context: context,
       builder: (context) {
