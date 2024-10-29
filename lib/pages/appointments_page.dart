@@ -10,51 +10,42 @@ import '../providers/user_provider.dart';
 final Logger logger = Logger.forClass(AppointmentsPage);
 
 class AppointmentsPage extends StatefulWidget {
-  const AppointmentsPage({Key? key}) : super(key: key);
+  const AppointmentsPage({super.key});
 
   @override
-  _AppointmentsPageState createState() => _AppointmentsPageState();
+   createState() => _AppointmentsPageState();
 }
 
 class _AppointmentsPageState extends State<AppointmentsPage> {
   DateTime _selectedDate = DateTime.now();
   MeetingType _selectedMeetingType = MeetingType.f2f;
   TimeOfDay? _selectedTime;
-  bool _isLoading = false;
   List<TimeOfDay> _availableTimes = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchAvailableTimes();
-    _fetchUserAppointments();
+    logger.info('started initing state for appointments page state.');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchAvailableTimesAndUserAppointments();
+    });
+    logger.info('ended initing state for appointments page state.');
   }
 
-  Future<void> _fetchAvailableTimes() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _fetchAvailableTimesAndUserAppointments() async {
     try {
-      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
-      await appointmentManager.fetchAppointmentsForDate(_selectedDate);
+      final appointmentManager =
+          Provider.of<AppointmentManager>(context, listen: false);
+      await appointmentManager.fetchUserAppointments();
       List<TimeOfDay> availableTimes =
-      await appointmentManager.getAvailableTimesForDate(_selectedDate);
+          await appointmentManager.getAvailableTimesForDate(_selectedDate);
       setState(() {
         _availableTimes = availableTimes;
-        _isLoading = false;
       });
     } catch (e) {
       logger.err('Error fetching available times: {}', [e]);
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() {});
     }
-  }
-
-  Future<void> _fetchUserAppointments() async {
-    final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
-    await appointmentManager.fetchUserAppointments();
   }
 
   Future<void> _bookAppointment() async {
@@ -67,11 +58,13 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }
 
     try {
-      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+      final appointmentManager =
+          Provider.of<AppointmentManager>(context, listen: false);
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       String? userId = appointmentManager.userId;
-      String? subscriptionId = userProvider.selectedSubscription?.subscriptionId;
+      String? subscriptionId =
+          userProvider.selectedSubscription?.subscriptionId;
 
       if (userId == null || subscriptionId == null) {
         throw Exception('User ID or Subscription ID is not set.');
@@ -86,7 +79,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       );
 
       bool isAvailable =
-      appointmentManager.isTimeSlotAvailable(_selectedDate, _selectedTime!);
+          appointmentManager.isTimeSlotAvailable(_selectedDate, _selectedTime!);
 
       if (!mounted) return;
       if (!isAvailable) {
@@ -122,10 +115,10 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       );
 
       // Refresh available times and user's appointments
-      await _fetchAvailableTimes();
-      await _fetchUserAppointments();
+      await _fetchAvailableTimesAndUserAppointments();
     } catch (e) {
       logger.err('Error booking appointment: {}', [e]);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error booking appointment: $e')),
       );
@@ -134,18 +127,17 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   Future<void> _cancelAppointment(String appointmentId) async {
     try {
-      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+      final appointmentManager =
+          Provider.of<AppointmentManager>(context, listen: false);
 
-      await appointmentManager.cancelAppointment(appointmentId, canceledBy: 'user');
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appointment canceled.')),
-      );
-
-      // Refresh available times and user's appointments
-      await _fetchAvailableTimes();
-      await _fetchUserAppointments();
+      if (await appointmentManager.cancelAppointment(appointmentId,
+          canceledBy: 'user')) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Appointment canceled.')),
+        );
+      }
+      await _fetchAvailableTimesAndUserAppointments();
     } catch (e) {
       logger.err('Error canceling appointment: {}', [e]);
       if (!mounted) return;
@@ -158,7 +150,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   @override
   Widget build(BuildContext context) {
     final appointmentManager = Provider.of<AppointmentManager>(context);
-
+logger.info('build appts page');
     return Scaffold(
       appBar: AppBar(title: const Text('Appointments')),
       body: SingleChildScrollView(
@@ -203,29 +195,30 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                     _selectedDate = picked;
                     _selectedTime = null;
                   });
-                  await _fetchAvailableTimes();
+                  await _fetchAvailableTimesAndUserAppointments();
                 }
               },
             ),
             const SizedBox(height: 16),
-            _isLoading
+            appointmentManager.isLoading
                 ? const CircularProgressIndicator()
                 : _availableTimes.isEmpty
-                ? const Text('No available time slots for the selected date.')
-                : Wrap(
-              spacing: 8.0,
-              children: _availableTimes.map((time) {
-                return ChoiceChip(
-                  label: Text(time.format(context)),
-                  selected: _selectedTime == time,
-                  onSelected: (bool selected) {
-                    setState(() {
-                      _selectedTime = selected ? time : null;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
+                    ? const Text(
+                        'No available time slots for the selected date.')
+                    : Wrap(
+                        spacing: 8.0,
+                        children: _availableTimes.map((time) {
+                          return ChoiceChip(
+                            label: Text(time.format(context)),
+                            selected: _selectedTime == time,
+                            onSelected: (bool selected) {
+                              setState(() {
+                                _selectedTime = selected ? time : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
             const SizedBox(height: 16),
             Center(
               child: ElevatedButton(
@@ -240,7 +233,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             ),
             appointmentManager.isLoading
                 ? const CircularProgressIndicator()
-                : _buildAppointmentsList(appointmentManager.appointments),
+                : _buildAppointmentsList(appointmentManager.userAppointments),
           ],
         ),
       ),
@@ -250,13 +243,13 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
     final upcomingAppointments = appointments.where((appointment) {
       return appointment.appointmentDateTime.isAfter(DateTime.now()) &&
-          appointment.status != MeetingStatus.canceled;
+          appointment.status != MeetingStatus.canceled && !appointment.isDeleted!;
     }).toList();
 
     if (upcomingAppointments.isEmpty) {
       return const Text('No upcoming appointments.');
     }
-
+  logger.info('upcomingAppointments={}',[upcomingAppointments]);
     return Column(
       children: upcomingAppointments.map((appointment) {
         return ListTile(
@@ -271,7 +264,8 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                 builder: (BuildContext context) {
                   return AlertDialog(
                     title: const Text("Cancel Appointment"),
-                    content: const Text("Are you sure you want to cancel this appointment?"),
+                    content: const Text(
+                        "Are you sure you want to cancel this appointment?"),
                     actions: [
                       TextButton(
                         onPressed: () {

@@ -129,18 +129,15 @@ class PaymentProvider extends ChangeNotifier with Loadable {
   Future<void> fetchPayments() async {
     _isLoading = true;
     // Do not call notifyListeners here
-
     try {
-      final userId = _userId;
-
-      if (userId == null) {
+      if (_userId == null) {
         // Handle error
         return;
       }
 
       Query query = FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(_userId)
           .collection('payments')
           .orderBy('paymentDate', descending: true);
 

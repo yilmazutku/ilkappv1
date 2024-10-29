@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:untitled/models/user_model.dart';
 
 class AppointmentModel {
   final String appointmentId;
@@ -13,7 +14,8 @@ class AppointmentModel {
   final String? createdBy; // 'user' or 'admin'
   String? canceledBy; // 'user' or 'admin'
   DateTime? canceledAt;
-
+   UserModel? user;//sonradan eklendi, userid var ama user yok gosterirken hangi username e ait old icin
+  bool? isDeleted = false;
   AppointmentModel({
     required this.appointmentId,
     required this.userId,
@@ -27,6 +29,8 @@ class AppointmentModel {
     this.createdBy,
     this.canceledBy,
     this.canceledAt,
+    this.user,
+    this.isDeleted,
   });
 
   factory AppointmentModel.fromDocument(DocumentSnapshot doc) {
@@ -48,6 +52,11 @@ class AppointmentModel {
       canceledAt: data['canceledAt'] != null
           ? (data['canceledAt'] as Timestamp).toDate()
           : null,
+      isDeleted: data['isDeleted'] == null
+          ? false
+          : data['isDeleted'] == 'true'
+              ? true
+              : false,
     );
   }
 
@@ -69,6 +78,7 @@ class AppointmentModel {
       'createdBy': createdBy,
       'canceledBy': canceledBy,
       'canceledAt': canceledAt != null ? Timestamp.fromDate(canceledAt!) : null,
+      'isDeleted': isDeleted ?? false,
     };
   }
 }

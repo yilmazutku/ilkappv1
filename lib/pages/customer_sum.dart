@@ -159,7 +159,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
             userProvider.selectSubscription(newSubscription);
             logger.info('Subscription selected = {}', [newValue]);
-
             // Update other providers with new subscriptionId
             Provider.of<AppointmentManager>(context, listen: false)
                 .setSelectedSubscriptionId(newValue);

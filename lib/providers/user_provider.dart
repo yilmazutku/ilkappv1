@@ -79,7 +79,7 @@ class UserProvider extends ChangeNotifier with Loadable {
         logger.err('User ID not set.');
         return;
       }
-
+      _isLoading = true;
       Query query = FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
@@ -104,18 +104,17 @@ class UserProvider extends ChangeNotifier with Loadable {
     } catch (e) {
       logger.err('Error fetching subscriptions: {}', [e]);
     }
+    finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
 
   void setShowAllSubscriptions(bool value) {
     if (showAllSubscriptions != value) {
       showAllSubscriptions = value;
-      _isLoading = true;
-      notifyListeners();
-      fetchSubscriptions().then((_) {
-        _isLoading = false;
-        notifyListeners();
-      });
+      fetchSubscriptions();
     }
   }
 

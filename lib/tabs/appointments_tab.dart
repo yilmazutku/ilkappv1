@@ -20,7 +20,7 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
 
   @override
   List<dynamic> getDataList(AppointmentManager provider) {
-    return provider.appointments;
+    return provider.userAppointments;
   }
 
   @override
@@ -31,28 +31,31 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
   @override
   void setShowAllData(AppointmentManager provider, bool value) {
     provider.setShowAllAppointments(value);
+    if (!value) {
+      provider.setSelectedSubscriptionId(provider.selectedSubscriptionId);
+    }
   }
 
   @override
   Widget buildList(BuildContext context, List<dynamic> dataList) {
     List<AppointmentModel> appointments = dataList.cast<AppointmentModel>();
     return ListView.builder(
-      itemCount: appointments.length,
-      itemBuilder: (context, index) {
-        AppointmentModel appointment = appointments[index];
-        return ListTile(
-          title: Text(
-              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
-          subtitle: Text(
-              'Type: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              AppointmentModel appointment = appointments[index];
+              return ListTile(
+                title: Text(
+                    'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+                subtitle: Text(
+                    'Type: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
           trailing: IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              _showEditAppointmentDialog(context, appointment);
-            },
-          ),
-        );
-      },
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        _showEditAppointmentDialog(context, appointment);
+                      },
+                    ),
+                        );
+                      },
     );
   }
 

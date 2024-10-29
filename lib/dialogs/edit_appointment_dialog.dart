@@ -9,13 +9,13 @@ class EditAppointmentDialog extends StatefulWidget {
   final Function onAppointmentUpdated;
 
   const EditAppointmentDialog({
-    Key? key,
+    super.key,
     required this.appointment,
     required this.onAppointmentUpdated,
-  }) : super(key: key);
+  });
 
   @override
-  _EditAppointmentDialogState createState() => _EditAppointmentDialogState();
+   createState() => _EditAppointmentDialogState();
 }
 
 class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
