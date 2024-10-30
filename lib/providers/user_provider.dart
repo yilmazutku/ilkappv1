@@ -72,7 +72,9 @@ class UserProvider extends ChangeNotifier with Loadable {
       logger.err('Error fetching user details: {}', [e]);
     }
   }
+  Future<void> addSubscription() async { //TODO: add sub dialog burayı kullanabilmeli.
 
+  }
   Future<void> fetchSubscriptions() async {
     try {
       if (_userId == null) {

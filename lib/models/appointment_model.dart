@@ -14,7 +14,7 @@ class AppointmentModel {
   final String? createdBy; // 'user' or 'admin'
   String? canceledBy; // 'user' or 'admin'
   DateTime? canceledAt;
-   UserModel? user;//sonradan eklendi, userid var ama user yok gosterirken hangi username e ait old icin
+  UserModel? user;//sonradan eklendi, userid var ama user yok gosterirken hangi username e ait old icin
   bool? isDeleted = false;
   AppointmentModel({
     required this.appointmentId,

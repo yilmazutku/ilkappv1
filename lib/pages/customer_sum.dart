@@ -140,13 +140,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
     try {
       if (userProvider.isLoading) {
-        logger.info('userProvider is currently loading.');
+      //  logger.info('userProvider is currently loading.');
         return const CircularProgressIndicator();
       }
       if (userProvider.subscriptions.isEmpty) {
         return Container(); // Or any placeholder widget
       }
-      logger.info('userProvider is not loading. Starting to build.');
+     // logger.info('userProvider is not loading. Starting to build.');
       return DropdownButton<String>(
         value: userProvider.selectedSubscription?.subscriptionId,
         onChanged: (String? newValue) {

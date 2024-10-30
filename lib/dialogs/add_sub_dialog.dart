@@ -182,7 +182,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
           .collection('subscriptions')
           .doc(subscriptionId)
           .set(subscription.toMap());
-
+      //logger.info('Subscription added successfully {}',[subscription]);
       // Notify parent widget to refresh data
       widget.onSubscriptionAdded();
 
