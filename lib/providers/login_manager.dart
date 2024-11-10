@@ -44,7 +44,7 @@ class LoginProvider extends ChangeNotifier {
     try {
       //TODO gerçek logine çevirmek icin comemnte al 2.yi birinciyi de çıkar
       // await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: 'utkuyy97@gmail.com', password: '612009aa');
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: 'utkuyy97@gmail.com', password: '612009');
       return true;
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);

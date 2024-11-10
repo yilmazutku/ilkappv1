@@ -14,7 +14,7 @@ import 'package:untitled/providers/test_provider.dart';
 import 'models/logger.dart';
 import 'firebase_options.dart';
 String email = 'utkuyy97@gmail.com';
-String password = '612009aa';
+String password = '612009';
 final logger = Logger('MyApp');
 
 void main() async {

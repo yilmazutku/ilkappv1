@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../dialogs/edit_appointment_dialog.dart';
 import '../models/appointment_model.dart';
 import '../models/logger.dart';
 import '../models/user_model.dart';
 import '../providers/appointment_manager.dart';
+import '../providers/user_provider.dart';
+import '../dialogs/edit_appointment_dialog.dart';
 
 final Logger logger = Logger.forClass(AdminAppointmentsPage);
 
@@ -18,10 +19,6 @@ class AdminAppointmentsPage extends StatefulWidget {
 }
 
 class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
-  bool isLoading = true;
-  List<AppointmentModel> allAppointments = [];
-  List<AppointmentModel> appointments = [];
-
   DateTime? startDate;
   DateTime? endDate;
   MeetingType? selectedMeetingType;
@@ -32,66 +29,19 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
   final List<MeetingStatus?> meetingStatuses = [null, ...MeetingStatus.values];
   final List<String> sortOptions = ['Date Ascending', 'Date Descending', 'Name A-Z', 'Name Z-A'];
 
+  late Future<List<AppointmentModel>> _appointmentsFuture;
+
   @override
   void initState() {
     super.initState();
-    fetchAllAppointments();
+    _fetchAllAppointments();
   }
 
-  void applyFiltersAndSort() {
-    setState(() {
-      appointments = allAppointments.where((appointment) {
-        bool matchesDate = (startDate == null || appointment.appointmentDateTime.isAfter(startDate!)) &&
-            (endDate == null || appointment.appointmentDateTime.isBefore(endDate!.add(const Duration(days: 1))));
-
-        bool matchesType = selectedMeetingType == null || appointment.meetingType == selectedMeetingType;
-        bool matchesStatus = selectedMeetingStatus == null || appointment.status == selectedMeetingStatus;
-
-        return matchesDate && matchesType && matchesStatus;
-      }).toList();
-
-      // Sort appointments based on selected option
-      appointments.sort((a, b) {
-        switch (sortOption) {
-          case 'Date Ascending':
-            return a.appointmentDateTime.compareTo(b.appointmentDateTime);
-          case 'Date Descending':
-            return b.appointmentDateTime.compareTo(a.appointmentDateTime);
-          case 'Name A-Z':
-            return a.user?.name.compareTo(b.user?.name ?? '') ?? 0;
-          case 'Name Z-A':
-            return b.user?.name.compareTo(a.user?.name ?? '') ?? 0;
-          default:
-            return 0;
-        }
-      });
-    });
+  void _fetchAllAppointments() {
+    _appointmentsFuture = _fetchAppointmentsWithUsers();
   }
 
-  void _pickDateRange() async {
-    DateTimeRange? pickedRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialDateRange: startDate != null && endDate != null
-          ? DateTimeRange(start: startDate!, end: endDate!)
-          : null,
-    );
-
-    if (pickedRange != null) {
-      setState(() {
-        startDate = pickedRange.start;
-        endDate = pickedRange.end;
-      });
-      applyFiltersAndSort();
-    }
-  }
-
-  Future<void> fetchAllAppointments() async {
-    setState(() {
-      isLoading = true;
-    });
-
+  Future<List<AppointmentModel>> _fetchAppointmentsWithUsers() async {
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance.collectionGroup('appointments').get();
 
@@ -108,33 +58,75 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
         return appointment;
       }).toList());
 
-      setState(() {
-        allAppointments = fetchedAppointments;
-        applyFiltersAndSort();
-        isLoading = false;
-      });
+      // Apply filters and sorting
+      return _applyFiltersAndSort(fetchedAppointments);
     } catch (e) {
       logger.err('Error fetching appointments: {}', [e]);
+      return [];
+    }
+  }
+
+  List<AppointmentModel> _applyFiltersAndSort(List<AppointmentModel> appointments) {
+    List<AppointmentModel> filteredAppointments = appointments.where((appointment) {
+      bool matchesDate = (startDate == null || appointment.appointmentDateTime.isAfter(startDate!)) &&
+          (endDate == null || appointment.appointmentDateTime.isBefore(endDate!.add(const Duration(days: 1))));
+
+      bool matchesType = selectedMeetingType == null || appointment.meetingType == selectedMeetingType;
+      bool matchesStatus = selectedMeetingStatus == null || appointment.status == selectedMeetingStatus;
+
+      return matchesDate && matchesType && matchesStatus;
+    }).toList();
+
+    // Sort appointments based on selected option
+    filteredAppointments.sort((a, b) {
+      switch (sortOption) {
+        case 'Date Ascending':
+          return a.appointmentDateTime.compareTo(b.appointmentDateTime);
+        case 'Date Descending':
+          return b.appointmentDateTime.compareTo(a.appointmentDateTime);
+        case 'Name A-Z':
+          return (a.user?.name ?? '').compareTo(b.user?.name ?? '');
+        case 'Name Z-A':
+          return (b.user?.name ?? '').compareTo(a.user?.name ?? '');
+        default:
+          return 0;
+      }
+    });
+
+    return filteredAppointments;
+  }
+
+  void _pickDateRange() async {
+    DateTimeRange? pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDateRange: startDate != null && endDate != null
+          ? DateTimeRange(start: startDate!, end: endDate!)
+          : null,
+    );
+
+    if (pickedRange != null) {
       setState(() {
-        isLoading = false;
+        startDate = pickedRange.start;
+        endDate = pickedRange.end;
+        _fetchAllAppointments();
       });
     }
   }
 
   Future<void> _deleteAppointment(AppointmentModel appointment) async {
     try {
-      final appointmentManager =
-      Provider.of<AppointmentManager>(context, listen: false);
-      appointmentManager.setUserId(appointment.userId);
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
 
-      if (await appointmentManager.cancelAppointment(appointment.appointmentId, canceledBy: 'admin')) {
+      if (await appointmentManager.cancelAppointment(appointment.appointmentId, appointment.userId, canceledBy: 'admin')) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Appointment canceled.')),
         );
       }
 
-      fetchAllAppointments();
+      _fetchAllAppointments();
     } catch (e) {
       logger.err('Error canceling appointment: {}', [e]);
       if (!mounted) return;
@@ -142,6 +134,22 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
         SnackBar(content: Text('Error canceling appointment: $e')),
       );
     }
+  }
+
+  void _showEditAppointmentDialog(BuildContext context, AppointmentModel appointment) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return EditAppointmentDialog(
+          appointment: appointment,
+          onAppointmentUpdated: () {
+            setState(() {
+              _fetchAllAppointments();
+            });
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -152,8 +160,12 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: fetchAllAppointments, // Refresh button to reload data
-            tooltip: 'Yenile',
+            onPressed: () {
+              setState(() {
+                _fetchAllAppointments();
+              });
+            },
+            tooltip: 'Refresh',
           ),
           IconButton(
             icon: const Icon(Icons.date_range),
@@ -165,14 +177,14 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
             items: meetingTypes.map((type) {
               return DropdownMenuItem<MeetingType?>(
                 value: type,
-                child: Text(type == null ? 'Hepsi' : type.label),
+                child: Text(type == null ? 'All' : type.label),
               );
             }).toList(),
             onChanged: (value) {
               setState(() {
                 selectedMeetingType = value;
+                _fetchAllAppointments();
               });
-              applyFiltersAndSort();
             },
           ),
           DropdownButton<MeetingStatus?>(
@@ -181,14 +193,14 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
             items: meetingStatuses.map((status) {
               return DropdownMenuItem<MeetingStatus?>(
                 value: status,
-                child: Text(status == null ? 'Hepsi' : status.label),
+                child: Text(status == null ? 'All' : status.label),
               );
             }).toList(),
             onChanged: (value) {
               setState(() {
                 selectedMeetingStatus = value;
+                _fetchAllAppointments();
               });
-              applyFiltersAndSort();
             },
           ),
           DropdownButton<String>(
@@ -203,8 +215,8 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
             onChanged: (value) {
               setState(() {
                 sortOption = value;
+                _fetchAllAppointments();
               });
-              applyFiltersAndSort();
             },
           ),
           if (startDate != null || endDate != null || selectedMeetingType != null || selectedMeetingStatus != null)
@@ -216,34 +228,33 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                   endDate = null;
                   selectedMeetingType = null;
                   selectedMeetingStatus = null;
+                  _fetchAllAppointments();
                 });
-                applyFiltersAndSort();
               },
             ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          if (startDate != null && endDate != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                'Date Range: ${DateFormat('dd/MM/yyyy').format(startDate!)} - ${DateFormat('dd/MM/yyyy').format(endDate!)}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          Expanded(
-            child: appointments.isEmpty
-                ? const Center(child: Text('No appointments found.'))
-                : ListView.builder(
+      body: FutureBuilder<List<AppointmentModel>>(
+        future: _appointmentsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            logger.err('Error fetching appointments: {}', [snapshot.error??'snapshot error']);
+            return Center(child: Text('Error fetching appointments: ${snapshot.error}'));
+          } else {
+            final appointments = snapshot.data ?? [];
+
+            if (appointments.isEmpty) {
+              return const Center(child: Text('No appointments found.'));
+            }
+
+            return ListView.builder(
               itemCount: appointments.length,
               itemBuilder: (context, index) {
                 AppointmentModel appointment = appointments[index];
                 return ListTile(
-                  title: Text(
-                      'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+                  title: Text('Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
                   subtitle: Text(
                       'User: ${appointment.user?.name ?? 'Unknown'}\nType: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
                   trailing: Row(
@@ -283,33 +294,18 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                           );
 
                           if (confirmDelete == true) {
-                            _deleteAppointment(appointment);
+                            await _deleteAppointment(appointment);
                           }
                         },
                       ),
                     ],
                   ),
                 );
-
               },
-            ),
-          ),
-        ],
+            );
+          }
+        },
       ),
-    );
-  }
-  void _showEditAppointmentDialog(BuildContext context, AppointmentModel appointment) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return EditAppointmentDialog(
-          appointment: appointment,
-          onAppointmentUpdated: () {
-            Provider.of<AppointmentManager>(context, listen: false)
-                .fetchAppointments();
-          },
-        );
-      },
     );
   }
 }

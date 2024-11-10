@@ -1,52 +1,58 @@
-// providers/payment_provider.dart
-
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../models/logger.dart';
 import '../models/payment_model.dart';
 import '../models/subs_model.dart';
-import '../tabs/basetab.dart';
+
 final Logger logger = Logger.forClass(PaymentProvider);
 
-class PaymentProvider extends ChangeNotifier with Loadable {
-  List<PaymentModel> _payments = [];
-  bool _isLoading = false;
-  bool _showAllPayments = false;
+class PaymentProvider extends ChangeNotifier {
+  final Logger logger = Logger.forClass(PaymentProvider);
 
   String? _userId;
   String? _selectedSubscriptionId;
 
-  List<PaymentModel> get payments => _payments;
-
-  @override
-  bool get isLoading => _isLoading;
-
-  bool get showAllPayments => _showAllPayments;
-
-  PaymentProvider();
-
+  // Setters
   void setUserId(String userId) {
     _userId = userId;
-    fetchPayments();
   }
 
   void setSelectedSubscriptionId(String? subscriptionId) {
     _selectedSubscriptionId = subscriptionId;
-    fetchPayments();
   }
 
-  void setShowAllPayments(bool value) {
-    if (_showAllPayments != value) {
-      logger.info('setShowAllPayments is called with isShowAllPayments={}',[value]);
-      _showAllPayments = value;
-      fetchPayments();
+  // Fetch Payments
+  Future<List<PaymentModel>> fetchPayments({required bool showAllPayments}) async {
+    if (_userId == null) return [];
+
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('payments')
+          .orderBy('paymentDate', descending: true);
+
+      if (!showAllPayments && _selectedSubscriptionId != null) {
+        query = query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
+      }
+
+      final snapshot = await query.get();
+
+      List<PaymentModel> payments =
+      snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
+
+      return payments;
+    } catch (e) {
+      logger.err('Error fetching payments: $e');
+      return [];
     }
   }
-  // New method to add payment
+
+  // Method to add payment
   Future<void> addPayment({
     required String userId,
     required SubscriptionModel subscription,
@@ -100,13 +106,13 @@ class PaymentProvider extends ChangeNotifier with Loadable {
         'amountPaid': subscription.amountPaid,
       });
 
-      // Refresh payments
-      fetchPayments();
+      // No need to call fetchPayments() here since we're not maintaining a local list
     } catch (e) {
       logger.err('Error adding payment: $e');
       rethrow; // Rethrow the exception to handle it in the UI
     }
   }
+
   Future<String> _uploadDekontImage(String userId, File dekontImage) async {
     try {
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
@@ -126,36 +132,21 @@ class PaymentProvider extends ChangeNotifier with Loadable {
       throw Exception('Error uploading dekont image: $e');
     }
   }
-  Future<void> fetchPayments() async {
-    _isLoading = true;
-    // Do not call notifyListeners here
+
+  // Update payment method if needed
+  Future<void> updatePayment(PaymentModel updatedPayment) async {
     try {
-      if (_userId == null) {
-        // Handle error
-        return;
-      }
-
-      Query query = FirebaseFirestore.instance
+      await FirebaseFirestore.instance
           .collection('users')
-          .doc(_userId)
+          .doc(updatedPayment.userId)
           .collection('payments')
-          .orderBy('paymentDate', descending: true);
+          .doc(updatedPayment.paymentId)
+          .update(updatedPayment.toMap());
 
-      if (!_showAllPayments && _selectedSubscriptionId != null) {
-        query =
-            query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
-      }
-
-      final snapshot = await query.get();
-
-      _payments =
-          snapshot.docs.map((doc) => PaymentModel.fromDocument(doc)).toList();
-
+      logger.info('Payment updated successfully for user ${updatedPayment.userId}');
     } catch (e) {
-      // Handle error TODO
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      logger.err('Error updating payment: $e');
+      throw Exception('Error updating payment: $e');
     }
   }
 }

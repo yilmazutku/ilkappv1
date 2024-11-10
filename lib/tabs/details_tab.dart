@@ -1,46 +1,54 @@
-// tabs/details_tab.dart
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import '../models/user_model.dart';
 import '../providers/user_provider.dart';
 
-class DetailsTab extends StatelessWidget {
+class DetailsTab extends StatefulWidget {
   final String userId;
 
   const DetailsTab({super.key, required this.userId});
 
   @override
+   createState() => _DetailsTabState();
+}
+
+class _DetailsTabState extends State<DetailsTab> {
+  late Future<UserModel?> _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _userFuture = UserProvider().fetchUserDetails();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-
-    // Fetch user details if not already fetched
-    if (userProvider.user == null && !userProvider.isLoading) {
-      userProvider.fetchUserDetails();
-    }
-
-    if (userProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (userProvider.user == null) {
-      return const Center(child: Text('No user details available.'));
-    }
-
-    final user = userProvider.user!;
-
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        ListTile(
-          title: const Text('Name'),
-          subtitle: Text(user.name),
-        ),
-        ListTile(
-          title: const Text('Email'),
-          subtitle: Text(user.email),
-        ),
-        // Add more user details as needed
-      ],
+    return FutureBuilder<UserModel?>(
+      future: _userFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error fetching user details: ${snapshot.error}'));
+        } else if (snapshot.data == null) {
+          return const Center(child: Text('No user details available.'));
+        } else {
+          final user = snapshot.data!;
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              ListTile(
+                title: const Text('Name'),
+                subtitle: Text(user.name),
+              ),
+              ListTile(
+                title: const Text('Email'),
+                subtitle: Text(user.email),
+              ),
+              // Add more user details as needed
+            ],
+          );
+        }
+      },
     );
   }
 }

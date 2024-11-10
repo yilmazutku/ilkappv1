@@ -7,6 +7,7 @@ import '../dialogs/edit_appointment_dialog.dart';
 import 'basetab.dart';
 
 class AppointmentsTab extends BaseTab<AppointmentManager> {
+
   const AppointmentsTab({super.key, required super.userId})
       : super(
     allDataLabel: 'All Appointments',
@@ -15,47 +16,40 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
 
   @override
   AppointmentManager getProvider(BuildContext context) {
-    return Provider.of<AppointmentManager>(context);
+    final provider = Provider.of<AppointmentManager>(context);
+    return provider;
   }
 
   @override
-  List<dynamic> getDataList(AppointmentManager provider) {
-    return provider.userAppointments;
+  Future<List<dynamic>> getDataList(AppointmentManager provider, bool showAllData) {
+    return provider.fetchAppointments(showAllAppointments: showAllData, userId: userId);
   }
 
   @override
-  bool getShowAllData(AppointmentManager provider) {
-    return provider.showAllAppointments;
-  }
+  _AppointmentsTabState createState() => _AppointmentsTabState();
+}
 
-  @override
-  void setShowAllData(AppointmentManager provider, bool value) {
-    provider.setShowAllAppointments(value);
-    if (!value) {
-      provider.setSelectedSubscriptionId(provider.selectedSubscriptionId);
-    }
-  }
-
+class _AppointmentsTabState extends BaseTabState<AppointmentManager, AppointmentsTab> {
   @override
   Widget buildList(BuildContext context, List<dynamic> dataList) {
     List<AppointmentModel> appointments = dataList.cast<AppointmentModel>();
     return ListView.builder(
-            itemCount: appointments.length,
-            itemBuilder: (context, index) {
-              AppointmentModel appointment = appointments[index];
-              return ListTile(
-                title: Text(
-                    'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
-                subtitle: Text(
-                    'Type: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
+      itemCount: appointments.length,
+      itemBuilder: (context, index) {
+        AppointmentModel appointment = appointments[index];
+        return ListTile(
+          title: Text(
+              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+          subtitle: Text(
+              'Type: ${appointment.meetingType.label}\nStatus: ${appointment.status.label}\nCanceled By: ${appointment.canceledBy ?? 'N/A'}'),
           trailing: IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        _showEditAppointmentDialog(context, appointment);
-                      },
-                    ),
-                        );
-                      },
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              _showEditAppointmentDialog(context, appointment);
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -66,8 +60,10 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
         return EditAppointmentDialog(
           appointment: appointment,
           onAppointmentUpdated: () {
-            Provider.of<AppointmentManager>(context, listen: false)
-                .fetchAppointments();
+            setState(() {
+              // Re-fetch data when the appointment is updated
+              fetchData();
+            });
           },
         );
       },

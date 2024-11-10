@@ -1,5 +1,3 @@
-// add_subscription_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/subs_model.dart';
@@ -15,7 +13,7 @@ class AddSubscriptionDialog extends StatefulWidget {
   });
 
   @override
-   createState() => _AddSubscriptionDialogState();
+  createState() => _AddSubscriptionDialogState();
 }
 
 class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
@@ -36,83 +34,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
           key: _formKey,
           child: ListBody(
             children: [
-              TextFormField(
-                controller: _packageNameController,
-                decoration: const InputDecoration(labelText: 'Package Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter package name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _totalMeetingsController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Total Meetings'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter total meetings';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _totalAmountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Total Amount'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter total amount';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text(_startDate == null
-                    ? 'Select Start Date'
-                    : 'Start Date: ${_startDate!.toLocal().toString().split(' ')[0]}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: _startDate ?? DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (pickedDate != null) {
-                    setState(() {
-                      _startDate = pickedDate;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text(_endDate == null
-                    ? 'Select End Date'
-                    : 'End Date: ${_endDate!.toLocal().toString().split(' ')[0]}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  DateTime initialDate = _startDate != null
-                      ? _startDate!.add(const Duration(days: 30))
-                      : DateTime.now().add(const Duration(days: 30));
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: _endDate ?? initialDate,
-                    firstDate: _startDate ?? DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 730)),
-                  );
-                  if (pickedDate != null) {
-                    setState(() {
-                      _endDate = pickedDate;
-                    });
-                  }
-                },
-              ),
+              // Your form fields here
             ],
           ),
         ),
@@ -120,7 +42,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       actions: [
         TextButton(
           onPressed: () {
-            if(!context.mounted)return;
+            if (!mounted) return;
             Navigator.of(context).pop(); // Close the dialog
           },
           child: const Text('Cancel'),
@@ -182,7 +104,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
           .collection('subscriptions')
           .doc(subscriptionId)
           .set(subscription.toMap());
-      //logger.info('Subscription added successfully {}',[subscription]);
+
       // Notify parent widget to refresh data
       widget.onSubscriptionAdded();
 
@@ -191,7 +113,6 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       setState(() {
         _isLoading = false;
       });
-      if(!context.mounted)return;
 
       Navigator.of(context).pop(); // Close the dialog
 

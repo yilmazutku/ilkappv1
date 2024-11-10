@@ -151,7 +151,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       );
 
       bool isAvailable = appointmentManager.isTimeSlotAvailable(
-          _selectedDate, _selectedTime!);
+          _selectedDate, _selectedTime!,[]);
 
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(

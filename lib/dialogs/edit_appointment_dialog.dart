@@ -34,7 +34,6 @@ class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
   Future<void> _updateAppointment() async {
     try {
       final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
-      appointmentManager.setUserId(widget.appointment.userId);
 
       AppointmentModel updatedAppointment = AppointmentModel(
         appointmentId: widget.appointment.appointmentId,

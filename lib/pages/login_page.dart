@@ -18,6 +18,7 @@ class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   Future<String?> getCurrentSubscriptionId(String userId) async {
+    logger.info('getting sub id for user with userId={}',[userId]);
     final subscriptionsCollection = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -123,7 +124,7 @@ class LoginPage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const ResetPasswordPage()),
+                  builder: (context) => const ResetPasswordPage(email: '',)),
             );
           },
           child: const Text('Şifremi Unuttum'),
@@ -186,12 +187,39 @@ class LoginPage extends StatelessWidget {
         ),
         // ListTile for "Randevu"
         ListTile(
-          leading: const Icon(Icons.calendar_today),
+          leading: const Icon(Icons.food_bank),
           title: const Text('Randevu'),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AppointmentsPage()),
-          ),
+          onTap: () async {
+            final userId = FirebaseAuth.instance.currentUser?.uid;
+
+            if (userId == null) {
+              if(!context.mounted)return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User not logged in')),
+              );
+              return;
+            }
+
+            final subscriptionId = await getCurrentSubscriptionId(userId);
+
+            if (subscriptionId == null) {
+              if(!context.mounted)return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No active subscription found')),
+              );
+              return;
+            }
+            if(!context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AppointmentsPage(
+                  userId: userId,
+                  subscriptionId: subscriptionId,
+                ),
+              ),
+            );
+          },
         ),
         // ListTile for "Şifre Sıfırla"
         ListTile(
@@ -199,7 +227,10 @@ class LoginPage extends StatelessWidget {
           title: const Text('Şifre Sıfırla'),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
+            MaterialPageRoute(
+                builder: (context) => ResetPasswordPage(
+                      email: FirebaseAuth.instance.currentUser?.email ?? '',
+                    )),
           ),
         ),
         // ListTile for "Admin Appointments"

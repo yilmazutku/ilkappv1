@@ -1,13 +1,6 @@
-// tabs/base_tab.dart
-// managers/loadable.dart
 import 'package:flutter/material.dart';
-mixin Loadable {
-  bool get isLoading;
-}
 
-
-
-abstract class BaseTab<T extends Loadable> extends StatelessWidget {
+abstract class BaseTab<T> extends StatefulWidget {
   final String userId;
   final String allDataLabel;
   final String subscriptionDataLabel;
@@ -21,45 +14,80 @@ abstract class BaseTab<T extends Loadable> extends StatelessWidget {
 
   T getProvider(BuildContext context);
 
-  List<dynamic> getDataList(T provider);
+  Future<List<dynamic>> getDataList(T provider, bool showAllData);
 
-  Widget buildList(BuildContext context, List<dynamic> dataList);
+  @override
+  BaseTabState<T, BaseTab<T>> createState();
+}
 
-  bool getShowAllData(T provider);
+abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
+  bool showAllData = false;
+  Future<List<dynamic>>? dataFuture;
 
-  void setShowAllData(T provider, bool value);
+  @override
+  void initState() {
+    super.initState();
+   // fetchData();
+    //   // Avoid calling fetchData or similar logic here if it depends on Provider
+  }
+
+  bool _dataFetched = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_dataFetched) {
+      fetchData();
+      _dataFetched = true;
+    }
+  }
+
+  void fetchData() {
+    final provider = widget.getProvider(context);
+    dataFuture = widget.getDataList(provider, showAllData);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final provider = getProvider(context);
-
-    if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final dataList = getDataList(provider);
-
     return Column(
       children: [
         // Toggle Button
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(getShowAllData(provider) ? allDataLabel : subscriptionDataLabel),
+            Text(showAllData ? widget.allDataLabel : widget.subscriptionDataLabel),
             Switch(
-              value: getShowAllData(provider),
+              value: showAllData,
               onChanged: (value) {
-                setShowAllData(provider, value);
+                setState(() {
+                  showAllData = value;
+                  fetchData();
+                });
               },
             ),
           ],
         ),
         Expanded(
-          child: dataList.isEmpty
-              ? const Center(child: Text('No data found.'))
-              : buildList(context, dataList),
+          child: FutureBuilder<List<dynamic>>(
+            future: dataFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error fetching data: ${snapshot.error}'));
+              } else {
+                final dataList = snapshot.data ?? [];
+                if (dataList.isEmpty) {
+                  return const Center(child: Text('No data found.'));
+                }
+                return buildList(context, dataList);
+              }
+            },
+          ),
         ),
       ],
     );
   }
+
+  // Abstract method
+  Widget buildList(BuildContext context, List<dynamic> dataList);
 }

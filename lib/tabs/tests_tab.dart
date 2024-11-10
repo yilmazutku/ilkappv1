@@ -1,5 +1,3 @@
-// tabs/tests_tab.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/test_model.dart';
@@ -15,24 +13,21 @@ class TestsTab extends BaseTab<TestProvider> {
 
   @override
   TestProvider getProvider(BuildContext context) {
-    return Provider.of<TestProvider>(context);
+    final provider = Provider.of<TestProvider>(context);
+    provider.setUserId(userId);
+    return provider;
   }
 
   @override
-  List<TestModel> getDataList(TestProvider provider) {
-    return provider.tests;
+  Future<List<dynamic>> getDataList(TestProvider provider, bool showAllData) {
+    return provider.fetchTests(); //hep tum testleri döner
   }
 
   @override
-  bool getShowAllData(TestProvider provider) {
-    return provider.showAllTests;
-  }
+  BaseTabState<TestProvider, BaseTab<TestProvider>> createState() => _TestsTabState();
+}
 
-  @override
-  void setShowAllData(TestProvider provider, bool value) {
-    provider.setShowAllTests(value);
-  }
-
+class _TestsTabState extends BaseTabState<TestProvider, TestsTab> {
   @override
   Widget buildList(BuildContext context, List<dynamic> dataList) {
     List<TestModel> tests = dataList.cast<TestModel>();
@@ -42,11 +37,7 @@ class TestsTab extends BaseTab<TestProvider> {
         TestModel test = tests[index];
         return ListTile(
           title: Text('Test Name: ${test.testName}'),
-          subtitle: Text(
-              'Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
-          onTap: () {
-            // Handle onTap if necessary
-          },
+          subtitle: Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
         );
       },
     );

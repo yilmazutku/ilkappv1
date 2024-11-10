@@ -15,24 +15,21 @@ class ImagesTab extends BaseTab<MealStateManager> {
 
   @override
   MealStateManager getProvider(BuildContext context) {
-    return Provider.of<MealStateManager>(context);
+    final provider = Provider.of<MealStateManager>(context);
+    provider.setUserId(userId);
+    return provider;
   }
 
   @override
-  List<MealModel> getDataList(MealStateManager provider) {
-    return provider.meals;
+  Future<List<dynamic>> getDataList(MealStateManager provider, bool showAllData) {
+    return provider.fetchMeals(showAllImages: showAllData);
   }
 
   @override
-  bool getShowAllData(MealStateManager provider) {
-    return provider.showAllImages;
-  }
+   createState() => _ImagesTabState();
+}
 
-  @override
-  void setShowAllData(MealStateManager provider, bool value) {
-    provider.setShowAllImages(value);
-  }
-
+class _ImagesTabState extends BaseTabState<MealStateManager, ImagesTab> {
   @override
   Widget buildList(BuildContext context, List<dynamic> dataList) {
     List<MealModel> meals = dataList.cast<MealModel>();
@@ -58,7 +55,8 @@ class ImagesTab extends BaseTab<MealStateManager> {
     );
   }
 
-  void _showFullImage(BuildContext context, String imageUrl, MealModel meal) {
+  void _showFullImage(BuildContext context, String imageUrl, MealModel meal) { //TODO
     // Implement your image viewer dialog
+    // You can call setState here if needed
   }
 }

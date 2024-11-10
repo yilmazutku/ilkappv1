@@ -2,50 +2,54 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/logger.dart';
+
 import '../models/appointment_model.dart';
+import '../models/logger.dart';
 import '../providers/appointment_manager.dart';
-import '../providers/user_provider.dart';
 
 final Logger logger = Logger.forClass(AppointmentsPage);
 
 class AppointmentsPage extends StatefulWidget {
-  const AppointmentsPage({super.key});
+  String userId;
+  String subscriptionId;
+
+  AppointmentsPage({
+    super.key,
+    required this.userId,
+    required this.subscriptionId,
+  });
 
   @override
-   createState() => _AppointmentsPageState();
+  createState() => _AppointmentsPageState();
 }
 
 class _AppointmentsPageState extends State<AppointmentsPage> {
   DateTime _selectedDate = DateTime.now();
   MeetingType _selectedMeetingType = MeetingType.f2f;
   TimeOfDay? _selectedTime;
-  List<TimeOfDay> _availableTimes = [];
+  late Future<List<TimeOfDay>> _availableTimesFuture;
+  late Future<List<AppointmentModel>> _userAppointmentsFuture;
 
   @override
   void initState() {
     super.initState();
-    logger.info('started initing state for appointments page state.');
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _fetchAvailableTimesAndUserAppointments();
-    });
-    logger.info('ended initing state for appointments page state.');
+    logger.info('Initializing AppointmentsPage state.');
+    _fetchAvailableTimes();
+    _fetchUserAppointments();
   }
 
-  Future<void> _fetchAvailableTimesAndUserAppointments() async {
-    try {
-      final appointmentManager =
-          Provider.of<AppointmentManager>(context, listen: false);
-      await appointmentManager.fetchUserAppointments();
-      List<TimeOfDay> availableTimes =
-          await appointmentManager.getAvailableTimesForDate(_selectedDate);
-      setState(() {
-        _availableTimes = availableTimes;
-      });
-    } catch (e) {
-      logger.err('Error fetching available times: {}', [e]);
-      setState(() {});
-    }
+  void _fetchAvailableTimes() {
+    final appointmentManager =
+        Provider.of<AppointmentManager>(context, listen: false);
+    _availableTimesFuture =
+        appointmentManager.getAvailableTimesForDate(_selectedDate);
+  }
+
+  void _fetchUserAppointments() {
+    final appointmentManager =
+        Provider.of<AppointmentManager>(context, listen: false);
+    _userAppointmentsFuture =
+        appointmentManager.fetchAppointments(showAllAppointments: true,userId:widget.userId);
   }
 
   Future<void> _bookAppointment() async {
@@ -60,15 +64,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     try {
       final appointmentManager =
           Provider.of<AppointmentManager>(context, listen: false);
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-      String? userId = appointmentManager.userId;
-      String? subscriptionId =
-          userProvider.selectedSubscription?.subscriptionId;
-
-      if (userId == null || subscriptionId == null) {
-        throw Exception('User ID or Subscription ID is not set.');
-      }
 
       DateTime appointmentDateTime = DateTime(
         _selectedDate.year,
@@ -78,28 +73,31 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         _selectedTime!.minute,
       );
 
-      bool isAvailable =
-          appointmentManager.isTimeSlotAvailable(_selectedDate, _selectedTime!);
+      // Check if the selected time slot is still available
+      List<TimeOfDay> availableTimes =
+          await appointmentManager.getAvailableTimesForDate(_selectedDate);
+      bool isAvailable = availableTimes.contains(_selectedTime);
 
       if (!mounted) return;
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selected time slot is not available.')),
+          const SnackBar(
+              content: Text('Selected time slot is no longer available.')),
         );
         return;
       }
 
       String appointmentId = FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(widget.userId)
           .collection('appointments')
           .doc()
           .id;
 
       AppointmentModel appointment = AppointmentModel(
         appointmentId: appointmentId,
-        userId: userId,
-        subscriptionId: subscriptionId,
+        userId: widget.userId,
+        subscriptionId: widget.subscriptionId,
         meetingType: _selectedMeetingType,
         appointmentDateTime: appointmentDateTime,
         status: MeetingStatus.scheduled,
@@ -115,7 +113,11 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       );
 
       // Refresh available times and user's appointments
-      await _fetchAvailableTimesAndUserAppointments();
+      setState(() {
+        _fetchAvailableTimes();
+        _fetchUserAppointments();
+        _selectedTime = null;
+      });
     } catch (e) {
       logger.err('Error booking appointment: {}', [e]);
       if (!mounted) return;
@@ -125,19 +127,23 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }
   }
 
-  Future<void> _cancelAppointment(String appointmentId) async {
+  Future<void> _cancelAppointment(AppointmentModel appointment) async {
     try {
       final appointmentManager =
           Provider.of<AppointmentManager>(context, listen: false);
 
-      if (await appointmentManager.cancelAppointment(appointmentId,
+      if (await appointmentManager.cancelAppointment(
+          appointment.appointmentId, appointment.userId,
           canceledBy: 'user')) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Appointment canceled.')),
         );
       }
-      await _fetchAvailableTimesAndUserAppointments();
+      setState(() {
+        _fetchAvailableTimes();
+        _fetchUserAppointments();
+      });
     } catch (e) {
       logger.err('Error canceling appointment: {}', [e]);
       if (!mounted) return;
@@ -149,8 +155,8 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appointmentManager = Provider.of<AppointmentManager>(context);
-logger.info('build appts page');
+    logger.info('Building AppointmentsPage');
+
     return Scaffold(
       appBar: AppBar(title: const Text('Appointments')),
       body: SingleChildScrollView(
@@ -195,30 +201,43 @@ logger.info('build appts page');
                     _selectedDate = picked;
                     _selectedTime = null;
                   });
-                  await _fetchAvailableTimesAndUserAppointments();
+                  _fetchAvailableTimes();
                 }
               },
             ),
             const SizedBox(height: 16),
-            appointmentManager.isLoading
-                ? const CircularProgressIndicator()
-                : _availableTimes.isEmpty
-                    ? const Text(
-                        'No available time slots for the selected date.')
-                    : Wrap(
-                        spacing: 8.0,
-                        children: _availableTimes.map((time) {
-                          return ChoiceChip(
-                            label: Text(time.format(context)),
-                            selected: _selectedTime == time,
-                            onSelected: (bool selected) {
-                              setState(() {
-                                _selectedTime = selected ? time : null;
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
+            FutureBuilder<List<TimeOfDay>>(
+              future: _availableTimesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text(
+                      'Error fetching available times: ${snapshot.error}');
+                } else {
+                  List<TimeOfDay> availableTimes = snapshot.data ?? [];
+                  if (availableTimes.isEmpty) {
+                    return const Text(
+                        'No available time slots for the selected date.');
+                  } else {
+                    return Wrap(
+                      spacing: 8.0,
+                      children: availableTimes.map((time) {
+                        return ChoiceChip(
+                          label: Text(time.format(context)),
+                          selected: _selectedTime == time,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              _selectedTime = selected ? time : null;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    );
+                  }
+                }
+              },
+            ),
             const SizedBox(height: 16),
             Center(
               child: ElevatedButton(
@@ -231,9 +250,19 @@ logger.info('build appts page');
               'My Appointments',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            appointmentManager.isLoading
-                ? const CircularProgressIndicator()
-                : _buildAppointmentsList(appointmentManager.userAppointments),
+            FutureBuilder<List<AppointmentModel>>(
+              future: _userAppointmentsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error fetching appointments: ${snapshot.error}');
+                } else {
+                  List<AppointmentModel> appointments = snapshot.data ?? [];
+                  return _buildAppointmentsList(appointments);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -243,13 +272,14 @@ logger.info('build appts page');
   Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
     final upcomingAppointments = appointments.where((appointment) {
       return appointment.appointmentDateTime.isAfter(DateTime.now()) &&
-          appointment.status != MeetingStatus.canceled && !appointment.isDeleted!;
+          appointment.status != MeetingStatus.canceled &&
+          !(appointment.isDeleted ?? false);
     }).toList();
 
     if (upcomingAppointments.isEmpty) {
       return const Text('No upcoming appointments.');
     }
-  logger.info('upcomingAppointments={}',[upcomingAppointments]);
+    logger.info('upcomingAppointments={}', [upcomingAppointments]);
     return Column(
       children: upcomingAppointments.map((appointment) {
         return ListTile(
@@ -285,7 +315,7 @@ logger.info('build appts page');
               );
 
               if (confirmCancel == true) {
-                await _cancelAppointment(appointment.appointmentId);
+                await _cancelAppointment(appointment);
               }
             },
           ),

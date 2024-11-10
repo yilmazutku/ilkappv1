@@ -165,8 +165,8 @@ class _AddImageDialogState extends State<AddImageDialog> {
         await mealDocRef.set(mealModel.toMap());
 
         // Update meal checked state
-        Provider.of<MealStateManager>(context, listen: false)
-            .setMealCheckedState(_selectedMeal!, true);
+        // Provider.of<MealStateManager>(context, listen: false)
+        //     .setMealCheckedState(_selectedMeal!, true);
 
         // Notify parent widget to refresh data
         widget.onImageAdded();

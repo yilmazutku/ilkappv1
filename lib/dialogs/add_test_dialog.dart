@@ -1,10 +1,8 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../models/logger.dart';
 import '../models/test_model.dart';
 
@@ -27,8 +25,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
 
   // Controllers and variables
   final TextEditingController _testNameController = TextEditingController();
-  final TextEditingController _testDescriptionController =
-      TextEditingController();
+  final TextEditingController _testDescriptionController = TextEditingController();
   DateTime? _selectedTestDate;
   File? _testFile;
   final ImagePicker _picker = ImagePicker();
@@ -85,6 +82,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
       actions: [
         TextButton(
           onPressed: () {
+            if (!mounted) return;
             Navigator.of(context).pop(); // Close the dialog
           },
           child: const Text('Cancel'),
@@ -119,7 +117,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
         _selectedTestDate == null ||
         _testFile == null) {
       logger.err('Please fill all required fields.');
-      if(!context.mounted)return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
       );
@@ -155,6 +153,7 @@ class _AddTestDialogState extends State<AddTestDialog> {
 
       // Notify parent widget to refresh data
       widget.onTestAdded();
+
       if (!mounted) return;
       setState(() {
         _isLoading = false;

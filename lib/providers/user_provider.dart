@@ -3,85 +3,53 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
-import '../tabs/basetab.dart';
 
 final Logger logger = Logger.forClass(UserProvider);
 
-class UserProvider extends ChangeNotifier with Loadable {
-  UserModel? _user;
-  List<SubscriptionModel> _subscriptions = [];
-  SubscriptionModel? _selectedSubscription;
-  bool _isLoading = false;
-  bool showAllSubscriptions = false;
+class UserProvider extends ChangeNotifier {
+  static final UserProvider _userProvider = UserProvider._internal();
+  factory UserProvider () {
+    return _userProvider;
+  }
+  UserProvider._internal();
+
   String? _userId;
 
-  UserModel? get user => _user;
-  List<SubscriptionModel> get subscriptions => _subscriptions;
-  SubscriptionModel? get selectedSubscription => _selectedSubscription;
-
-
-  List<UserModel> _users = [];
-  List<UserModel> get users => _users;
-
-
-  @override
-  bool get isLoading => _isLoading;
-
-  Future<void> fetchUsers() async {
-    _isLoading = true;
-    // notifyListeners();
-    try {
-      final snapshot = await FirebaseFirestore.instance.collection('users').get();
-      _users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
-      logger.info('fetchUsers _users={}',[_users]);
-    } catch (e) {
-      logger.err('Error fetching users: {}', [e]);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  void setUserId(String userId) async {
+  String? get userId => _userId; // Set User ID
+  void setUserId(String userId) { // TODO: belki detailstab ve diğerlerinde fln tek tek set etmemeyi ayarlamak? + diğer providerları da sıngleton yapmak gerek
     _userId = userId;
-    _isLoading = true;
-   // notifyListeners();
-    // notifyListeners();
-    await fetchUserDetails();
-    await fetchSubscriptions();
-    logger.info('fetchData after setUserId is completed.');
-    _isLoading = false;
-    notifyListeners();
   }
 
-  Future<void> fetchUserDetails() async {
+  // Fetch User Details
+  Future<UserModel?> fetchUserDetails() async {
     try {
       if (_userId == null) {
-        logger.err('User ID not set.');
-        return;
+        logger.err('fetchUserDetails:User ID not set.');
+        return null;
       }
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
           .get();
-  logger.info('Fetching user details for user id={}',[_userId!]);
+      logger.info('Fetching user details for user id={}', [_userId!]);
       if (doc.exists) {
-        _user = UserModel.fromDocument(doc);
+        return UserModel.fromDocument(doc);
+      } else {
+        return null;
       }
     } catch (e) {
       logger.err('Error fetching user details: {}', [e]);
+      return null;
     }
   }
-  Future<void> addSubscription() async { //TODO: add sub dialog burayı kullanabilmeli.
 
-  }
-  Future<void> fetchSubscriptions() async {
+  // Fetch Subscriptions
+  Future<List<SubscriptionModel>> fetchSubscriptions({required bool showAllSubscriptions}) async {
     try {
       if (_userId == null) {
-        logger.err('User ID not set.');
-        return;
+        logger.err('fetchSubscriptions:User ID not set.');
+        return [];
       }
-      _isLoading = true;
       Query query = FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
@@ -94,34 +62,27 @@ class UserProvider extends ChangeNotifier with Loadable {
 
       final snapshot = await query.get();
 
-      _subscriptions = snapshot.docs
+      List<SubscriptionModel> subscriptions = snapshot.docs
           .map((doc) => SubscriptionModel.fromDocument(doc))
           .toList();
 
-      // Set selectedSubscription if it's null or not in the list
-      if (_selectedSubscription == null ||
-          !_subscriptions.contains(_selectedSubscription)) {
-        _selectedSubscription = _subscriptions.isNotEmpty ? _subscriptions.first : null;
-      }
+      return subscriptions;
     } catch (e) {
       logger.err('Error fetching subscriptions: {}', [e]);
-    }
-    finally {
-      _isLoading = false;
-      notifyListeners();
+      return [];
     }
   }
 
-
-  void setShowAllSubscriptions(bool value) {
-    if (showAllSubscriptions != value) {
-      showAllSubscriptions = value;
-      fetchSubscriptions();
+  // Fetch Users (if needed)
+  Future<List<UserModel>> fetchUsers() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').get();
+      List<UserModel> users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
+      logger.info('fetchUsers users={}', [users]);
+      return users;
+    } catch (e) {
+      logger.err('Error fetching users: {}', [e]);
+      return [];
     }
-  }
-
-  void selectSubscription(SubscriptionModel? subscription) {
-    _selectedSubscription = subscription;
-    notifyListeners();
   }
 }

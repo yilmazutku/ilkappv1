@@ -15,70 +15,53 @@ class AdminImages extends StatefulWidget {
 }
 
 class _AdminImagesState extends State<AdminImages> {
-  List<UserModel> users = [];
-  // bool isLoading = true;
+  late Future<List<UserModel>> _usersFuture;
 
   @override
   void initState() {
     super.initState();
-    //fetchUsers();
+    _usersFuture = Provider.of<UserProvider>(context, listen: false).fetchUsers();
   }
-
-  // Future<void> fetchUsers() async {
-  //   try {
-  //     final snapshot = await FirebaseFirestore.instance.collection('users').get();
-  //     setState(() {
-  //       users = snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList();
-  //       isLoading = false;
-  //     });
-  //   } catch (e) {
-  //     logger.err('Error fetching users: {}', [e]);
-  //     setState(() {
-  //       isLoading = false;
-  //     });
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
-    // Get the UserProvider instance
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    // Fetch users if not already loaded
-    if (userProvider.users.isEmpty && !userProvider.isLoading) {
-      userProvider.fetchUsers();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Panel - Users'),
       ),
-      body: Consumer<UserProvider>(
-        builder: (context, userProvider, child) {
-          final users = userProvider.users;
-          final isLoading = userProvider.isLoading;
-
-          if (isLoading) {
+      body: FutureBuilder<List<UserModel>>(
+        future: _usersFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          }
+          } else if (snapshot.hasError) {
+            logger.err('Error fetching users: {}', [snapshot.error??'snapshot error']);
+            return Center(child: Text('Error fetching users: ${snapshot.error}'));
+          } else {
+            final users = snapshot.data ?? [];
 
-          return ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return ListTile(
-                title: Text(user.name),
-                subtitle: Text(user.email),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => CustomerSummaryPage(userId: user.userId),
-                    ),
-                  );
-                },
-              );
-            },
-          );
+            if (users.isEmpty) {
+              return const Center(child: Text('No users found.'));
+            }
+
+            return ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return ListTile(
+                  title: Text(user.name),
+                  subtitle: Text(user.email),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => CustomerSummaryPage(userId: user.userId),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          }
         },
       ),
     );

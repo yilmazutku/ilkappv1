@@ -1,77 +1,42 @@
-// providers/test_provider.dart
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../models/logger.dart';
 import '../models/test_model.dart';
-import '../tabs/basetab.dart';
 
-class TestProvider extends ChangeNotifier with Loadable{
-  List<TestModel> _tests = [];
-  bool _isLoading = false;
-  bool _showAllTests = false;
+final Logger logger = Logger.forClass(TestProvider);
 
-  String? _selectedSubscriptionId;
+class TestProvider extends ChangeNotifier {
+  String? _userId;
 
-  List<TestModel> get tests => _tests;
-  @override
-  bool get isLoading => _isLoading;
-  bool get showAllTests => _showAllTests;
-
-  TestProvider() {
-    fetchTests();
+  void setUserId(String userId) {
+    _userId = userId;
   }
 
-  void setSelectedSubscriptionId(String? subscriptionId) {
-    _selectedSubscriptionId = subscriptionId;
-    fetchTests();
-  }
-
-  void setShowAllTests(bool value) {
-    if (_showAllTests != value) {
-      _showAllTests = value;
-      fetchTests();
+  Future<List<TestModel>> fetchTests() async {
+    if (_userId == null) {
+      logger.err('User ID not set.');
+      return [];
     }
-  }
-
-  Future<void> fetchTests() async {
-    _isLoading = true;
-    notifyListeners();
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        // Handle error
-        return;
-      }
-      final userId = user.uid;
-
       Query query = FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(_userId)
           .collection('tests')
           .orderBy('testDate', descending: true);
 
-      if (!_showAllTests && _selectedSubscriptionId != null) {
-        query = query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
-      }
-
       final snapshot = await query.get();
 
-      _tests = snapshot.docs
-          .map((doc) => TestModel.fromDocument(doc))
-          .toList();
+      List<TestModel> tests =
+          snapshot.docs.map((doc) => TestModel.fromDocument(doc)).toList();
 
+      return tests;
     } catch (e) {
-      // Handle error
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      logger.err('Error fetching tests for user with userId={}. {}',
+          [_userId!, e.toString()]);
+      return [];
     }
   }
 
-  void clearTests() {
-    _tests = [];
-    notifyListeners();
-  }
+// Other methods like addTest, updateTest can be added here if needed
 }

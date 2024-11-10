@@ -51,11 +51,11 @@ class MealModel {
 
 enum Meals {
   br('Kahvaltı', 'sabah/', '09:00'),
-  firstmid('sabah ara öğün', 'ilkara/', '10:30'),
+  firstmid('İlk ara öğün', 'ilkara/', '10:30'),
   lunch('Öğle', 'oglen/', '12:30'),
-  secondmid('Öğle Ara Öğün', 'ikinciara/', '16:00'),
+  secondmid('İkinci Ara Öğün', 'ikinciara/', '16:00'),
   dinner('Akşam', 'aksam/', '19:00'),
-  thirdmid('Gece Ara Öğün', 'ucuncuara/', '21:00');
+  thirdmid('Üçüncü Ara Öğün', 'ucuncuara/', '21:00');
 
   const Meals(this.label, this.url, this.defaultTime);
 

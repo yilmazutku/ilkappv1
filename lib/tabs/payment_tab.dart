@@ -1,5 +1,3 @@
-// tabs/payments_tab.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/edit_payment_dialog.dart';
@@ -16,24 +14,21 @@ class PaymentsTab extends BaseTab<PaymentProvider> {
 
   @override
   PaymentProvider getProvider(BuildContext context) {
-    return Provider.of<PaymentProvider>(context);
+    final provider = Provider.of<PaymentProvider>(context);
+    provider.setUserId(userId);
+    return provider;
   }
 
   @override
-  List<PaymentModel> getDataList(PaymentProvider provider) {
-    return provider.payments;
+  Future<List<dynamic>> getDataList(PaymentProvider provider, bool showAllData) {
+    return provider.fetchPayments(showAllPayments: showAllData);
   }
 
   @override
-  bool getShowAllData(PaymentProvider provider) {
-    return provider.showAllPayments;
-  }
+  BaseTabState<PaymentProvider, BaseTab<PaymentProvider>> createState() => _PaymentsTabState();
+}
 
-  @override
-  void setShowAllData(PaymentProvider provider, bool value) {
-    provider.setShowAllPayments(value);
-  }
-
+class _PaymentsTabState extends BaseTabState<PaymentProvider, PaymentsTab> {
   @override
   Widget buildList(BuildContext context, List<dynamic> dataList) {
     List<PaymentModel> payments = dataList.cast<PaymentModel>();
@@ -70,12 +65,14 @@ class PaymentsTab extends BaseTab<PaymentProvider> {
       context: context,
       builder: (context) {
         return EditPaymentDialog(
-         payment: payment,
-            onPaymentUpdated:() {  Provider.of<PaymentProvider>(context, listen: false)
-            .fetchPayments();}
+          payment: payment,
+          onPaymentUpdated: () {
+            setState(() {
+              fetchData(); // Re-fetch data when payment is updated
+            });
+          },
         );
       },
     );
   }
-  }
-
+}
