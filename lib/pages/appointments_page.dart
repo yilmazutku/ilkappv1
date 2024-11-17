@@ -213,12 +213,12 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   return const CircularProgressIndicator();
                 } else if (snapshot.hasError) {
                   return Text(
-                      'Error fetching available times: ${snapshot.error}');
+                      'Randevu saatlerine erişirken bir hata oluştu: ${snapshot.error}');
                 } else {
                   List<TimeOfDay> availableTimes = snapshot.data ?? [];
                   if (availableTimes.isEmpty) {
                     return const Text(
-                        'No available time slots for the selected date.');
+                        'Seçtiğiniz tarih için uygun vakit bulunmuyor.');
                   } else {
                     return Wrap(
                       spacing: 8.0,
@@ -242,12 +242,12 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             Center(
               child: ElevatedButton(
                 onPressed: _bookAppointment,
-                child: const Text('Book Appointment'),
+                child: const Text('Randevu al'),
               ),
             ),
             const SizedBox(height: 16),
             const Text(
-              'My Appointments',
+              'Randevularım',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             FutureBuilder<List<AppointmentModel>>(
@@ -277,15 +277,15 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }).toList();
 
     if (upcomingAppointments.isEmpty) {
-      return const Text('No upcoming appointments.');
+      return const Text('Yaklaşan bir randevunuz bulunmuyor.');
     }
     logger.info('upcomingAppointments={}', [upcomingAppointments]);
     return Column(
       children: upcomingAppointments.map((appointment) {
         return ListTile(
           title: Text(
-              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
-          subtitle: Text('Type: ${appointment.meetingType.label}'),
+              'Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+          subtitle: Text('Görüşme: ${appointment.meetingType.label}'),
           trailing: IconButton(
             icon: const Icon(Icons.cancel, color: Colors.red),
             onPressed: () async {
@@ -295,19 +295,19 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   return AlertDialog(
                     title: const Text("Cancel Appointment"),
                     content: const Text(
-                        "Are you sure you want to cancel this appointment?"),
+                        "Bu randevuyu iptal etmek istediğinize emin misiniz?"),
                     actions: [
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(false);
                         },
-                        child: const Text("No"),
+                        child: const Text("Hayır"),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(true);
                         },
-                        child: const Text("Yes"),
+                        child: const Text("Evet"),
                       ),
                     ],
                   );

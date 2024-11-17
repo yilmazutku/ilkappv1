@@ -8,7 +8,6 @@ import '../models/logger.dart';
 final Logger logger = Logger.forClass(MealStateManager);
 
 class MealStateManager extends ChangeNotifier {
-  final Logger logger = Logger.forClass(MealStateManager);
 
   String? _userId;
   String? _selectedSubscriptionId;

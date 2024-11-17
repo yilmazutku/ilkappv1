@@ -138,7 +138,7 @@ class _AddImageDialogState extends State<AddImageDialog> {
       final imageManager = Provider.of<ImageManager>(context, listen: false);
 
       final result = await imageManager.uploadFile(
-        File(_selectedImage!.path),
+        _selectedImage, // This is now an XFile
         meal: _selectedMeal!,
         userId: widget.userId,
       );
@@ -160,6 +160,7 @@ class _AddImageDialogState extends State<AddImageDialog> {
           description: null,
           calories: null,
           notes: null,
+          isChecked:true
         );
 
         await mealDocRef.set(mealModel.toMap());

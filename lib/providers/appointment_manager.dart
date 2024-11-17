@@ -79,9 +79,14 @@ class AppointmentManager extends ChangeNotifier {
   bool isTimeSlotAvailable(DateTime date, TimeOfDay time, List<AppointmentModel> dayAppointments) {
     DateTime dateTimeWithHour =
     DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    if (dayAppointments != null) { // appt book etmeden once cagirilirsa diye
+    var now = DateTime.now();
+    // Check if the time slot is in the past
+    if (dateTimeWithHour.isBefore(now)) {
+      return false;
+    }
       for (var appointment in dayAppointments) {
-        if (appointment.appointmentDateTime == dateTimeWithHour &&
+        if (dayAppointments != null) { // appt book etmeden once cagirilirsa diye
+         if (appointment.appointmentDateTime == dateTimeWithHour &&
             appointment.status != MeetingStatus.canceled) {
           return false;
         }

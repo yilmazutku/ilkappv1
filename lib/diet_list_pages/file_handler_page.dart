@@ -1,22 +1,23 @@
-import 'dart:io';
-import 'package:docx_to_text/docx_to_text.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import for Cloud Firestore
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:untitled/models/logger.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import '../models/logger.dart';
 import '../models/meal_model.dart';
-
+import '../models/user_model.dart';
+import 'delete_file_mobile.dart';
+import 'file_handler.dart'; // New conditional import
 
 final Logger log = Logger.forClass(FileHandlerPage);
+
 /*
 Suggested Improvements:
-Add more robust error handling in _parseFileContent and _extractSubtitles.
-Use user feedback (e.g., dialog, Snackbar) when the user forgets to select a user or when file selection is canceled.
- */
+- Added more robust error handling in _parseFileContent and _extractSubtitles.
+- Added user feedback using Snackbar when the user forgets to select a user or when file selection is canceled.
+*/
+
 class FileHandlerPage extends StatefulWidget {
   const FileHandlerPage({super.key});
 
@@ -28,7 +29,7 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   String? _localFilePath;
   List<Map<String, dynamic>> subtitles = [];
 
-  List<String> _userList = [];
+  Map<String, String> _userMap = {}; // Store userId as key and userName as value
   String? _selectedUser;
 
   @override
@@ -48,7 +49,7 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste Yukleyici'),
+        title: const Text('Liste Yükleyici'),
       ),
       body: Center(
         child: Column(
@@ -82,13 +83,13 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
       hint: const Text('Select a User'),
       onChanged: (String? newValue) {
         setState(() {
-          _selectedUser = newValue;
+          _selectedUser = newValue; // newValue will be the user ID
         });
       },
-      items: _userList.map<DropdownMenuItem<String>>((String user) {
+      items: _userMap.entries.map<DropdownMenuItem<String>>((entry) {
         return DropdownMenuItem<String>(
-          value: user,
-          child: Text(user),
+          value: entry.key, // Use user ID as value
+          child: Text(entry.value), // Display user name
         );
       }).toList(),
     );
@@ -109,7 +110,8 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
               children: [
                 Text(
                   '${subtitle['name']} \t ${subtitle['time']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 for (var content in subtitle['content'])
                   Text('- ${content['content']}'),
@@ -121,20 +123,21 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
     );
   }
 
-
   /// Fetch user list from Cloud Firestore
   Future<void> _fetchUserList() async {
     try {
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('userinfo').get();
+      final QuerySnapshot querySnapshot =
+      await FirebaseFirestore.instance.collection('users').get();
       final List<QueryDocumentSnapshot> documents = querySnapshot.docs;
 
       setState(() {
-        _userList = documents.map((doc) => doc.id).toList();
+        _userMap = {for (var doc in documents) doc.id: UserModel.fromDocument(doc).name};
       });
 
-      log.info('Fetched user list: {}', [_userList]);
+      log.info('Fetched user list: {}', [_userMap]);
     } catch (e) {
       log.err('Error fetching user list: {}', [e.toString()]);
+      _showSnackbar('Error fetching user list.');
     }
   }
 
@@ -142,56 +145,59 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   Future<void> _pickAndSaveFile() async {
     if (_selectedUser == null) {
       log.warn('Please select a user first.');
+      _showSnackbar('Please select a user first.');
       return;
+    }
+    for (var subtitle in subtitles) {
+      subtitle['content'].clear();  // Clear the content list
+      subtitle['time'] = '-';  // Reset the time field
     }
 
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['docx', 'pdf'], // Allows DOCX or PDF files
+      allowedExtensions: ['docx'],
+      withData: true,
     );
 
     if (result != null) {
-      String? selectedFilePath = result.files.single.path;
+      try {
+        Uint8List? fileBytes = result.files.single.bytes;
+        String fileName = result.files.single.name;
 
-      if (selectedFilePath != null) {
-        Directory tempDir = await getTemporaryDirectory();
-        String fileName = path.basename(selectedFilePath);
-        File localFile = File('${tempDir.path}/$fileName');
-        await File(selectedFilePath).copy(localFile.path);
-
-        setState(() {
-          _localFilePath = localFile.path;
-        });
-
-        await _parseFileContent(localFile);
-        await _uploadContentToFirestore(); // Updated to upload to Firestore
+        if (fileBytes != null) {
+          await handleFile(fileBytes, fileName, _onFileProcessed, _onFileProcessingError);
+        }
+      } catch (e) {
+        _onFileProcessingError(e.toString());
       }
     } else {
       log.info('File selection canceled.');
+      _showSnackbar('File selection canceled.');
     }
   }
 
-  /// Step 3: Parse the content of the file to extract subtitles
-  Future<void> _parseFileContent(File file) async {
-    final bytes = await file.readAsBytes();
-    String text = docxToText(bytes);
-
-    // Clear the previous subtitle data
-    for (var subtitle in subtitles) {
-      subtitle['content'].clear();
-      subtitle['time'] = 'Not Specified'; // Reset time for each subtitle
-    }
-
+  void _onFileProcessed(String text, String filePath) {
+    setState(() {
+      _localFilePath = filePath;
+    });
     _extractSubtitles(text);
-    setState(() {});
+    _uploadContentToFirestore();
   }
 
+  void _onFileProcessingError(String error) {
+    log.err('Error processing file: {}', [error]);
+    _showSnackbar('Error processing file: $error');
+  }
 
   void _extractSubtitles(String text) {
     log.info('text={}', [text]);
 
     // Split the text into lines and clean it
-    final lines = text.split(RegExp(r'\r\n|\r|\n')).map((line) => line.trim()).where((line) => line.isNotEmpty).toList();
+    final lines = text
+        .split(RegExp(r'\r\n|\r|\n'))
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
     Map<String, dynamic>? currentSubtitle;
 
     for (var line in lines) {
@@ -212,41 +218,39 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
         final timeMatch = RegExp(r'(\d{1,2}:\d{2})').firstMatch(line);
         currentSubtitle['time'] = timeMatch?.group(0) ?? '';
 
-        log.info('Extracted time for subtitle {}: {}', [currentSubtitle['name'], currentSubtitle['time']]);
+        log.info('Extracted time for subtitle {}: {}',
+            [currentSubtitle['name'], currentSubtitle['time']]);
       }
       // If no subtitle is found but there's a current subtitle, treat the line as content
       else if (currentSubtitle != null) {
-        log.info('Adding content to subtitle {}: {}', [currentSubtitle['name'], line]);
+        log.info('Adding content to subtitle {}: {}',
+            [currentSubtitle['name'], line]);
 
         // Add content to the current subtitle's content list
         currentSubtitle['content'].add({
           'content': line,
         });
       } else {
-        log.warn('No subtitle found and no active subtitle for line: {}', [line]);
+        log.warn(
+            'No subtitle found and no active subtitle for line: {}', [line]);
       }
     }
 
     log.info('Parsed subtitles: {}', [subtitles]);
   }
 
-
-
-
-
   /// Updated Step 4: Upload the parsed content to Cloud Firestore
   Future<void> _uploadContentToFirestore() async {
     if (_selectedUser == null) {
       log.warn('No user selected for upload.');
+      _showSnackbar('No user selected for upload.');
       return;
     }
 
-    // Generate a unique path with current date and time
     String currentDateTime = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
-    String documentPath = 'userinfo/$_selectedUser/dietlists/$currentDateTime';
+    String documentPath = 'users/$_selectedUser/dietlists/$currentDateTime';
 
     try {
-      // Convert subtitles list to a structure suitable for Firestore
       List<Map<String, dynamic>> dataToUpload = subtitles.map((subtitle) {
         return {
           'name': subtitle['name'],
@@ -255,28 +259,26 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
         };
       }).toList();
 
-      // Upload to Cloud Firestore
       DocumentReference ref = FirebaseFirestore.instance.doc(documentPath);
       await ref.set({
-        'uploadTime': FieldValue.serverTimestamp(), // Automatically store current server time
-        'subtitles': dataToUpload //        // Other document fields...
+        'uploadTime': FieldValue.serverTimestamp(),
+        'subtitles': dataToUpload,
       });
-      //await ref.set({'subtitles': dataToUpload});
-      documentPath = 'userinfo/$_selectedUser/currentDietList';
 
-      log.info('Diet list stored successfully at path: {}', [documentPath]);
+      log.info('Diet list uploaded at: {}', [documentPath]);
     } catch (e) {
-      log.err('Failed to upload diet list: {}', [e.toString()]);
+      log.err('Error uploading diet list: {}', [e.toString()]);
+      _showSnackbar('Failed to upload diet list.');
     }
   }
 
 
   /// Step 5: Delete the file from the temporary directory
+
   Future<void> _deleteFile() async {
     if (_localFilePath != null) {
-      File file = File(_localFilePath!);
-      if (await file.exists()) {
-        await file.delete();
+      try {
+        await deleteFile(_localFilePath!);
         log.info('File deleted.');
 
         setState(() {
@@ -287,7 +289,21 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
             subtitle['time'] = 'Not Specified'; // Reset time
           }
         });
+
+        _showSnackbar('File deleted successfully.');
+      } catch (e) {
+        log.err('Error deleting file: {}', [e.toString()]);
+        _showSnackbar('Error deleting file: ${e.toString()}');
       }
+    } else {
+      _showSnackbar('No file to delete.');
     }
+  }
+
+  /// Helper method to show Snackbars for user feedback
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

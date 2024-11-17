@@ -2,14 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:untitled/usersAndAccount/reset_password_page.dart';
+import 'package:untitled/pages/reset_password_page.dart';
 import 'admin_appointments_page.dart';
 import 'appointments_page.dart';
 import '../models/logger.dart';
 import '../providers/login_manager.dart';
-import '../usersAndAccount/admin_create_user_page.dart';
+import 'admin_create_user_page.dart';
 import 'admin_images_page.dart';
-import 'file_handler_page.dart';
+import '../diet_list_pages/file_handler_page.dart';
 import 'meal_upload_page.dart';
 
 final Logger logger = Logger.forClass(LoginPage);
