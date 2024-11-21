@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         theme: ThemeData(
-          primarySwatch: Colors.green,
+          primarySwatch: Colors.lightBlue,
         ),
        home: const HomePage(), // Your initial route or home widget
 

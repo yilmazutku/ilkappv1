@@ -240,7 +240,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            logger.err('Error fetching appointments: {}', [snapshot.error??'snapshot error']);
+            logger.err('Error fetching appointments in build method: {}', [snapshot.error??'snapshot error']);
             return Center(child: Text('Error fetching appointments: ${snapshot.error}'));
           } else {
             final appointments = snapshot.data ?? [];

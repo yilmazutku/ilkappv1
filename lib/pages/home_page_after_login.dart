@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:untitled/models/subs_model.dart';
 import 'package:untitled/pages/reset_password_page.dart';
+import 'package:untitled/pages/user_past_appointments_page.dart';
 import '../models/logger.dart';
 import '../pages/admin_appointments_page.dart';
 import '../pages/admin_images_page.dart';
@@ -92,6 +93,30 @@ class HomePageAfterLogin extends StatelessWidget {
                   builder: (context) => AppointmentsPage(
                     userId: userId,
                     subscriptionId: subscriptionId,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_today),
+            title: const Text('Geçmiş Randevularım'),
+            onTap: () async {
+              // final subscriptionId = await getCurrentSubscriptionId(userId);
+              //
+              // if (subscriptionId == null) {
+              //   if (!context.mounted) return;
+              //   ScaffoldMessenger.of(context).showSnackBar(
+              //     const SnackBar(content: Text('No active subscription found')),
+              //   );
+              //   return;
+              // }
+              // if (!context.mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PastAppointmentsPage(
+                    userId: userId,
                   ),
                 ),
               );
