@@ -15,7 +15,7 @@ class ImagesTab extends BaseTab<MealStateManager> {
 
   @override
   MealStateManager getProvider(BuildContext context) {
-    final provider = Provider.of<MealStateManager>(context);
+    final provider = Provider.of<MealStateManager>(context,listen: false);
     provider.setUserId(userId);
     return provider;
   }

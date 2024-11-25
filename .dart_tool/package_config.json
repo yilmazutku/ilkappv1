@@ -9,7 +9,7 @@
     },
     {
       "name": "_flutterfire_internals",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/_flutterfire_internals-1.3.44",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/_flutterfire_internals-1.3.46",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -63,19 +63,19 @@
     },
     {
       "name": "cloud_firestore",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore-5.4.4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore-5.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "cloud_firestore_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_platform_interface-6.4.3",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_platform_interface-6.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "cloud_firestore_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_web-4.3.2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore_web-4.3.4",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -177,13 +177,13 @@
     },
     {
       "name": "file_picker",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-8.1.3",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-8.1.4",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "file_selector_linux",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/file_selector_linux-0.9.3",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/file_selector_linux-0.9.3+1",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -207,43 +207,43 @@
     },
     {
       "name": "firebase_app_check",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check-0.3.1+4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check-0.3.1+6",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_app_check_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check_platform_interface-0.1.0+38",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check_platform_interface-0.1.0+40",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_app_check_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check_web-0.2.0",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_app_check_web-0.2.0+2",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "firebase_auth",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth-5.3.1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth-5.3.3",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_auth_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_platform_interface-7.4.7",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_platform_interface-7.4.9",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_auth_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_web-5.13.2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_web-5.13.4",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "firebase_core",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core-3.6.0",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core-3.8.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -261,61 +261,61 @@
     },
     {
       "name": "firebase_database",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database-11.1.4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database-11.1.6",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_database_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_platform_interface-0.2.5+44",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_platform_interface-0.2.5+46",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_database_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_web-0.2.6+2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_web-0.2.6+4",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
     {
       "name": "firebase_dynamic_links",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_dynamic_links-6.0.8",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_dynamic_links-6.0.10",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_dynamic_links_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_dynamic_links_platform_interface-0.2.6+44",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_dynamic_links_platform_interface-0.2.6+46",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_in_app_messaging",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_in_app_messaging-0.8.0+8",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_in_app_messaging-0.8.0+10",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_in_app_messaging_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_in_app_messaging_platform_interface-0.2.4+44",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_in_app_messaging_platform_interface-0.2.4+46",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_storage",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage-12.3.4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage-12.3.6",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_storage_platform_interface",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_platform_interface-5.1.31",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_platform_interface-5.1.33",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_storage_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_web-3.10.3",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_web-3.10.5",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -405,9 +405,9 @@
     },
     {
       "name": "flutter_svg",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.0.10+1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.0.15",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.4"
     },
     {
       "name": "flutter_test",
@@ -435,15 +435,15 @@
     },
     {
       "name": "google_identity_services_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_identity_services_web-0.3.1+4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_identity_services_web-0.3.3",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.4"
     },
     {
       "name": "google_sign_in",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in-6.2.1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in-6.2.2",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.3"
     },
     {
       "name": "google_sign_in_android",
@@ -465,7 +465,7 @@
     },
     {
       "name": "google_sign_in_web",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in_web-0.12.4+2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/google_sign_in_web-0.12.4+3",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -627,15 +627,15 @@
     },
     {
       "name": "path_parsing",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.0.1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.1.0",
       "packageUri": "lib/",
-      "languageVersion": "2.12"
+      "languageVersion": "3.3"
     },
     {
       "name": "path_provider",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider-2.1.4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider-2.1.5",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.4"
     },
     {
       "name": "path_provider_android",
@@ -687,7 +687,7 @@
     },
     {
       "name": "permission_handler_html",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler_html-0.1.3+2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/permission_handler_html-0.1.3+5",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -735,7 +735,7 @@
     },
     {
       "name": "shared_preferences",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences-2.3.2",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences-2.3.3",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -819,13 +819,13 @@
     },
     {
       "name": "syncfusion_flutter_core",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/syncfusion_flutter_core-27.1.56",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/syncfusion_flutter_core-27.2.3",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
     {
       "name": "syncfusion_flutter_pdf",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/syncfusion_flutter_pdf-27.1.56",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/syncfusion_flutter_pdf-27.2.3",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -849,7 +849,7 @@
     },
     {
       "name": "time",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/time-2.1.4",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/time-2.1.5",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -867,21 +867,21 @@
     },
     {
       "name": "vector_graphics",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.1.11+1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.1.15",
       "packageUri": "lib/",
-      "languageVersion": "2.17"
+      "languageVersion": "3.4"
     },
     {
       "name": "vector_graphics_codec",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.11+1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.12",
       "packageUri": "lib/",
-      "languageVersion": "2.17"
+      "languageVersion": "3.4"
     },
     {
       "name": "vector_graphics_compiler",
-      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.1.11+1",
+      "rootUri": "file:///C:/Users/utku/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.1.16",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.4"
     },
     {
       "name": "vector_math",
@@ -938,7 +938,7 @@
       "languageVersion": "3.2"
     }
   ],
-  "generated": "2024-10-30T19:32:57.794001Z",
+  "generated": "2024-11-25T18:26:36.984079Z",
   "generator": "pub",
   "generatorVersion": "3.4.4",
   "flutterRoot": "file:///C:/Users/utku/Downloads/flutter_windows_3.22.3-stable/flutter",

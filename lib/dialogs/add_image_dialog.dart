@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import '../models/logger.dart';
 import '../models/meal_model.dart';
 import '../providers/image_manager.dart';
-import '../providers/meal_state_and_upload_manager.dart';
 
 class AddImageDialog extends StatefulWidget {
   final String userId;

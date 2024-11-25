@@ -93,11 +93,13 @@ class _EditAppointmentDialogState extends State<EditAppointmentDialog> {
               onTap: () async {
                 final DateTime? pickedDate = await showDatePicker(
                   context: context,
+                  // initialDate: _appointmentDateTime.isAfter(DateTime.now())?_appointmentDateTime:DateTime.now(),
                   initialDate: _appointmentDateTime,
-                  firstDate: DateTime.now(),
+                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
                 if (pickedDate != null) {
+                  if (!context.mounted) return;
                   final TimeOfDay? pickedTime = await showTimePicker(
                     context: context,
                     initialTime: TimeOfDay.fromDateTime(_appointmentDateTime),

@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/appointment_model.dart';
+import '../models/logger.dart';
 import '../providers/appointment_manager.dart';
+final Logger logger = Logger.forClass(AddAppointmentDialog);
 
 class AddAppointmentDialog extends StatefulWidget {
   final String userId;
@@ -105,7 +107,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(),
+      firstDate: DateTime(DateTime.now().year - 1),
       lastDate: DateTime(DateTime.now().year + 1),
     );
     if (picked != null && picked != _selectedDate) {
@@ -151,7 +153,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       );
 
       bool isAvailable = appointmentManager.isTimeSlotAvailable(
-          _selectedDate, _selectedTime!,[]);
+          _selectedDate, _selectedTime!,null); //TODO gelecekteki apptleri eklerken null verilemez
 
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -184,10 +186,11 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-    } catch (e) {
+    } catch (e,s) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
+      logger.err('Exception:{}{}',[e,s]);
     } finally {
       setState(() {
         _isLoading = false;

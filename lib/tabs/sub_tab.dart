@@ -14,7 +14,7 @@ class SubscriptionsTab extends BaseTab<UserProvider> {
 
   @override
   UserProvider getProvider(BuildContext context) {
-    final provider = Provider.of<UserProvider>(context);
+    final provider = Provider.of<UserProvider>(context,listen: false);
     provider.setUserId(userId);
     return provider;
   }

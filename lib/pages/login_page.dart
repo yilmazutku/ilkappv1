@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/pages/reset_password_page.dart';
 import 'package:untitled/pages/user_past_appointments_page.dart';
+import 'package:untitled/pages/user_payments_page.dart';
 import 'admin_appointments_page.dart';
+import 'admin_timeslots_page.dart';
 import 'appointments_page.dart';
 import '../models/logger.dart';
 import '../providers/login_manager.dart';
@@ -206,6 +208,43 @@ class LoginPage extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => PastAppointmentsPage(
                   userId: userId!,
+                ),
+              ),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.food_bank),
+          title: const Text('Ödemelerim'),
+          onTap: () async {
+            final userId = FirebaseAuth.instance.currentUser?.uid;
+            if (userId == null) {
+              if(!context.mounted)return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('User not logged in')),
+              );
+              return;
+            }
+            if(!context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserPaymentsPage(
+                  userId: userId,
+                ),
+              ),
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_today),
+          title: const Text('Admin timeslots'),
+          onTap: () async {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminTimeSlotsPage(
+
                 ),
               ),
             );

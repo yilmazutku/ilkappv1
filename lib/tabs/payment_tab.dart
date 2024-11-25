@@ -8,13 +8,13 @@ import 'basetab.dart';
 class PaymentsTab extends BaseTab<PaymentProvider> {
   const PaymentsTab({super.key, required super.userId})
       : super(
-    allDataLabel: 'All Payments',
-    subscriptionDataLabel: 'Subscription Payments',
+    allDataLabel: 'Tüm ödemeler',
+    subscriptionDataLabel: 'Paket Ödemeleri',
   );
 
   @override
   PaymentProvider getProvider(BuildContext context) {
-    final provider = Provider.of<PaymentProvider>(context);
+    final provider = Provider.of<PaymentProvider>(context, listen:false);
     provider.setUserId(userId);
     return provider;
   }
@@ -37,13 +37,17 @@ class _PaymentsTabState extends BaseTabState<PaymentProvider, PaymentsTab> {
       itemBuilder: (context, index) {
         PaymentModel payment = payments[index];
         return ListTile(
-          title: Text('Amount: ${payment.amount}'),
-          subtitle: Text(
-              'Payment Date: ${payment.paymentDate.toLocal().toString().split(' ')[0]}\nDue Date: ${payment.dueDate?.toLocal().toString().split(' ')[0] ?? '-'}'),
+          title: Text('Miktar: ${payment.amount}'),
+          subtitle: payment.paymentDate != null
+              ? Text(
+                  'Ödeme Tarihi (Ödenmiş): ${payment.paymentDate?.toLocal().toString().split(' ')[0]}\nPlanlanmış Tarih: ${payment.dueDate?.toLocal().toString().split(' ')[0] ?? '-'}')
+              : Text(
+                  'Planlanmış Tarih: ${payment.dueDate?.toLocal().toString().split(' ')[0] ?? '-'}'),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Status: ${payment.status}'),
+              Text('Durum: ${payment.status.label
+              }'),
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () {

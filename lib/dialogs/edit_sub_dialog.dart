@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/subs_model.dart';
@@ -50,10 +49,10 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
             children: [
               TextFormField(
                 controller: _packageNameController,
-                decoration: const InputDecoration(labelText: 'Package Name'),
+                decoration: const InputDecoration(labelText: 'Paket İsmi'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter package name';
+                    return 'Lütfen paket ismini giriniz./n(ör: 1 ay,ekim-kasım)';
                   }
                   return null;
                 },
@@ -62,13 +61,13 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
               TextFormField(
                 controller: _totalMeetingsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Total Meetings'),
+                decoration: const InputDecoration(labelText: 'Toplam Görüşme Sayısını'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter total meetings';
+                    return 'Toplam görüşme sayısını giriniz.';
                   }
                   if (int.tryParse(value) == null) {
-                    return 'Invalid number';
+                    return 'Geçersiz görüşme sayısı. Lütfen girdiğiniz sayıyı kontrol ediniz.';
                   }
                   return null;
                 },
@@ -77,13 +76,13 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
               TextFormField(
                 controller: _totalAmountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Total Amount'),
+                decoration: const InputDecoration(labelText: 'Toplam Ödeme Miktarı'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter total amount';
+                    return 'Lütfen toplam ödeme miktarını giriniz.';
                   }
                   if (double.tryParse(value) == null) {
-                    return 'Invalid amount';
+                    return 'Geçersiz ödeme miktarı. Lütfen kontrol ediniz.';
                   }
                   return null;
                 },
@@ -91,8 +90,8 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
               const SizedBox(height: 16),
               ListTile(
                 title: Text(_startDate == null
-                    ? 'Select Start Date'
-                    : 'Start Date: ${_startDate!.toLocal().toString().split(' ')[0]}'),
+                    ? 'Başlangıç Tarihi Seçimi'
+                    : 'Başlangıç Tarihi: ${_startDate!.toLocal().toString().split(' ')[0]}'),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? pickedDate = await showDatePicker(
@@ -111,8 +110,8 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
               const SizedBox(height: 16),
               ListTile(
                 title: Text(_endDate == null
-                    ? 'Select End Date'
-                    : 'End Date: ${_endDate!.toLocal().toString().split(' ')[0]}'),
+                    ? 'Bitiş Tarihi Seçimi'
+                    : 'Bitiş Tarihi: ${_endDate!.toLocal().toString().split(' ')[0]}'),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime initialDate = _startDate != null
@@ -145,7 +144,7 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
                     _status = newValue!;
                   });
                 },
-                decoration: const InputDecoration(labelText: 'Subscription Status'),
+                decoration: const InputDecoration(labelText: 'Paket Durumu'),
               ),
             ],
           ),
@@ -160,7 +159,7 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
           onPressed: _isLoading ? null : _updateSubscription,
           child: _isLoading
               ? const CircularProgressIndicator()
-              : const Text('Update Subscription'),
+              : const Text('Paket Güncelle'),
         ),
       ],
     );
@@ -173,7 +172,7 @@ class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
 
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select start and end dates.')),
+        const SnackBar(content: Text('Lütfen başlangıç/bitiş tarihlerini seçiniz.')),
       );
       return;
     }

@@ -32,7 +32,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
-          child: ListBody(
+          child: const ListBody(
             children: [
               // Your form fields here
             ],

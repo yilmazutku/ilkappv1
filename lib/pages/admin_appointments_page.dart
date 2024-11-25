@@ -6,7 +6,6 @@ import '../models/appointment_model.dart';
 import '../models/logger.dart';
 import '../models/user_model.dart';
 import '../providers/appointment_manager.dart';
-import '../providers/user_provider.dart';
 import '../dialogs/edit_appointment_dialog.dart';
 
 final Logger logger = Logger.forClass(AdminAppointmentsPage);

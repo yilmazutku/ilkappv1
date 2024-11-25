@@ -30,7 +30,7 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
   final TextEditingController _amountController = TextEditingController();
   DateTime? _selectedPaymentDate;
   DateTime? _selectedDueDate;
-  String _paymentStatus = 'Pending';
+  PaymentStatus _paymentStatus = PaymentStatus.planned;
   File? _dekontImage;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -131,12 +131,12 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
                   : const Text('No image selected'),
             ],
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<PaymentStatus>(
               value: _paymentStatus,
-              items: ['Completed', 'Pending', 'Failed'].map((String status) {
-                return DropdownMenuItem<String>(
+              items: PaymentStatus.values.map((PaymentStatus status) {
+                return DropdownMenuItem<PaymentStatus>(
                   value: status,
-                  child: Text(status),
+                  child: Text(status.label),
                 );
               }).toList(),
               onChanged: (newValue) {

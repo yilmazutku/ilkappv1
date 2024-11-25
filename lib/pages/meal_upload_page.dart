@@ -36,15 +36,21 @@ class _MealUploadPageState extends State<MealUploadPage> {
 
   late Future<void> _mealContentsFuture;
   final String _currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  // New variables for water consumption and steps
   double _waterIntakeLiters = 0.0; // Water intake in liters
   final TextEditingController _stepsController = TextEditingController();
   bool _isSavingWater = false;
   bool _isSavingSteps = false;
+
   @override
   void initState() {
     super.initState();
     _mealContentsFuture = _fetchMealStatesAndContents();
+  }
+
+  String formatTimeOfDay24(TimeOfDay time) {
+    final now = DateTime.now();
+    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    return DateFormat('HH:mm').format(dateTime);
   }
 
   Future<void> _fetchMealStatesAndContents() async {
@@ -63,7 +69,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
         final latestDoc = querySnapshot.docs.first;
         final data = latestDoc.data() as Map<String, dynamic>;
         if (data['subtitles'] != null) {
-          (data['subtitles'] as List<dynamic>).forEach((subtitle) {
+          for (var subtitle in (data['subtitles'] as List<dynamic>)) {
             final meal = Meals.fromName(subtitle['name']);
             if (meal != null) {
               final contentList = List<String>.from(
@@ -87,7 +93,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
             } else {
               logger.warn('Skipping unmatched meal: {}', [subtitle['name']]);
             }
-          });
+          }
         }
       } else {
         logger.warn('No diet lists found for the user.');
@@ -334,17 +340,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
   @override
   Widget build(BuildContext context) {
     logger.info('Building MealUploadPage');
-
-    Map<Meals, TimeOfDay> mealTimes = {
-      Meals.br: const TimeOfDay(hour: 8, minute: 30),
-      Meals.firstmid: const TimeOfDay(hour: 10, minute: 30),
-      Meals.lunch: const TimeOfDay(hour: 12, minute: 30),
-      Meals.secondmid: const TimeOfDay(hour: 15, minute: 30),
-      Meals.dinner: const TimeOfDay(hour: 18, minute: 30),
-      Meals.thirdmid: const TimeOfDay(hour: 21, minute: 30)
-    };
     const defaultMealTime = TimeOfDay(hour: 0, minute: 0);
-    // const defaultMealTime = 'TimeOfDay(hour: 0, minute: 0)';
 
     return Scaffold(
       appBar: AppBar(
@@ -367,90 +363,128 @@ class _MealUploadPageState extends State<MealUploadPage> {
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        // Water Intake Section
-                        Card(
-                          elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'Water Intake',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                        // Water Intake and Steps Sections in a Row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Card(
+                                elevation: 4,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.local_drink, color: Colors.blue, size: 30),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Su Tüketimi',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Display today's water intake
+                                      Text(
+                                        'Bugün: ${_waterIntakeLiters.toStringAsFixed(2)} Litre',
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Slider(
+                                        value: _waterIntakeLiters,
+                                        min: 0,
+                                        max: 5,
+                                        divisions: 20,
+                                        label: '${_waterIntakeLiters.toStringAsFixed(2)} L',
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _waterIntakeLiters = value;
+                                          });
+                                        },
+                                        activeColor: Colors.blue,
+                                        inactiveColor: Colors.blue[100],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: _isSavingWater ? null : _saveWaterIntake,
+                                        style: ElevatedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          backgroundColor: Colors.blue,
+                                        ),
+                                        child: _isSavingWater
+                                            ? const CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        )
+                                            : const Text('Kaydet'),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  '${_waterIntakeLiters.toStringAsFixed(2)} Liters',
-                                  style: const TextStyle(fontSize: 24),
-                                ),
-                                Slider(
-                                  value: _waterIntakeLiters,
-                                  min: 0,
-                                  max: 5,
-                                  divisions: 20,
-                                  label: '${_waterIntakeLiters.toStringAsFixed(2)} L',
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _waterIntakeLiters = value;
-                                    });
-                                  },
-                                  onChangeEnd: (value) {
-                                    _saveWaterIntake();
-                                  },
-                                  activeColor: Colors.blue,
-                                  inactiveColor: Colors.blue[100],
-                                ),
-                                if (_isSavingWater)
-                                  const CircularProgressIndicator(),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Steps Section
-                        Card(
-                          elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'Steps Taken',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Card(
+                                elevation: 4,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.directions_walk, color: Colors.green, size: 30),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Adım Sayısı',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Display today's steps
+                                      Text(
+                                        'Bugün: ${_stepsController.text.isNotEmpty ? _stepsController.text : '0'}',
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        controller: _stepsController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Adım sayısını giriniz',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: _isSavingSteps ? null : _saveSteps,
+                                        style: ElevatedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          backgroundColor: Colors.green,
+                                        ),
+                                        child: _isSavingSteps
+                                            ? const CircularProgressIndicator(
+                                          valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                        )
+                                            : const Text('Kaydet'),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: _stepsController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Enter steps',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ElevatedButton(
-                                  onPressed: _isSavingSteps ? null : _saveSteps,
-                                  style: ElevatedButton.styleFrom(
-                                    foregroundColor: Colors.green,
-                                  ),
-                                  child: _isSavingSteps
-                                      ? const CircularProgressIndicator(
-                                    valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                                  )
-                                      : const Text('Save Steps'),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         // Meals Section
@@ -484,8 +518,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        MaterialLocalizations.of(context).formatTimeOfDay(
-                                            mealTimes[mealCategory] ?? defaultMealTime),
+                                        formatTimeOfDay24(mealTimes[mealCategory] ?? defaultMealTime),
                                         textAlign: TextAlign.left,
                                       ),
                                       IconButton(

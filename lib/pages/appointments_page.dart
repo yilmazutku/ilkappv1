@@ -10,14 +10,14 @@ import '../providers/appointment_manager.dart';
 final Logger logger = Logger.forClass(AppointmentsPage);
 
 class AppointmentsPage extends StatefulWidget {
-  String userId;
-  String subscriptionId;
+  final String userId;
+  final String subscriptionId;
 
-  AppointmentsPage({
-    super.key,
+  const AppointmentsPage({
+    Key? key,
     required this.userId,
     required this.subscriptionId,
-  });
+  }) : super(key: key);
 
   @override
   createState() => _AppointmentsPageState();
@@ -39,17 +39,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   }
 
   void _fetchAvailableTimes() {
-    final appointmentManager =
-        Provider.of<AppointmentManager>(context, listen: false);
-    _availableTimesFuture =
-        appointmentManager.getAvailableTimesForDate(_selectedDate);
+    final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+    _availableTimesFuture = appointmentManager.getAvailableTimesForDate(_selectedDate);
   }
 
   void _fetchUserAppointments() {
-    final appointmentManager =
-        Provider.of<AppointmentManager>(context, listen: false);
+    final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
     _userAppointmentsFuture =
-        appointmentManager.fetchAppointments(showAllAppointments: true,userId:widget.userId);
+        appointmentManager.fetchAppointments(showAllAppointments: true, userId: widget.userId);
   }
 
   Future<void> _bookAppointment() async {
@@ -62,8 +59,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }
 
     try {
-      final appointmentManager =
-          Provider.of<AppointmentManager>(context, listen: false);
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
 
       DateTime appointmentDateTime = DateTime(
         _selectedDate.year,
@@ -75,14 +71,13 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
       // Check if the selected time slot is still available
       List<TimeOfDay> availableTimes =
-          await appointmentManager.getAvailableTimesForDate(_selectedDate);
+      await appointmentManager.getAvailableTimesForDate(_selectedDate);
       bool isAvailable = availableTimes.contains(_selectedTime);
 
       if (!mounted) return;
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Selected time slot is no longer available.')),
+          const SnackBar(content: Text('Selected time slot is no longer available.')),
         );
         return;
       }
@@ -129,8 +124,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   Future<void> _cancelAppointment(AppointmentModel appointment) async {
     try {
-      final appointmentManager =
-          Provider.of<AppointmentManager>(context, listen: false);
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
 
       if (await appointmentManager.cancelAppointment(
           appointment.appointmentId, appointment.userId,
@@ -164,6 +158,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Meeting Type Selector (if needed)
             Row(
               children: [
                 const Text('Meeting Type:'),
@@ -186,6 +181,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
               ],
             ),
             const SizedBox(height: 16),
+            // Date Picker
             ListTile(
               title: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
               trailing: const Icon(Icons.calendar_today),
@@ -206,6 +202,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
               },
             ),
             const SizedBox(height: 16),
+            // Available Time Slots
             FutureBuilder<List<TimeOfDay>>(
               future: _availableTimesFuture,
               builder: (context, snapshot) {
@@ -213,12 +210,11 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   return const CircularProgressIndicator();
                 } else if (snapshot.hasError) {
                   return Text(
-                      'Randevu saatlerine erişirken bir hata oluştu: ${snapshot.error}');
+                      'Error fetching available times: ${snapshot.error}');
                 } else {
                   List<TimeOfDay> availableTimes = snapshot.data ?? [];
                   if (availableTimes.isEmpty) {
-                    return const Text(
-                        'Seçtiğiniz tarih için uygun vakit bulunmuyor.');
+                    return const Text('No available time slots for the selected date.');
                   } else {
                     return Wrap(
                       spacing: 8.0,
@@ -239,15 +235,17 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
               },
             ),
             const SizedBox(height: 16),
+            // Book Appointment Button
             Center(
               child: ElevatedButton(
                 onPressed: _bookAppointment,
-                child: const Text('Randevu al'),
+                child: const Text('Book Appointment'),
               ),
             ),
             const SizedBox(height: 16),
+            // User's Appointments
             const Text(
-              'Randevularım',
+              'My Appointments',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             FutureBuilder<List<AppointmentModel>>(
@@ -277,15 +275,15 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }).toList();
 
     if (upcomingAppointments.isEmpty) {
-      return const Text('Yaklaşan bir randevunuz bulunmuyor.');
+      return const Text('You have no upcoming appointments.');
     }
-    logger.info('upcomingAppointments={}', [upcomingAppointments]);
+    logger.info('Upcoming Appointments: {}', [upcomingAppointments]);
     return Column(
       children: upcomingAppointments.map((appointment) {
         return ListTile(
           title: Text(
-              'Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
-          subtitle: Text('Görüşme: ${appointment.meetingType.label}'),
+              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
+          subtitle: Text('Meeting: ${appointment.meetingType.label}'),
           trailing: IconButton(
             icon: const Icon(Icons.cancel, color: Colors.red),
             onPressed: () async {
@@ -295,19 +293,19 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   return AlertDialog(
                     title: const Text("Cancel Appointment"),
                     content: const Text(
-                        "Bu randevuyu iptal etmek istediğinize emin misiniz?"),
+                        "Are you sure you want to cancel this appointment?"),
                     actions: [
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(false);
                         },
-                        child: const Text("Hayır"),
+                        child: const Text("No"),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop(true);
                         },
-                        child: const Text("Evet"),
+                        child: const Text("Yes"),
                       ),
                     ],
                   );

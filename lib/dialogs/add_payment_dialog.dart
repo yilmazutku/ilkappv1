@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/logger.dart';
+import '../models/payment_model.dart';
 import '../models/subs_model.dart';
 import '../providers/payment_provider.dart';
 
@@ -16,11 +17,11 @@ class AddPaymentDialog extends StatefulWidget {
   final SubscriptionModel subscription;
 
   const AddPaymentDialog({
-    Key? key,
+    super.key,
     required this.userId,
     required this.onPaymentAdded,
     required this.subscription,
-  }) : super(key: key);
+  });
 
   @override
   _AddPaymentDialogState createState() => _AddPaymentDialogState();
@@ -33,7 +34,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
   final TextEditingController _amountController = TextEditingController();
   DateTime? _selectedPaymentDate;
   DateTime? _selectedDueDate;
-  String _paymentStatus = 'Pending';
+  PaymentStatus _paymentStatus = PaymentStatus.completed;
   File? _dekontImage;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -46,20 +47,20 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Payment'),
+      title: const Text('Ödeme Ekle'),
       content: SingleChildScrollView(
         child: ListBody(
           children: [
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount'),
+              decoration: const InputDecoration(labelText: 'Miktar'),
             ),
             const SizedBox(height: 16),
             ListTile(
               title: Text(_selectedDueDate == null
-                  ? 'Select Due Date (Optional)'
-                  : 'Due Date: ${_selectedDueDate!.toLocal().toString().split(' ')[0]}'),
+                  ? 'Planlanan Tarih'
+                  : 'Tarih: ${_selectedDueDate!.toLocal().toString().split(' ')[0]}'),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
                 DateTime? pickedDate = await showDatePicker(
@@ -82,8 +83,8 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
               // Show payment date selection only if no due date is selected
               ListTile(
                 title: Text(_selectedPaymentDate == null
-                    ? 'Select Payment Date'
-                    : 'Payment Date: ${_selectedPaymentDate!.toLocal().toString().split(' ')[0]}'),
+                    ? 'Ödeme Tarihi'
+                    : 'Tarih: ${_selectedPaymentDate!.toLocal().toString().split(' ')[0]}'),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? pickedDate = await showDatePicker(
@@ -102,7 +103,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => _pickDekontImage(),
-                child: const Text('Upload Dekont Image'),
+                child: const Text('Dekont Yükle (Opsiyonel)'),
               ),
               const SizedBox(height: 16),
               _dekontImage != null
@@ -110,15 +111,16 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                 _dekontImage!,
                 height: 100,
               )
-                  : const Text('No image selected'),
+                  : const Text('Dekont Seçilmedi'),
             ],
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<PaymentStatus>(
               value: _paymentStatus,
-              items: ['Completed', 'Pending', 'Failed'].map((String status) {
-                return DropdownMenuItem<String>(
+              items: PaymentStatus.values
+                  .map((PaymentStatus status) {
+                return DropdownMenuItem<PaymentStatus>(
                   value: status,
-                  child: Text(status),
+                  child: Text(status.label),
                 );
               }).toList(),
               onChanged: (newValue) {
@@ -126,62 +128,63 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                   _paymentStatus = newValue!;
                 });
               },
-              decoration: const InputDecoration(labelText: 'Payment Status'),
+              decoration: const InputDecoration(labelText: 'Ödeme Durumu'),
             ),
             const SizedBox(height: 16),
-            if (_selectedDueDate != null) ...[
-              CheckboxListTile(
-                title: const Text('Enable Notifications'),
-                value: _enableNotifications,
-                onChanged: (bool? value) {
-                  setState(() {
-                    _enableNotifications = value ?? false;
-                  });
-                },
-              ),
-              if (_enableNotifications)
-                Column(
-                  children: [
-                    const Text('Remind me before:'),
-                    CheckboxListTile(
-                      title: const Text('3 days'),
-                      value: _notificationOptions[0],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[0] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('2 days'),
-                      value: _notificationOptions[1],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[1] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('1 day'),
-                      value: _notificationOptions[2],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[2] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('6 hours'),
-                      value: _notificationOptions[3],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[3] = value ?? false;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-            ],
+            //TODO ileride notifications
+            // if (_selectedDueDate != null) ...<Widget>[
+            //   CheckboxListTile(
+            //     title: const Text('Enable Notifications'),
+            //     value: _enableNotifications,
+            //     onChanged: (bool? value) {
+            //       setState(() {
+            //         _enableNotifications = value ?? false;
+            //       });
+            //     },
+            //   ),
+            //   if (_enableNotifications)
+            //     Column(
+            //       children: [
+            //         const Text('Remind me before:'),
+            //         CheckboxListTile(
+            //           title: const Text('3 days'),
+            //           value: _notificationOptions[0],
+            //           onChanged: (bool? value) {
+            //             setState(() {
+            //               _notificationOptions[0] = value ?? false;
+            //             });
+            //           },
+            //         ),
+            //         CheckboxListTile(
+            //           title: const Text('2 days'),
+            //           value: _notificationOptions[1],
+            //           onChanged: (bool? value) {
+            //             setState(() {
+            //               _notificationOptions[1] = value ?? false;
+            //             });
+            //           },
+            //         ),
+            //         CheckboxListTile(
+            //           title: const Text('1 day'),
+            //           value: _notificationOptions[2],
+            //           onChanged: (bool? value) {
+            //             setState(() {
+            //               _notificationOptions[2] = value ?? false;
+            //             });
+            //           },
+            //         ),
+            //         CheckboxListTile(
+            //           title: const Text('6 hours'),
+            //           value: _notificationOptions[3],
+            //           onChanged: (bool? value) {
+            //             setState(() {
+            //               _notificationOptions[3] = value ?? false;
+            //             });
+            //           },
+            //         ),
+            //       ],
+            //     ),
+            // ],
           ],
         ),
       ),

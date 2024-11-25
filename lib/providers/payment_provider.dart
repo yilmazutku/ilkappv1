@@ -58,7 +58,7 @@ class PaymentProvider extends ChangeNotifier {
     required SubscriptionModel subscription,
     required double amount,
     DateTime? paymentDate,
-    String status = 'Pending',
+    PaymentStatus status = PaymentStatus.completed,
     File? dekontImage,
     DateTime? dueDate,
     List<int>? notificationTimes,

@@ -16,7 +16,7 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
 
   @override
   AppointmentManager getProvider(BuildContext context) {
-    final provider = Provider.of<AppointmentManager>(context);
+    final provider = Provider.of<AppointmentManager>(context, listen: false);
     return provider;
   }
 

@@ -24,6 +24,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await signInAutomatically();
+
   runApp(const MyApp());
 
 }

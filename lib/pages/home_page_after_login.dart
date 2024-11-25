@@ -11,6 +11,7 @@ import '../pages/appointments_page.dart';
 import '../diet_list_pages/file_handler_page.dart';
 import '../pages/meal_upload_page.dart';
 import 'admin_create_user_page.dart';
+import 'admin_timeslots_page.dart';
 
 final Logger logger = Logger.forClass(HomePageAfterLogin);
 
@@ -122,6 +123,31 @@ class HomePageAfterLogin extends StatelessWidget {
               );
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.calendar_today),
+            title: const Text('Admin timeslots'),
+            onTap: () async {
+              // final subscriptionId = await getCurrentSubscriptionId(userId);
+              //
+              // if (subscriptionId == null) {
+              //   if (!context.mounted) return;
+              //   ScaffoldMessenger.of(context).showSnackBar(
+              //     const SnackBar(content: Text('No active subscription found')),
+              //   );
+              //   return;
+              // }
+              // if (!context.mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminTimeSlotsPage(
+
+                  ),
+                ),
+              );
+            },
+          ),
+
           // ListTile for "Şifre Sıfırla"
           ListTile(
             leading: const Icon(Icons.lock),
