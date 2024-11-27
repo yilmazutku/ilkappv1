@@ -10,6 +10,7 @@ import 'package:untitled/providers/meal_state_and_upload_manager.dart';
 import 'package:untitled/providers/user_provider.dart';
 import 'package:untitled/providers/payment_provider.dart';
 import 'package:untitled/providers/test_provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'models/logger.dart';
 import 'firebase_options.dart';
@@ -66,9 +67,19 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.lightBlue,
         ),
-       home: const HomePage(), // Your initial route or home widget
-
+        supportedLocales: const [
+          Locale('en', 'US'),
+          Locale('tr', 'TR'),
+          // Add other supported locales here
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: const HomePage(),
       ),
+
     // ),
     );
   }

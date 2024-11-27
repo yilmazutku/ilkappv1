@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/appointment_model.dart';
 import '../models/logger.dart';
 import '../providers/appointment_manager.dart';
+import 'meal_upload_page.dart';
 
 final Logger logger = Logger.forClass(AppointmentsPage);
 
@@ -53,7 +54,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     if (_selectedTime == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a time slot.')),
+        const SnackBar(content: Text('Lütfen bir zaman dilimi seçin.')),
       );
       return;
     }
@@ -77,7 +78,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       if (!mounted) return;
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selected time slot is no longer available.')),
+          const SnackBar(content: Text('Seçtiğiniz saat/tarih uygun değildir.')),
         );
         return;
       }
@@ -104,7 +105,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appointment booked successfully.')),
+        const SnackBar(content: Text('Randevu başarıyla oluşturuldu.')),
       );
 
       // Refresh available times and user's appointments
@@ -113,11 +114,12 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         _fetchUserAppointments();
         _selectedTime = null;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       logger.err('Error booking appointment: {}', [e]);
+      logger.err('Stack trace: {}', [stackTrace]);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error booking appointment: $e')),
+        const SnackBar(content: Text('Randevu oluşturulurken bir hata oluştu.')),
       );
     }
   }
@@ -131,18 +133,19 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
           canceledBy: 'user')) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Appointment canceled.')),
+          const SnackBar(content: Text('Randevu iptal edildi.')),
         );
       }
       setState(() {
         _fetchAvailableTimes();
         _fetchUserAppointments();
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       logger.err('Error canceling appointment: {}', [e]);
+      logger.err('Stack trace: {}', [stackTrace]);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error canceling appointment: $e')),
+        SnackBar(content: Text('Randevu iptal edilirken bir hata oluştu: $e')),
       );
     }
   }
@@ -152,76 +155,125 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     logger.info('Building AppointmentsPage');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Appointments')),
+      appBar: AppBar(
+        title: const Text('Randevularım'),
+        backgroundColor: Colors.deepPurple,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Meeting Type Selector (if needed)
-            Row(
-              children: [
-                const Text('Meeting Type:'),
-                const SizedBox(width: 16),
-                DropdownButton<MeetingType>(
-                  value: _selectedMeetingType,
-                  onChanged: (MeetingType? newValue) {
-                    setState(() {
-                      _selectedMeetingType = newValue!;
-                    });
-                  },
-                  items: MeetingType.values
-                      .map<DropdownMenuItem<MeetingType>>((MeetingType type) {
-                    return DropdownMenuItem<MeetingType>(
-                      value: type,
-                      child: Text(type.label),
-                    );
-                  }).toList(),
+            // Meeting Type Selector
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.event_available, color: Colors.deepPurple, size: 30),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Görüşme Türü:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    DropdownButton<MeetingType>(
+                      value: _selectedMeetingType,
+                      onChanged: (MeetingType? newValue) {
+                        setState(() {
+                          _selectedMeetingType = newValue!;
+                        });
+                      },
+                      items: MeetingType.values
+                          .map<DropdownMenuItem<MeetingType>>((MeetingType type) {
+                        return DropdownMenuItem<MeetingType>(
+                          value: type,
+                          child: Text(type.label),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 16),
             // Date Picker
-            ListTile(
-              title: Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 45)),
-                );
-                if (picked != null && picked != _selectedDate) {
-                  setState(() {
-                    _selectedDate = picked;
-                    _selectedTime = null;
-                  });
-                  _fetchAvailableTimes();
-                }
-              },
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: Icon(Icons.calendar_today, color: Colors.blueAccent),
+                title: Text(
+                  DateFormat('dd MMMM yyyy', 'tr_TR').format(_selectedDate),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                trailing: const Icon(Icons.edit_calendar, color: Colors.blueAccent),
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 45)),
+                    locale: const Locale('tr', 'TR'),
+                  );
+                  if (picked != null && picked != _selectedDate) {
+                    setState(() {
+                      _selectedDate = picked;
+                      _selectedTime = null;
+                    });
+                    _fetchAvailableTimes();
+                  }
+                },
+              ),
             ),
             const SizedBox(height: 16),
             // Available Time Slots
+            Text(
+              'Uygun Saatler',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal),
+            ),
+            const SizedBox(height: 8),
             FutureBuilder<List<TimeOfDay>>(
               future: _availableTimesFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
+                  return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Text(
-                      'Error fetching available times: ${snapshot.error}');
+                  logger.err('Error fetching available times: {}', [snapshot.error!]);
+                  return Text('Zaman dilimleri alınırken bir hata oluştu: ${snapshot.error}');
                 } else {
                   List<TimeOfDay> availableTimes = snapshot.data ?? [];
+                  // Sort the times
+                  availableTimes.sort((a, b) {
+                    if (a.hour != b.hour) {
+                      return a.hour.compareTo(b.hour);
+                    } else {
+                      return a.minute.compareTo(b.minute);
+                    }
+                  });
                   if (availableTimes.isEmpty) {
-                    return const Text('No available time slots for the selected date.');
+                    return const Text('Seçilen tarih için uygun zaman dilimi yok.');
                   } else {
                     return Wrap(
                       spacing: 8.0,
+                      runSpacing: 8.0,
                       children: availableTimes.map((time) {
                         return ChoiceChip(
-                          label: Text(time.format(context)),
+                          label: Text(
+                            MealUploadPage.formatTimeOfDay24(time),
+                            style: TextStyle(
+                              color: _selectedTime == time ? Colors.white : Colors.black,
+                            ),
+                          ),
                           selected: _selectedTime == time,
+                          selectedColor: Colors.deepPurple,
+                          backgroundColor: Colors.grey[200],
                           onSelected: (bool selected) {
                             setState(() {
                               _selectedTime = selected ? time : null;
@@ -237,24 +289,33 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             const SizedBox(height: 16),
             // Book Appointment Button
             Center(
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _bookAppointment,
-                child: const Text('Book Appointment'),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Randevu Al'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white, backgroundColor: Colors.green,
+                  textStyle: const TextStyle(fontSize: 18),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             // User's Appointments
-            const Text(
-              'My Appointments',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              'Randevularım',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
             ),
+            const SizedBox(height: 8),
             FutureBuilder<List<AppointmentModel>>(
               future: _userAppointmentsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
+                  return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Text('Error fetching appointments: ${snapshot.error}');
+                  logger.err('Error fetching appointments: {}', [snapshot.error!]);
+                  return Text('Randevular alınırken bir hata oluştu: ${snapshot.error}');
                 } else {
                   List<AppointmentModel> appointments = snapshot.data ?? [];
                   return _buildAppointmentsList(appointments);
@@ -275,50 +336,62 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     }).toList();
 
     if (upcomingAppointments.isEmpty) {
-      return const Text('You have no upcoming appointments.');
+      return const Text('Gelecek randevunuz bulunmamaktadır.');
     }
     logger.info('Upcoming Appointments: {}', [upcomingAppointments]);
-    return Column(
-      children: upcomingAppointments.map((appointment) {
-        return ListTile(
-          title: Text(
-              'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}'),
-          subtitle: Text('Meeting: ${appointment.meetingType.label}'),
-          trailing: IconButton(
-            icon: const Icon(Icons.cancel, color: Colors.red),
-            onPressed: () async {
-              bool? confirmCancel = await showDialog<bool>(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text("Cancel Appointment"),
-                    content: const Text(
-                        "Are you sure you want to cancel this appointment?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(false);
-                        },
-                        child: const Text("No"),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: const Text("Yes"),
-                      ),
-                    ],
-                  );
-                },
-              );
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: upcomingAppointments.length,
+      itemBuilder: (context, index) {
+        AppointmentModel appointment = upcomingAppointments[index];
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: Icon(Icons.event_note, color: Colors.deepPurple),
+            title: Text(
+              DateFormat('dd MMMM yyyy - HH:mm', 'tr_TR')
+                  .format(appointment.appointmentDateTime),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text('Görüşme Türü: ${appointment.meetingType.label}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              onPressed: () async {
+                bool? confirmCancel = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text("Randevuyu İptal Et"),
+                      content: const Text("Bu randevuyu iptal etmek istediğinize emin misiniz?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                          child: const Text("Hayır"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                          child: const Text("Evet"),
+                        ),
+                      ],
+                    );
+                  },
+                );
 
-              if (confirmCancel == true) {
-                await _cancelAppointment(appointment);
-              }
-            },
+                if (confirmCancel == true) {
+                  await _cancelAppointment(appointment);
+                }
+              },
+            ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 }

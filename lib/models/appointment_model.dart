@@ -88,6 +88,7 @@ enum MeetingStatus {
   scheduled('Planlandı'),
   burned('Yakıldı'),
   canceled('Iptal edildi'),
+ // pendingCancellation('Iptal onayı bekliyor'), // New status
   postponed('Ertelendi');
 
   const MeetingStatus(this.label);

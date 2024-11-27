@@ -19,6 +19,11 @@ class MealUploadPage extends StatefulWidget {
     required this.subscriptionId,
   });
 
+  static String formatTimeOfDay24(TimeOfDay time) {
+    final now = DateTime.now();
+    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    return DateFormat('HH:mm').format(dateTime);
+  }
   @override
   State<MealUploadPage> createState() => _MealUploadPageState();
 }
@@ -47,11 +52,6 @@ class _MealUploadPageState extends State<MealUploadPage> {
     _mealContentsFuture = _fetchMealStatesAndContents();
   }
 
-  String formatTimeOfDay24(TimeOfDay time) {
-    final now = DateTime.now();
-    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
-    return DateFormat('HH:mm').format(dateTime);
-  }
 
   Future<void> _fetchMealStatesAndContents() async {
     try {
@@ -373,12 +373,12 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
                                     children: [
-                                      Row(
+                                      const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(Icons.local_drink, color: Colors.blue, size: 30),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Su Tüketimi',
                                             style: TextStyle(
                                               fontSize: 18,
@@ -435,12 +435,12 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
                                     children: [
-                                      Row(
+                                      const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(Icons.directions_walk, color: Colors.green, size: 30),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Adım Sayısı',
                                             style: TextStyle(
                                               fontSize: 18,
@@ -518,7 +518,7 @@ class _MealUploadPageState extends State<MealUploadPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        formatTimeOfDay24(mealTimes[mealCategory] ?? defaultMealTime),
+                                        MealUploadPage.formatTimeOfDay24(mealTimes[mealCategory] ?? defaultMealTime),
                                         textAlign: TextAlign.left,
                                       ),
                                       IconButton(

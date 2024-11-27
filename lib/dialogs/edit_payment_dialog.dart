@@ -38,8 +38,8 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
 
   // New variables for notifications
   bool _enableNotifications = false;
-  final List<bool> _notificationOptions = [false, false, false, false];
-  final List<int> _notificationTimes = [72, 48, 24, 6]; // Hours before due date
+  // final List<bool> _notificationOptions = [false, false, false, false];
+  // final List<int> _notificationTimes = [72, 48, 24, 6]; // Hours before due date
 
   @override
   void initState() {
@@ -48,55 +48,84 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
     _selectedPaymentDate = widget.payment.paymentDate;
     _selectedDueDate = widget.payment.dueDate;
     _paymentStatus = widget.payment.status;
-    _enableNotifications = widget.payment.notificationTimes != null;
-    if (_enableNotifications && widget.payment.notificationTimes != null) {
-      for (int i = 0; i < _notificationTimes.length; i++) {
-        _notificationOptions[i] =
-            widget.payment.notificationTimes!.contains(_notificationTimes[i]);
-      }
-    }
+    // _enableNotifications = widget.payment.notificationTimes != null;
+    // if (_enableNotifications && widget.payment.notificationTimes != null) {
+    //   for (int i = 0; i < _notificationTimes.length; i++) {
+    //     _notificationOptions[i] =
+    //         widget.payment.notificationTimes!.contains(_notificationTimes[i]);
+    //   }
+    // }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit Payment'),
+      title: const Text('Ödemeyi Düzenle'),
       content: SingleChildScrollView(
         child: ListBody(
           children: [
+            // Amount Field
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount'),
+              decoration: const InputDecoration(labelText: 'Miktar'),
             ),
             const SizedBox(height: 16),
+
+            // Due Date Picker
             ListTile(
               title: Text(_selectedDueDate == null
-                  ? 'Select Due Date (Optional)'
-                  : 'Due Date: ${_selectedDueDate!.toLocal().toString().split(' ')[0]}'),
+                  ? 'Planlanan Tarih Seç (Opsiyonel)'
+                  : 'Planlanan Tarih: ${_selectedDueDate!.toLocal().toString().split(' ')[0]}'),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
                 DateTime? pickedDate = await showDatePicker(
                   context: context,
-                  initialDate: _selectedDueDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
+                //  initialDate: _selectedDueDate ?? DateTime.now(),
+                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
                 if (pickedDate != null) {
                   setState(() {
                     _selectedDueDate = pickedDate;
                     // If a due date is selected, clear the payment date
-                    _selectedPaymentDate = null;
+                    if (_paymentStatus != PaymentStatus.completed) {
+                      _selectedPaymentDate = null;
+                    }
                   });
                 }
               },
             ),
             const SizedBox(height: 16),
-            if (_selectedDueDate == null) ...[
+
+            // Payment Status Dropdown
+            DropdownButtonFormField<PaymentStatus>(
+              value: _paymentStatus,
+              items: PaymentStatus.values.map((PaymentStatus status) {
+                return DropdownMenuItem<PaymentStatus>(
+                  value: status,
+                  child: Text(status.label),
+                );
+              }).toList(),
+              onChanged: (newValue) {
+                setState(() {
+                  _paymentStatus = newValue!;
+                  // If status is not completed, clear payment date
+                  if (_paymentStatus != PaymentStatus.completed) {
+                    _selectedPaymentDate = null;
+                  }
+                });
+              },
+              decoration: const InputDecoration(labelText: 'Ödeme Durumu'),
+            ),
+            const SizedBox(height: 16),
+
+            // Payment Date Picker (Visible only when status is 'Tamamlandı')
+            if (_paymentStatus == PaymentStatus.completed) ...[
               ListTile(
                 title: Text(_selectedPaymentDate == null
-                    ? 'Select Payment Date'
-                    : 'Payment Date: ${_selectedPaymentDate!.toLocal().toString().split(' ')[0]}'),
+                    ? 'Ödeme Tarihi Seç'
+                    : 'Ödeme Tarihi: ${_selectedPaymentDate!.toLocal().toString().split(' ')[0]}'),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? pickedDate = await showDatePicker(
@@ -115,7 +144,7 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => _pickDekontImage(),
-                child: const Text('Upload Dekont Image'),
+                child: const Text('Dekont Görseli Yükle (Opsiyonel)'),
               ),
               const SizedBox(height: 16),
               _dekontImage != null
@@ -128,78 +157,11 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
                 widget.payment.dekontUrl!,
                 height: 100,
               )
-                  : const Text('No image selected'),
+                  : const Text('Dekont Görseli Seçilmedi'),
             ],
-            const SizedBox(height: 16),
-            DropdownButtonFormField<PaymentStatus>(
-              value: _paymentStatus,
-              items: PaymentStatus.values.map((PaymentStatus status) {
-                return DropdownMenuItem<PaymentStatus>(
-                  value: status,
-                  child: Text(status.label),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _paymentStatus = newValue!;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'Payment Status'),
-            ),
-            const SizedBox(height: 16),
-            if (_selectedDueDate != null) ...[
-              CheckboxListTile(
-                title: const Text('Enable Notifications'),
-                value: _enableNotifications,
-                onChanged: (bool? value) {
-                  setState(() {
-                    _enableNotifications = value ?? false;
-                  });
-                },
-              ),
-              if (_enableNotifications)
-                Column(
-                  children: [
-                    const Text('Remind me before:'),
-                    CheckboxListTile(
-                      title: const Text('3 days'),
-                      value: _notificationOptions[0],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[0] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('2 days'),
-                      value: _notificationOptions[1],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[1] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('1 day'),
-                      value: _notificationOptions[2],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[2] = value ?? false;
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text('6 hours'),
-                      value: _notificationOptions[3],
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _notificationOptions[3] = value ?? false;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-            ],
+
+            // Notifications (Optional)
+            // ... (if needed)
           ],
         ),
       ),
@@ -208,17 +170,18 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
           onPressed: () {
             Navigator.of(context).pop(); // Close the dialog
           },
-          child: const Text('Cancel'),
+          child: const Text('İptal'),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : () => _updatePayment(),
           child: _isLoading
               ? const CircularProgressIndicator()
-              : const Text('Update Payment'),
+              : const Text('Ödemeyi Güncelle'),
         ),
       ],
     );
   }
+
 
   Future<void> _pickDekontImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -234,10 +197,10 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
 
   Future<void> _updatePayment() async {
     if (_amountController.text.isEmpty) {
-      logger.err('Amount is required.');
+      logger.warn('Amount is required on _updatePayment.');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter the amount.')),
+          const SnackBar(content: Text('Lütfen miktarı giriniz.')),
         );
       }
       return;
@@ -252,7 +215,15 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
       }
       return;
     }
-
+    if (_paymentStatus == PaymentStatus.completed && _selectedPaymentDate == null) {
+      // Show error: Payment date is required when status is 'Tamamlandı'
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lütfen ödeme tarihini seçiniz.')),
+        );
+      }
+      return;
+    }
     // if (_selectedPaymentDate != null &&
     //     _dekontImage == null &&
     //     widget.payment.dekontUrl == null) {
@@ -278,27 +249,27 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
       }
 
       // Prepare notification times if enabled
-      List<int>? notificationTimes;
-      if (_enableNotifications && _selectedDueDate != null) {
-        notificationTimes = [];
-        for (int i = 0; i < _notificationOptions.length; i++) {
-          if (_notificationOptions[i]) {
-            notificationTimes.add(_notificationTimes[i]);
-          }
-        }
-        if (notificationTimes.isEmpty) {
-          logger.err('At least one notification time must be selected.');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please select at least one notification time.')),
-            );
-          }
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-      }
+       List<int>? notificationTimes;
+      // if (_enableNotifications && _selectedDueDate != null) {
+      //   notificationTimes = [];
+      //   for (int i = 0; i < _notificationOptions.length; i++) {
+      //     if (_notificationOptions[i]) {
+      //       notificationTimes.add(_notificationTimes[i]);
+      //     }
+      //   }
+      //   if (notificationTimes.isEmpty) {
+      //     logger.err('At least one notification time must be selected.');
+      //     if (mounted) {
+      //       ScaffoldMessenger.of(context).showSnackBar(
+      //         const SnackBar(content: Text('Please select at least one notification time.')),
+      //       );
+      //     }
+      //     setState(() {
+      //       _isLoading = false;
+      //     });
+      //     return;
+      //   }
+      // }
 
       // Update the payment document
       PaymentModel updatedPayment = PaymentModel(
@@ -365,8 +336,8 @@ class _EditPaymentDialogState extends State<EditPaymentDialog> {
       logger.info('Dekont image uploaded to $downloadUrl');
 
       return downloadUrl;
-    } catch (e) {
-      logger.err('Error uploading dekont image: $e');
+    } catch (e,s) {
+      logger.err('Error uploading dekont image: $s');
       throw Exception('Error uploading dekont image: $e');
     }
   }

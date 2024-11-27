@@ -83,7 +83,7 @@ class PaymentProvider extends ChangeNotifier {
         userId: userId,
         subscriptionId: subscription.subscriptionId,
         amount: amount,
-        paymentDate: paymentDate ?? DateTime.now(),
+        paymentDate: paymentDate,
         status: status,
         dekontUrl: dekontUrl,
         dueDate: dueDate,

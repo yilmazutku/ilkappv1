@@ -61,14 +61,14 @@ class _UserPaymentsPageState extends State<UserPaymentsPage> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ödeme Tarihi: ${_formatDate(payment.paymentDate)}'),
-                      Text('Son Ödeme Tarihi: ${_formatDate(payment.dueDate)}'),
+                      Text('Planlanan Ödeme Tarihi: ${_formatDate(payment.dueDate)}'),
+                      Text('Ödendiği Tarih: ${_formatDate(payment.paymentDate)}'),
                     ],
                   ),
                   trailing: Text(
                     payment.status.label,
                     style: TextStyle(
-                      color: payment.status==PaymentStatus.completed ? Colors.green : Colors.red,
+                      color: payment.status==PaymentStatus.completed ? Colors.blue : Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

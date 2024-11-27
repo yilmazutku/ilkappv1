@@ -5,9 +5,9 @@ import 'logger.dart';
 class PaymentModel {
   final String paymentId;
   final String userId;
-  final String subscriptionId; // Added subscriptionId
+  final String subscriptionId;
   final double amount;
-  final DateTime? paymentDate;
+  final DateTime? paymentDate; // Made nullable
   final PaymentStatus status;
   final String? dekontUrl;
   final DateTime? dueDate;
@@ -16,9 +16,9 @@ class PaymentModel {
   PaymentModel({
     required this.paymentId,
     required this.userId,
-    required this.subscriptionId, // Added subscriptionId
+    required this.subscriptionId,
     required this.amount,
-    required this.paymentDate,
+    this.paymentDate, // Nullable
     required this.status,
     this.dekontUrl,
     this.dueDate,
@@ -31,9 +31,10 @@ class PaymentModel {
       paymentId: doc.id,
       userId: data['userId'],
       subscriptionId: data['subscriptionId'],
-      // Fetch subscriptionId
       amount: data['amount'].toDouble(),
-      paymentDate: (data['paymentDate'] as Timestamp).toDate(),
+      paymentDate: data['paymentDate'] != null
+          ? (data['paymentDate'] as Timestamp).toDate()
+          : null,
       status: PaymentStatus.fromLabel(data['status']),
       dekontUrl: data['dekontUrl'],
       dueDate: data['dueDate'] != null
@@ -48,9 +49,9 @@ class PaymentModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
-      'subscriptionId': subscriptionId, // Include subscriptionId
+      'subscriptionId': subscriptionId,
       'amount': amount,
-      'paymentDate': Timestamp.fromDate(paymentDate!),
+      'paymentDate': paymentDate != null ? Timestamp.fromDate(paymentDate!) : null,
       'status': status.label,
       'dekontUrl': dekontUrl,
       'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
@@ -59,9 +60,9 @@ class PaymentModel {
   }
 }
 
+
 final Logger logger = Logger.forClass(PaymentStatus);
 enum PaymentStatus {
-
 
   completed('Tamamlandı'),
   planned('Planlandı'),
