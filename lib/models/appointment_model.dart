@@ -7,7 +7,7 @@ class AppointmentModel {
   final String subscriptionId;
   final MeetingType meetingType;
   final DateTime appointmentDateTime;
-  MeetingStatus status;
+  AppointmentStatus status;
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -41,7 +41,7 @@ class AppointmentModel {
       subscriptionId: data['subscriptionId'],
       meetingType: MeetingType.fromLabel(data['meetingType']),
       appointmentDateTime: (data['appointmentDateTime'] as Timestamp).toDate(),
-      status: MeetingStatus.fromLabel(data['status']),
+      status: AppointmentStatus.fromLabel(data['status']),
       notes: data['notes'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
@@ -83,7 +83,7 @@ class AppointmentModel {
   }
 }
 
-enum MeetingStatus {
+enum AppointmentStatus {
   completed('Yapıldı'),
   scheduled('Planlandı'),
   burned('Yakıldı'),
@@ -91,12 +91,12 @@ enum MeetingStatus {
  // pendingCancellation('Iptal onayı bekliyor'), // New status
   postponed('Ertelendi');
 
-  const MeetingStatus(this.label);
+  const AppointmentStatus(this.label);
 
   final String label;
 
-  static MeetingStatus fromLabel(String label) {
-    return MeetingStatus.values.firstWhere((e) => e.label == label);
+  static AppointmentStatus fromLabel(String label) {
+    return AppointmentStatus.values.firstWhere((e) => e.label == label);
   }
 }
 

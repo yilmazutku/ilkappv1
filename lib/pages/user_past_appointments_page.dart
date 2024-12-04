@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../models/appointment_model.dart';
 import '../models/logger.dart';
 
@@ -10,7 +9,7 @@ final Logger logger = Logger.forClass(PastAppointmentsPage);
 class PastAppointmentsPage extends StatefulWidget {
   final String userId;
 
-  const PastAppointmentsPage({super.key, required this.userId});
+  const PastAppointmentsPage({Key? key, required this.userId}) : super(key: key);
 
   @override
   createState() => _PastAppointmentsPageState();
@@ -21,8 +20,14 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
   int _currentPage = 1; // Current page index
   int _totalPages = 1; // Total number of pages
   List<AppointmentModel> _allAppointments = []; // All fetched appointments
+  List<AppointmentModel> _filteredAppointments = []; // Filtered appointments
   List<AppointmentModel> _currentAppointments = []; // Appointments for the current page
   bool _isLoading = false;
+
+  // Filters
+  AppointmentStatus? _selectedStatus;
+  DateTimeRange? _selectedDateRange;
+  bool _isDateAscending = true;
 
   @override
   void initState() {
@@ -50,17 +55,12 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
           .map((doc) => AppointmentModel.fromDocument(doc))
           .toList();
 
-      _totalPages = (_allAppointments.length / _pageSize).ceil();
-      if (_totalPages == 0) _totalPages = 1; // Ensure at least one page
+      _applyFilters();
 
-      logger.info('Total past appointments fetched: ${_allAppointments.length}');
-      logger.info('Total pages calculated: $_totalPages');
-
-      _setCurrentPageAppointments();
     } catch (e) {
       logger.err('Error fetching all past appointments: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching appointments: $e')),
+        SnackBar(content: Text('Randevular alınırken hata oluştu: $e')),
       );
     } finally {
       setState(() {
@@ -69,15 +69,51 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
     }
   }
 
-  /// Set the appointments for the current page by slicing the _allAppointments list.
+  /// Apply filters and sorting to the appointments list.
+  void _applyFilters() {
+    List<AppointmentModel> filtered = List.from(_allAppointments);
+
+    // Apply status filter
+    if (_selectedStatus != null) {
+      filtered = filtered.where((appointment) => appointment.status == _selectedStatus).toList();
+    }
+
+    // Apply date filter
+    if (_selectedDateRange != null) {
+      filtered = filtered.where((appointment) {
+        DateTime date = appointment.appointmentDateTime;
+        return date.isAfter(_selectedDateRange!.start.subtract(const Duration(days: 1))) &&
+            date.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
+      }).toList();
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) {
+      if (_isDateAscending) {
+        return a.appointmentDateTime.compareTo(b.appointmentDateTime);
+      } else {
+        return b.appointmentDateTime.compareTo(a.appointmentDateTime);
+      }
+    });
+
+    setState(() {
+      _filteredAppointments = filtered;
+      _totalPages = (_filteredAppointments.length / _pageSize).ceil();
+      if (_totalPages == 0) _totalPages = 1;
+      _currentPage = 1; // Reset to first page
+      _setCurrentPageAppointments();
+    });
+  }
+
+  /// Set the appointments for the current page by slicing the _filteredAppointments list.
   void _setCurrentPageAppointments() {
     setState(() {
       int startIndex = (_currentPage - 1) * _pageSize;
       int endIndex = startIndex + _pageSize;
-      if (endIndex > _allAppointments.length) {
-        endIndex = _allAppointments.length;
+      if (endIndex > _filteredAppointments.length) {
+        endIndex = _filteredAppointments.length;
       }
-      _currentAppointments = _allAppointments.sublist(startIndex, endIndex);
+      _currentAppointments = _filteredAppointments.sublist(startIndex, endIndex);
       logger.info('Displaying appointments for page $_currentPage: $_currentAppointments');
     });
   }
@@ -93,28 +129,234 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
     }
   }
 
+  Future<void> _selectDateRange() async {
+    DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _selectedDateRange ??
+          DateTimeRange(
+            start: DateTime.now().subtract(const Duration(days: 30)),
+            end: DateTime.now(),
+          ),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'),
+    );
+
+    if (picked != null && picked != _selectedDateRange) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+      _applyFilters();
+    }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedStatus = null;
+      _selectedDateRange = null;
+      _isDateAscending = true;
+    });
+    _applyFilters();
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        AppointmentStatus? tempStatus = _selectedStatus;
+        DateTimeRange? tempDateRange = _selectedDateRange;
+
+        return AlertDialog(
+          title: const Text('Filtrele'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<AppointmentStatus>(
+                  value: tempStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Durum',
+                  ),
+                  items: AppointmentStatus.values.map((AppointmentStatus status) {
+                    return DropdownMenuItem<AppointmentStatus>(
+                      value: status,
+                      child: Text(status.label),
+                    );
+                  }).toList(),
+                  onChanged: (AppointmentStatus? newValue) {
+                    tempStatus = newValue;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () async {
+                    DateTimeRange? picked = await showDateRangePicker(
+                      context: context,
+                      initialDateRange: tempDateRange ??
+                          DateTimeRange(
+                            start: DateTime.now().subtract(const Duration(days: 30)),
+                            end: DateTime.now(),
+                          ),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now(),
+                      locale: const Locale('tr', 'TR'),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        tempDateRange = picked;
+                      });
+                    }
+                  },
+                  child: Text(
+                    tempDateRange == null
+                        ? 'Tarih Seçiniz'
+                        : 'Seçilen Tarih: ${DateFormat('dd.MM.yyyy').format(tempDateRange!.start)} - ${DateFormat('dd.MM.yyyy').format(tempDateRange!.end)}',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('İptal'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Uygula'),
+              onPressed: () {
+                setState(() {
+                  _selectedStatus = tempStatus;
+                  _selectedDateRange = tempDateRange;
+                });
+                _applyFilters();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _toggleDateSorting() {
+    setState(() {
+      _isDateAscending = !_isDateAscending;
+      _applyFilters();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Past Appointments'),
+        title: const Text('Geçmiş Randevularım'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_alt),
+            onPressed: _showFilterDialog,
+          ),
+          IconButton(
+            icon: Icon(_isDateAscending ? Icons.arrow_downward : Icons.arrow_upward),
+            onPressed: _toggleDateSorting,
+          ),
+        ],
       ),
       body: Column(
         children: [
+          if (_selectedStatus != null || _selectedDateRange != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  if (_selectedStatus != null)
+                    Chip(
+                      label: Text('Durum: ${_selectedStatus!.label}'),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedStatus = null;
+                        });
+                        _applyFilters();
+                      },
+                    ),
+                  if (_selectedDateRange != null)
+                    Chip(
+                      label: Text(
+                          'Tarih: ${DateFormat('dd.MM.yyyy').format(_selectedDateRange!.start)} - ${DateFormat('dd.MM.yyyy').format(_selectedDateRange!.end)}'),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedDateRange = null;
+                        });
+                        _applyFilters();
+                      },
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _clearFilters,
+                    child: const Text('Filtreleri Temizle'),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _allAppointments.isEmpty
-                ? const Center(child: Text('No past appointments found.'))
+                : _filteredAppointments.isEmpty
+                ? const Center(child: Text('Geçmiş randevunuz bulunmamaktadır.'))
                 : ListView.builder(
               itemCount: _currentAppointments.length,
               itemBuilder: (context, index) {
                 final appointment = _currentAppointments[index];
-                return ListTile(
-                  title: Text(
-                    DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime),
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.calendar_today,
+                        color: theme.primaryColor,
+                        size: 40,
+                      ),
+                      title: Text(
+                        DateFormat('dd MMMM yyyy - HH:mm', 'tr_TR')
+                            .format(appointment.appointmentDateTime),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 5),
+                          Text(
+                            'Durum: ${appointment.status.label}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Görüşme Türü: ${appointment.meetingType.label}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        color: theme.primaryColor,
+                      ),
+                      onTap: () {
+                        // Handle tap if needed
+                      },
+                    ),
                   ),
-                  subtitle: Text('Status: ${appointment.status.label}'),
                 );
               },
             ),
@@ -122,34 +364,51 @@ class _PastAppointmentsPageState extends State<PastAppointmentsPage> {
           if (_totalPages > 1)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_totalPages, (index) {
-                  int page = index + 1;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: TextButton(
-                      onPressed: () {
-                        _changePage(page);
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: _currentPage == page
-                            ? Colors.blue
-                            : Colors.grey[200],
-                      ),
-                      child: Text(
-                        '$page',
-                        style: TextStyle(
-                          color: _currentPage == page ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+              child: PaginationControls(
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                onPageChanged: _changePage,
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+class PaginationControls extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final Function(int) onPageChanged;
+
+  const PaginationControls({
+    Key? key,
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed: currentPage > 1 ? () => onPageChanged(currentPage - 1) : null,
+          icon: const Icon(Icons.arrow_back_ios),
+          color: theme.primaryColor,
+        ),
+        Text(
+          '$currentPage / $totalPages',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          onPressed: currentPage < totalPages ? () => onPageChanged(currentPage + 1) : null,
+          icon: const Icon(Icons.arrow_forward_ios),
+          color: theme.primaryColor,
+        ),
+      ],
     );
   }
 }

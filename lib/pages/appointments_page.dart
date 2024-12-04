@@ -96,7 +96,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         subscriptionId: widget.subscriptionId,
         meetingType: _selectedMeetingType,
         appointmentDateTime: appointmentDateTime,
-        status: MeetingStatus.scheduled,
+        status: AppointmentStatus.scheduled,
         createdAt: DateTime.now(),
         createdBy: 'user',
       );
@@ -331,7 +331,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   Widget _buildAppointmentsList(List<AppointmentModel> appointments) {
     final upcomingAppointments = appointments.where((appointment) {
       return appointment.appointmentDateTime.isAfter(DateTime.now()) &&
-          appointment.status != MeetingStatus.canceled &&
+          appointment.status != AppointmentStatus.canceled &&
           !(appointment.isDeleted ?? false);
     }).toList();
 

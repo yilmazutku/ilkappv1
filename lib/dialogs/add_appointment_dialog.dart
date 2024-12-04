@@ -35,13 +35,13 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Appointment'),
+      title: const Text('Randevu Ekle'),
       content: SingleChildScrollView(
         child: Column(
           children: [
             // Date Picker
             ListTile(
-              title: const Text('Select Date'),
+              title: const Text('Tarih Seç'),
               subtitle: Text(_selectedDate.toLocal().toString().split(' ')[0]),
               trailing: IconButton(
                 icon: const Icon(Icons.calendar_today),
@@ -50,10 +50,10 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
             ),
             // Time Picker
             ListTile(
-              title: const Text('Select Time'),
+              title: const Text('Saat Seç'),
               subtitle: Text(_selectedTime != null
                   ? _selectedTime!.format(context)
-                  : 'No time selected'),
+                  : 'Saat seçilmedi.'),
               trailing: IconButton(
                 icon: const Icon(Icons.access_time),
                 onPressed: _pickTime,
@@ -87,7 +87,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('İptal'),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _addAppointment, //TODO test setstate ve return err msglar
@@ -97,7 +97,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
             height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
-              : const Text('Add'),
+              : const Text('Ekle'),
         ),
       ],
     );
@@ -130,7 +130,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
   Future<void> _addAppointment() async {
     if (_selectedTime == null) {
       setState(() {
-        _errorMessage = 'Please select a time.';
+        _errorMessage = 'Lütfen bir saat seçiniz.';
       });
       return;
     }
@@ -157,10 +157,10 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
 
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selected time slot is not available.')),
+          const SnackBar(content: Text('Seçilen tarih/saat uygun değildir. Lütfen kontrol ediniz.')),
         );
         setState(() {
-          _errorMessage = 'Selected time slot is not available.';
+          _errorMessage = 'Seçilen tarih/saat uygun değildir. Lütfen kontrol ediniz.';
         });
         return;
       }
@@ -176,7 +176,7 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
         subscriptionId: widget.subscriptionId,
         meetingType: _meetingType,
         appointmentDateTime: appointmentDateTime,
-        status: MeetingStatus.scheduled,
+        status: AppointmentStatus.scheduled,
         createdAt: DateTime.now(),
         createdBy: 'admin',
       );
@@ -188,7 +188,8 @@ class _AddAppointmentDialogState extends State<AddAppointmentDialog> {
       Navigator.of(context).pop();
     } catch (e,s) {
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        // _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = 'Randevu oluşturulurken bir hata oluştu. Geliştiriciden destek isteyiniz.';
       });
       logger.err('Exception:{}{}',[e,s]);
     } finally {

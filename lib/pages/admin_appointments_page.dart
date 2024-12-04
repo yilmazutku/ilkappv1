@@ -21,11 +21,11 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
   DateTime? startDate;
   DateTime? endDate;
   MeetingType? selectedMeetingType;
-  MeetingStatus? selectedMeetingStatus;
+  AppointmentStatus? selectedMeetingStatus;
   String? sortOption = 'Date Descending';
 
   final List<MeetingType?> meetingTypes = [null, ...MeetingType.values];
-  final List<MeetingStatus?> meetingStatuses = [null, ...MeetingStatus.values];
+  final List<AppointmentStatus?> meetingStatuses = [null, ...AppointmentStatus.values];
   final List<String> sortOptions = ['Date Ascending', 'Date Descending', 'Name A-Z', 'Name Z-A'];
 
   late Future<List<AppointmentModel>> _appointmentsFuture;
@@ -186,11 +186,11 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
               });
             },
           ),
-          DropdownButton<MeetingStatus?>(
+          DropdownButton<AppointmentStatus?>(
             value: selectedMeetingStatus,
             hint: const Text('Meeting Status'),
             items: meetingStatuses.map((status) {
-              return DropdownMenuItem<MeetingStatus?>(
+              return DropdownMenuItem<AppointmentStatus?>(
                 value: status,
                 child: Text(status == null ? 'All' : status.label),
               );

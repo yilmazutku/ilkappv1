@@ -147,7 +147,7 @@ class AppointmentManager extends ChangeNotifier {
       for (var appointment in dayAppointments!) {
         // appt book etmeden once cagirilirsa diye
         if (appointment.appointmentDateTime == dateTimeWithHour &&
-            appointment.status != MeetingStatus.canceled) {
+            appointment.status != AppointmentStatus.canceled) {
           return false;
         }
       }
@@ -184,7 +184,7 @@ class AppointmentManager extends ChangeNotifier {
           .collection('appointments')
           .doc(appointmentId)
           .update({
-        'status': MeetingStatus.canceled.label,
+        'status': AppointmentStatus.canceled.label,
         'canceledBy': canceledBy,
         'canceledAt': Timestamp.now(),
       });
