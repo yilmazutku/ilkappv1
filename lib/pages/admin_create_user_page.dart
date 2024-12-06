@@ -1,14 +1,11 @@
-import 'dart:convert';
-import 'dart:math';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crypto/crypto.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/logger.dart';
-import '../models/subs_model.dart';
 import '../models/user_model.dart';
+
 final Logger logger = Logger.forClass(CreateUserPage);
+
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
 
@@ -17,149 +14,206 @@ class CreateUserPage extends StatefulWidget {
 }
 
 class _CreateUserPageState extends State<CreateUserPage> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _surnameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _referenceController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   String _statusMessage = '';
 
-  String generateSalt([int length = 16]) {
-    final random = Random.secure();
-    final salt = List<int>.generate(length, (_) => random.nextInt(256));
-    return base64Url.encode(salt);
-  }
+  Future<void> createUser({
+    required String name,
+    String? email,
+    String? password,
+    String? surname,
+    int? age,
+    String? reference,
+    String? notes,
+  }) async {
+    if (name.isEmpty) {
+      _showMessageDialog('Hata', 'Lütfen isim alanını doldurunuz.');
+      return;
+    }
 
-  String hashPassword(String password, String salt) {
-    final saltedPassword = password + salt;
-    final bytes = utf8.encode(saltedPassword);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  Future<void> createUser(String username, String email, String password) async {
-    final salt = generateSalt();
-    final hashedPassword = hashPassword(password, salt);
+    // Generate email and password if not provided
+    email ??= '${name.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}@example.com';
+    password ??= 'TempPassword123!'; // Temporary default password
 
     try {
-      // Create user with Firebase Authentication
+      // Check if a user with the same email already exists
+      final existingUserQuery = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (existingUserQuery.docs.isNotEmpty) {
+        _showMessageDialog(
+          'Hata',
+          'Bu e-posta adresiyle bir kullanıcı zaten mevcut. Lütfen farklı bir e-posta giriniz.',
+        );
+        return;
+      }
+
+      // Create Firebase Authentication user
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       final userId = userCredential.user?.uid;
 
       if (userId == null) {
-        throw Exception('User creation failed: userId is null.');
+        throw Exception('Firebase Authentication kullanıcı oluşturulamadı.');
       }
 
-      // Create UserModel instance
+      // Create a UserModel instance
       final newUser = UserModel(
         userId: userId,
-        name: username,
+        name: name,
         email: email,
-        role: 'customer', // Default role for new users
+        password: password,
+        role: 'customer',
         createdAt: DateTime.now(),
+        surname: surname,
+        age: age,
+        reference: reference,
+        notes: notes,
       );
 
       // Store user data in Firestore
       await _firestore.collection('users').doc(userId).set(newUser.toMap());
 
-      // Create a default SubscriptionModel instance with a dummy package
-      final defaultSubscription = SubscriptionModel(
-        subscriptionId: _firestore.collection('subscriptions').doc().id,
-        userId: userId,
-        packageName: 'Mevcut_Degil', // Dummy package
-        startDate: DateTime.now(),
-        endDate: DateTime.now().add(const Duration(days: 30)), // Example: 30 days trial
-        totalMeetings: 10,
-        meetingsRemaining: 10,
-        totalAmount: 0.0,
-      );
-
-      // Store subscription data in Firestore
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('subscriptions')
-          .doc(defaultSubscription.subscriptionId)
-          .set(defaultSubscription.toMap());
-
-      setState(() {
-        _statusMessage = 'User $username created successfully!';
-      });
-      logger.info('User created: {}.',[newUser,defaultSubscription]) ;
+      _showMessageDialog('Başarılı', 'Kullanıcı $name başarıyla oluşturuldu.');
+      logger.info('User created: {}', [newUser]);
     } catch (e) {
-      logger.err('Failed to create user: {}',[  e.toString()]);
-
-      setState(() {
-        _statusMessage = 'Failed:$e';
-      });
+      logger.err('Kullanıcı oluşturulamadı: {}', [e.toString()]);
+      _showMessageDialog('Hata', 'Kullanıcı oluşturulamadı. Hata: $e');
     }
   }
 
+  void _showMessageDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Tamam'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New User'),
+        title: const Text('Yeni Kullanıcı Oluştur'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Enter Username',
-                border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'İsim Giriniz',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Enter Email',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _surnameController,
+                decoration: const InputDecoration(
+                  labelText: 'Soyisim Giriniz (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Enter Password',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _ageController,
+                decoration: const InputDecoration(
+                  labelText: 'Yaş Giriniz (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
               ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                final username = _usernameController.text.trim();
-                final email = _emailController.text.trim();
-                final password = _passwordController.text.trim();
+              const SizedBox(height: 10),
+              TextField(
+                controller: _referenceController,
+                decoration: const InputDecoration(
+                  labelText: 'Referans Giriniz (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notlar (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-posta Giriniz (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Şifre Giriniz (Opsiyonel)',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  final name = _nameController.text.trim();
+                  final surname = _surnameController.text.trim();
+                  final age = int.tryParse(_ageController.text.trim());
+                  final reference = _referenceController.text.trim();
+                  final notes = _notesController.text.trim();
+                  final email = _emailController.text.trim().isNotEmpty
+                      ? _emailController.text.trim()
+                      : null;
+                  final password = _passwordController.text.trim().isNotEmpty
+                      ? _passwordController.text.trim()
+                      : null;
 
-                if (username.isNotEmpty && email.isNotEmpty && password.isNotEmpty) {
-                  createUser(username, email, password);
-                } else {
-                  setState(() {
-                    _statusMessage = 'Please fill in all fields.';
-                  });
-                }
-              },
-             child: const Text('Create User'),
-            ),
-            const SizedBox(height: 0),
-            Text(
-              _statusMessage,
-              style: TextStyle(
-                color: _statusMessage.startsWith('Failed') ? Colors.red : Colors.green,
-                fontSize: 16,
+                  createUser(
+                    name: name,
+                    email: email,
+                    password: password,
+                    surname: surname.isNotEmpty ? surname : null,
+                    age: age,
+                    reference: reference.isNotEmpty ? reference : null,
+                    notes: notes.isNotEmpty ? notes : null,
+                  );
+                },
+                child: const Text('Kullanıcı Oluştur'),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -167,7 +221,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _nameController.dispose();
+    _surnameController.dispose();
+    _ageController.dispose();
+    _referenceController.dispose();
+    _notesController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
