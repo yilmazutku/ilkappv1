@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/logger.dart';
 import '../models/subs_model.dart';
+
+final Logger logger = Logger.forClass(AddSubscriptionDialog);
 
 class AddSubscriptionDialog extends StatefulWidget {
   final String userId;
@@ -28,13 +31,114 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Subscription Package'),
+      title: const Text('Yeni Abonelik Paketi Ekle'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
-          child: const ListBody(
+          child: ListBody(
             children: [
-              // Your form fields here
+              // Package Name
+              TextFormField(
+                controller: _packageNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Paket Adı',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen bir paket adı girin.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Total Meetings
+              TextFormField(
+                controller: _totalMeetingsController,
+                decoration: const InputDecoration(
+                  labelText: 'Toplam Toplantı Sayısı',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen toplam toplantı sayısını girin.';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Geçerli bir sayı girin.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Total Amount
+              TextFormField(
+                controller: _totalAmountController,
+                decoration: const InputDecoration(
+                  labelText: 'Toplam Ücret',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Lütfen toplam ücreti girin.';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Geçerli bir ücret girin.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Start Date
+              ListTile(
+                title: const Text('Başlangıç Tarihi'),
+                subtitle: Text(_startDate != null
+                    ? _startDate!.toLocal().toString().split(' ')[0]
+                    : 'Bir tarih seçin'),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      _startDate = pickedDate;
+                    });
+                    logger.info('Başlangıç tarihi seçildi: {}', [_startDate!]);
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // End Date
+              ListTile(
+                title: const Text('Bitiş Tarihi'),
+                subtitle: Text(_endDate != null
+                    ? _endDate!.toLocal().toString().split(' ')[0]
+                    : 'Bir tarih seçin'),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate ?? DateTime.now(),
+                    firstDate: _startDate ?? DateTime.now(),
+                    lastDate: DateTime(2100),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      _endDate = pickedDate;
+                    });
+                    logger.info('Bitiş tarihi seçildi: {}', [_endDate!]);
+                  }
+                },
+              ),
             ],
           ),
         ),
@@ -45,13 +149,13 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
             if (!mounted) return;
             Navigator.of(context).pop(); // Close the dialog
           },
-          child: const Text('Cancel'),
+          child: const Text('İptal'),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _addSubscription,
           child: _isLoading
               ? const CircularProgressIndicator()
-              : const Text('Add Subscription'),
+              : const Text('Abonelik Ekle'),
         ),
       ],
     );
@@ -59,13 +163,15 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
 
   Future<void> _addSubscription() async {
     if (!_formKey.currentState!.validate()) {
+      logger.warn('Form doğrulama başarısız.');
       return;
     }
 
     if (_startDate == null || _endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select start and end dates.')),
+        const SnackBar(content: Text('Lütfen başlangıç ve bitiş tarihlerini seçin.')),
       );
+      logger.warn('Başlangıç veya bitiş tarihi seçilmedi.');
       return;
     }
 
@@ -105,7 +211,8 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
           .doc(subscriptionId)
           .set(subscription.toMap());
 
-      // Notify parent widget to refresh data
+      logger.info('Yeni abonelik eklendi: {}', [subscription]);
+
       widget.onSubscriptionAdded();
 
       if (!mounted) return;
@@ -117,7 +224,7 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       Navigator.of(context).pop(); // Close the dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subscription added successfully.')),
+        const SnackBar(content: Text('Abonelik başarıyla eklendi.')),
       );
     } catch (e) {
       setState(() {
@@ -125,8 +232,9 @@ class _AddSubscriptionDialogState extends State<AddSubscriptionDialog> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding subscription: $e')),
+        SnackBar(content: Text('Abonelik eklenirken hata oluştu: $e')),
       );
+      logger.err('Abonelik eklenirken hata oluştu: {}', [e]);
     }
   }
 

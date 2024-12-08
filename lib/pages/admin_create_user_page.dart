@@ -8,7 +8,7 @@ final Logger logger = Logger.forClass(CreateUserPage);
 
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
-
+  static const String tempPw='TempPassword123!';
   @override
   createState() => _CreateUserPageState();
 }
@@ -41,7 +41,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
     // Generate email and password if not provided
     email ??= '${name.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}@example.com';
-    password ??= 'TempPassword123!'; // Temporary default password
+    password ??= CreateUserPage.tempPw; // Temporary default password
 
     try {
       // Check if a user with the same email already exists

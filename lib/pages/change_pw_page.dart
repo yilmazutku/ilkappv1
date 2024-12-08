@@ -23,7 +23,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     if (user == null) {
       setState(() {
-        _statusMessage = 'No user is currently signed in.';
+        _statusMessage = 'Giriş yapmış bir kullanıcı bulunmuyor.';
       });
       return;
     }
@@ -46,7 +46,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       log.info('User signed out. Redirect to login page.');
 
       setState(() {
-        _statusMessage = 'Password updated successfully! Please log in again.';
+        _statusMessage = 'Şifre başarıyla değiştirildi. Lütfen tekrar giriş yapınız..';
       });
 
       // Here you would typically navigate to the login page.
@@ -54,7 +54,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     } catch (e) {
       setState(() {
-        _statusMessage = 'Failed to update password: $e';
+        _statusMessage = 'Şifre değiştirilemedi. Lütfen destek isteyiniz.';
       });
       log.info('Failed to update password: $e');
     }

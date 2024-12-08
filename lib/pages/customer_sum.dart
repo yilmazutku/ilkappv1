@@ -44,107 +44,89 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
     super.initState();
 
     _tabController = TabController(length: 6, vsync: this);
-
-    try {
-      // final userProvider = Provider.of<UserProvider>(context, listen: false);
-      // logger.info('Setting userId={}', [widget.userId]);
-      // userProvider.setUserId(widget.userId);
-      //
-      // Provider.of<MealStateManager>(context, listen: false)
-      //     .setUserId(widget.userId);
-      // Provider.of<PaymentProvider>(context, listen: false)
-      //     .setUserId(widget.userId);
-      // logger.info('User ID set for providers = {}', [widget.userId]);
-
-      _tabController.addListener(() {
-        try {
-          if (_tabController.index != _previousTabIndex) {
-            logger.info('Tab index changed to = {}', [_tabController.index]);
-            _previousTabIndex = _tabController.index;
-          }
-        } catch (e) {
-          logger.err('Error handling tab change = {}', [e]);
-        }
-      });
-    } catch (e) {
-      logger.err('Error in initState = {}', [e]);
-    }
+    _tabController.addListener(() {
+      if (_tabController.index != _previousTabIndex) {
+        logger.info('Tab changed: index={}', [_tabController.index]);
+        _previousTabIndex = _tabController.index;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    logger.info('Setting userId={}', [widget.userId]);
+    logger.info('Initializing CustomerSummaryPage with userId={}', [widget.userId]);
     userProvider.setUserId(widget.userId);
 
-    Provider.of<MealStateManager>(context, listen: false)
-        .setUserId(widget.userId);
-    Provider.of<PaymentProvider>(context, listen: false)
-        .setUserId(widget.userId);
-    logger.info('User ID set for providers = {}', [widget.userId]);
-
+    Provider.of<MealStateManager>(context, listen: false).setUserId(widget.userId);
+    Provider.of<PaymentProvider>(context, listen: false).setUserId(widget.userId);
 
     return FutureBuilder<UserModel?>(
-      future:
-          Provider.of<UserProvider>(context, listen: false).fetchUserDetails(),
+      future: userProvider.fetchUserDetails(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
+          logger.err('Error fetching user details: {}', [snapshot.error!]);
           return Scaffold(
             body: Center(
-                child: Text('Error fetching user details: ${snapshot.error}')),
+              child: Text('Kullanıcı detayları alınırken bir hata oluştu: ${snapshot.error}'),
+            ),
+          );
+        } else if (!snapshot.hasData || snapshot.data == null) {
+          logger.warn('User data not found for userId={}', [widget.userId]);
+          return Scaffold(
+            body: const Center(child: Text('Kullanıcı bilgisi bulunamadı.')),
           );
         } else {
           _user = snapshot.data;
-          String title = 'Customer Summary';
-          if (_user != null) {
-            title = '${_user!.name}\'s Summary';
-          }
-
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(title),
-              actions: [
-                _buildSubscriptionDropdown(context),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _onAddButtonPressed,
-                ),
-              ],
-              bottom: TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Details'),
-                  Tab(text: 'Appointments'),
-                  Tab(text: 'Payments'),
-                  Tab(text: 'Images'),
-                  Tab(text: 'Tests'),
-                  Tab(text: 'Subscriptions'),
-                ],
-              ),
-            ),
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                DetailsTab(userId: widget.userId),
-                AppointmentsTab(userId: widget.userId),
-                PaymentsTab(userId: widget.userId),
-                ImagesTab(userId: widget.userId),
-                const Center(child: Text('Tests Tab')), // Placeholder
-                SubscriptionsTab(userId: widget.userId),
-              ],
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: _onAddButtonPressed,
-              label: const Text('Add'),
-              icon: const Icon(Icons.add),
-            ),
-          );
+          return _buildScaffold(_user!);
         }
       },
+    );
+  }
+
+  Widget _buildScaffold(UserModel user) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${user.name} - Özet'),
+        actions: [
+          _buildSubscriptionDropdown(context),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _onAddButtonPressed,
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Detaylar'),
+            Tab(text: 'Randevular'),
+            Tab(text: 'Ödemeler'),
+            Tab(text: 'Resimler'),
+            Tab(text: 'Testler'),
+            Tab(text: 'Abonelikler'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          DetailsTab(userId: user.userId),
+          AppointmentsTab(userId: user.userId),
+          PaymentsTab(userId: user.userId),
+          ImagesTab(userId: user.userId),
+          const Center(child: Text('Testler Sekmesi')), // Placeholder
+          SubscriptionsTab(userId: user.userId),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _onAddButtonPressed,
+        label: const Text('Ekle'),
+        icon: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -156,16 +138,16 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
         } else if (snapshot.hasError) {
-          logger.err('Error fetching subscriptions: {}',
-              [snapshot.error ?? 'an error but snapshot has no error? weird']);
+          logger.err('Error fetching subscriptions: {}', [snapshot.error!]);
           return const SizedBox();
         } else {
           _subscriptions = snapshot.data ?? [];
           if (_subscriptions.isEmpty) {
+            logger.warn('No subscriptions found for userId={}', [widget.userId]);
             return Container();
           }
 
-          if (_selectedSubscription == null && _subscriptions.isNotEmpty) {
+          if (_selectedSubscription == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 setState(() {
@@ -177,7 +159,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
                       .setSelectedSubscriptionId(newValue);
                   Provider.of<PaymentProvider>(context, listen: false)
                       .setSelectedSubscriptionId(newValue);
-                  logger.info('Default subscription selected = {}', [newValue]);
+                  logger.info('Default subscription selected: subscriptionId={}', [newValue]);
                 });
               }
             });
@@ -189,27 +171,23 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
               if (newValue == null) return;
               setState(() {
                 _selectedSubscription = _subscriptions.firstWhere(
-                  (sub) => sub.subscriptionId == newValue,
+                      (sub) => sub.subscriptionId == newValue,
                 );
-
-                logger.info('Subscription selected = {}', [newValue]);
-                // Update other providers with new subscriptionId
+                logger.info('Subscription selected: subscriptionId={}', [newValue]);
                 Provider.of<AppointmentManager>(context, listen: false)
                     .setSelectedSubscriptionId(newValue);
                 Provider.of<MealStateManager>(context, listen: false)
                     .setSelectedSubscriptionId(newValue);
                 Provider.of<PaymentProvider>(context, listen: false)
                     .setSelectedSubscriptionId(newValue);
-                logger.info(
-                    'Subscription ID set for all providers = {}', [newValue]);
               });
             },
-            items: _subscriptions
-                .map<DropdownMenuItem<String>>((SubscriptionModel sub) {
+            items: _subscriptions.map<DropdownMenuItem<String>>((SubscriptionModel sub) {
               return DropdownMenuItem<String>(
                 value: sub.subscriptionId,
                 child: Text(
-                    '${sub.packageName} (${sub.startDate.toLocal().toString().split(' ')[0]})'),
+                  '${sub.packageName} (${sub.startDate.toLocal().toString().split(' ')[0]})',
+                ),
               );
             }).toList(),
           );
@@ -219,14 +197,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   }
 
   void _onAddButtonPressed() {
-    int currentIndex = _tabController.index;
-    logger.info('Add button pressed on tab index = {}', [currentIndex]);
+    final currentIndex = _tabController.index;
+    logger.info('Add button pressed: tabIndex={}', [currentIndex]);
 
     try {
       switch (currentIndex) {
-        case 0:
-          // Handle Details tab if needed
-          break;
         case 1:
           _showAddAppointmentDialog();
           break;
@@ -236,189 +211,103 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         case 3:
           _showAddImageDialog();
           break;
-        case 4:
-          _showAddTestDialog();
-          break;
         case 5:
           _showAddSubscriptionDialog();
           break;
         default:
-          break;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bu sekme için ekleme yapılamaz.')),
+          );
       }
     } catch (e) {
-      logger.err('Error in _onAddButtonPressed = {}', [e]);
+      logger.err('Error while handling add button: {}', [e]);
     }
   }
 
   void _showAddSubscriptionDialog() {
-    final userId = widget.userId;
-    logger.info('Showing add subscription dialog for userId = {}', [userId]);
-
-    try {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AddSubscriptionDialog(
-              userId: userId,
-              onSubscriptionAdded: () {
-                setState(() {
-                  _selectedSubscription = null; // Reset selected subscription
-                });
-                logger
-                    .info('Subscriptions refreshed after adding subscription.');
-              },
-            );
+    final userId = _user?.userId ?? widget.userId;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddSubscriptionDialog(
+          userId: userId,
+          onSubscriptionAdded: () {
+            setState(() {
+              _selectedSubscription = null; // Reset selection
+            });
+            logger.info('Subscription added and refreshed for userId={}', [userId]);
           },
         );
-      }
-    } catch (e) {
-      logger.err('Error in _showAddSubscriptionDialog = {}', [e]);
-    }
+      },
+    );
   }
 
   void _showAddAppointmentDialog() {
-    final userId = widget.userId;
     final subscriptionId = _selectedSubscription?.subscriptionId;
+    if (subscriptionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen bir abonelik seçin.')),
+      );
+      return;
+    }
 
-    try {
-      if (subscriptionId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription.')),
-          );
-        }
-        return;
-      }
-
-      logger.info(
-          'Showing AddAppointmentDialog for userId = {}, subscriptionId = {}',
-          [userId, subscriptionId]);
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AddAppointmentDialog(
-              userId: userId,
-              subscriptionId: subscriptionId,
-              onAppointmentAdded: () {
-                logger.info('Appointment added.');
-              },
-            );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddAppointmentDialog(
+          userId: widget.userId,
+          subscriptionId: subscriptionId,
+          onAppointmentAdded: () {
+            logger.info('Appointment added for userId={}, subscriptionId={}', [widget.userId, subscriptionId]);
           },
         );
-      }
-    } catch (e) {
-      logger.err('Error in _showAddAppointmentDialog = {}', [e]);
-    }
+      },
+    );
   }
 
   void _showAddPaymentDialog() {
-    final userId = widget.userId;
     final subscription = _selectedSubscription;
+    if (subscription == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen bir abonelik seçin.')),
+      );
+      return;
+    }
 
-    try {
-      if (subscription == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription.')),
-          );
-        }
-        return;
-      }
-
-      logger.info(
-          'Showing AddPaymentDialog for userId = {}, subscriptionId = {}',
-          [userId, subscription.subscriptionId]);
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AddPaymentDialog(
-              userId: userId,
-              subscription: subscription,
-              onPaymentAdded: () {
-                logger.info('Payment added.');
-              },
-            );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddPaymentDialog(
+          userId: widget.userId,
+          subscription: subscription,
+          onPaymentAdded: () {
+            logger.info('Payment added for userId={}, subscriptionId={}', [widget.userId, subscription.subscriptionId]);
           },
         );
-      }
-    } catch (e) {
-      logger.err('Error in _showAddPaymentDialog = {}', [e]);
-    }
+      },
+    );
   }
 
   void _showAddImageDialog() {
-    final userId = widget.userId;
     final subscriptionId = _selectedSubscription?.subscriptionId;
+    if (subscriptionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen bir abonelik seçin.')),
+      );
+      return;
+    }
 
-    try {
-      if (subscriptionId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription.')),
-          );
-        }
-        return;
-      }
-
-      logger.info('Showing AddImageDialog for userId = {}, subscriptionId = {}',
-          [userId, subscriptionId]);
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AddImageDialog(
-              userId: userId,
-              subscriptionId: subscriptionId,
-              onImageAdded: () {
-                logger.info('Image added.');
-              },
-            );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddImageDialog(
+          userId: widget.userId,
+          subscriptionId: subscriptionId,
+          onImageAdded: () {
+            logger.info('Image added for userId={}, subscriptionId={}', [widget.userId, subscriptionId]);
           },
         );
-      }
-    } catch (e) {
-      logger.err('Error in _showAddImageDialog = {}', [e]);
-    }
-  }
-
-  void _showAddTestDialog() {
-    final userId = widget.userId;
-    final subscriptionId = _selectedSubscription?.subscriptionId;
-
-    try {
-      if (subscriptionId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a subscription.')),
-          );
-        }
-        return;
-      }
-
-      logger.info('Showing AddTestDialog for userId = {}, subscriptionId = {}',
-          [userId, subscriptionId]);
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AddTestDialog(
-              userId: userId,
-              onTestAdded: () {
-                logger.info('Test added.');
-              },
-            );
-          },
-        );
-      }
-    } catch (e) {
-      logger.err('Error in _showAddTestDialog = {}', [e]);
-    }
+      },
+    );
   }
 }
