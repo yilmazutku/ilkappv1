@@ -7,6 +7,7 @@
 // import 'basetab.dart';
 //
 // class AppointmentsTab extends BaseTab<AppointmentManager> {
+//
 //   const AppointmentsTab({super.key, required super.userId})
 //       : super(
 //     allDataLabel: 'All Appointments',
@@ -15,27 +16,20 @@
 //
 //   @override
 //   AppointmentManager getProvider(BuildContext context) {
-//     return Provider.of<AppointmentManager>(context);
+//     final provider = Provider.of<AppointmentManager>(context, listen: false);
+//     return provider;
 //   }
 //
 //   @override
-//   List<dynamic> getDataList(AppointmentManager provider) {
-//     return provider.userAppointments;
+//   Future<List<dynamic>> getDataList(AppointmentManager provider, bool showAllData) {
+//     return provider.fetchAppointments(showAllAppointments: showAllData, userId: userId);
 //   }
 //
 //   @override
-//   bool getShowAllData(AppointmentManager provider) {
-//     return provider.showAllAppointments;
-//   }
+//   _AppointmentsTabState createState() => _AppointmentsTabState();
+// }
 //
-//   @override
-//   void setShowAllData(AppointmentManager provider, bool value) {
-//     provider.setShowAllAppointments(value);
-//     if (!value) {
-//       provider.setSelectedSubscriptionId(provider.selectedSubscriptionId);
-//     }
-//   }
-//
+// class _AppointmentsTabState extends BaseTabState<AppointmentManager, AppointmentsTab> {
 //   @override
 //   Widget buildList(BuildContext context, List<dynamic> dataList) {
 //     List<AppointmentModel> appointments = dataList.cast<AppointmentModel>();
@@ -66,24 +60,19 @@
 //         return EditAppointmentDialog(
 //           appointment: appointment,
 //           onAppointmentUpdated: () {
-//             Provider.of<AppointmentManager>(context, listen: false)
-//                 .fetchAppointments();
+//             setState(() {
+//               // Re-fetch data when the appointment is updated
+//               fetchData();
+//             });
 //           },
 //         );
 //       },
 //     );
 //   }
 // }
-// // tabs/base_tab.dart
-// // managers/loadable.dart
 // import 'package:flutter/material.dart';
-// mixin Loadable {
-//   bool get isLoading;
-// }
 //
-//
-//
-// abstract class BaseTab<T extends Loadable> extends StatelessWidget {
+// abstract class BaseTab<T> extends StatefulWidget {
 //   final String userId;
 //   final String allDataLabel;
 //   final String subscriptionDataLabel;
@@ -97,92 +86,322 @@
 //
 //   T getProvider(BuildContext context);
 //
-//   List<dynamic> getDataList(T provider);
+//   Future<List<dynamic>> getDataList(T provider, bool showAllData);
 //
-//   Widget buildList(BuildContext context, List<dynamic> dataList);
+//   @override
+//   BaseTabState<T, BaseTab<T>> createState();
+// }
 //
-//   bool getShowAllData(T provider);
+// abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
+//   bool showAllData = false;
+//   Future<List<dynamic>>? dataFuture;
 //
-//   void setShowAllData(T provider, bool value);
+//   @override
+//   void initState() {
+//     super.initState();
+//    // fetchData();
+//     //   // Avoid calling fetchData or similar logic here if it depends on Provider
+//   }
+//
+//   bool _dataFetched = false;
+//   @override
+//   void didChangeDependencies() {
+//     super.didChangeDependencies();
+//     if (!_dataFetched) {
+//       fetchData();
+//       _dataFetched = true;
+//     }
+//   }
+//
+//   void fetchData() {
+//     final provider = widget.getProvider(context);
+//     dataFuture = widget.getDataList(provider, showAllData);
+//   }
 //
 //   @override
 //   Widget build(BuildContext context) {
-//     final provider = getProvider(context);
-//
-//     if (provider.isLoading) {
-//       return const Center(child: CircularProgressIndicator());
-//     }
-//
-//     final dataList = getDataList(provider);
-//
 //     return Column(
 //       children: [
 //         // Toggle Button
 //         Row(
 //           mainAxisAlignment: MainAxisAlignment.center,
 //           children: [
-//             Text(getShowAllData(provider) ? allDataLabel : subscriptionDataLabel),
+//             Text(showAllData ? widget.allDataLabel : widget.subscriptionDataLabel),
 //             Switch(
-//               value: getShowAllData(provider),
+//               value: showAllData,
 //               onChanged: (value) {
-//                 setShowAllData(provider, value);
+//                 setState(() {
+//                   showAllData = value;
+//                   fetchData();
+//                 });
 //               },
 //             ),
 //           ],
 //         ),
 //         Expanded(
-//           child: dataList.isEmpty
-//               ? const Center(child: Text('No data found.'))
-//               : buildList(context, dataList),
+//           child: FutureBuilder<List<dynamic>>(
+//             future: dataFuture,
+//             builder: (context, snapshot) {
+//               if (snapshot.connectionState == ConnectionState.waiting) {
+//                 return const Center(child: CircularProgressIndicator());
+//               } else if (snapshot.hasError) {
+//                 return Center(child: Text('Error fetching data: ${snapshot.error}'));
+//               } else {
+//                 final dataList = snapshot.data ?? [];
+//                 if (dataList.isEmpty) {
+//                   return const Center(child: Text('No data found.'));
+//                 }
+//                 return buildList(context, dataList);
+//               }
+//             },
+//           ),
 //         ),
 //       ],
 //     );
 //   }
-// }
-// // tabs/details_tab.dart
 //
+//   // Abstract method
+//   Widget buildList(BuildContext context, List<dynamic> dataList);
+// }
 // import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
+// import '../models/user_model.dart';
+// import '../pages/admin_create_user_page.dart';
 // import '../providers/user_provider.dart';
 //
-// class DetailsTab extends StatelessWidget {
+// class DetailsTab extends StatefulWidget {
 //   final String userId;
 //
 //   const DetailsTab({super.key, required this.userId});
 //
 //   @override
-//   Widget build(BuildContext context) {
-//     final userProvider = Provider.of<UserProvider>(context);
+//   createState() => _DetailsTabState();
+// }
 //
-//     // Fetch user details if not already fetched
-//     if (userProvider.user == null && !userProvider.isLoading) {
-//       userProvider.fetchUserDetails();
+// class _DetailsTabState extends State<DetailsTab> {
+//   late Future<UserModel?> _userFuture;
+//
+//   // Controllers for all fields including optional ones
+//   final TextEditingController _nameController = TextEditingController();
+//   final TextEditingController _emailController = TextEditingController();
+//   final TextEditingController _surnameController = TextEditingController();
+//   final TextEditingController _ageController = TextEditingController();
+//   final TextEditingController _referenceController = TextEditingController();
+//   final TextEditingController _notesController = TextEditingController();
+//
+//   bool _isEditing = false; // Toggle editing mode
+//   bool _isLoading = false; // Show loading indicator during save
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _userFuture = UserProvider().fetchUserDetails();
+//   }
+//
+//   void _populateFields(UserModel user) {
+//     _nameController.text = user.name;
+//     _emailController.text = user.email;
+//     _surnameController.text = user.surname ?? '';
+//     _ageController.text = user.age?.toString() ?? '';
+//     _referenceController.text = user.reference ?? '';
+//     _notesController.text = user.notes ?? '';
+//   }
+//
+//   Future<void> _saveChanges(UserModel originalUser) async {
+//     if (_isLoading) return;
+//
+//     setState(() {
+//       _isLoading = true;
+//     });
+//
+//     final updatedUser = UserModel(
+//       userId: originalUser.userId,
+//       name: _nameController.text.trim(),
+//       email: _emailController.text.trim(),
+//       password: originalUser.password,
+//       role: originalUser.role,
+//       createdAt: originalUser.createdAt,
+//       surname: _surnameController.text.trim().isNotEmpty
+//           ? _surnameController.text.trim()
+//           : null,
+//       age: _ageController.text.trim().isNotEmpty
+//           ? int.tryParse(_ageController.text.trim())
+//           : null,
+//       reference: _referenceController.text.trim().isNotEmpty
+//           ? _referenceController.text.trim()
+//           : null,
+//       notes: _notesController.text.trim().isNotEmpty
+//           ? _notesController.text.trim()
+//           : null,
+//     );
+//
+//     try {
+//       if (originalUser.email != updatedUser.email) {
+//         // If email has changed, perform migration
+//         final success = await UserProvider().updateEmailAndMigrate(
+//           oldUid: originalUser.userId,
+//           oldEmail: originalUser.email,
+//           password: CreateUserPage.tempPw,
+//           newEmail: updatedUser.email,
+//           updatedUser: updatedUser,
+//         );
+//
+//         if (success) {
+//           _showMessageDialog('Başarılı',
+//               'E-posta değiştirildi ve kullanıcı bilgileri taşındı.');
+//         } else {
+//           _showMessageDialog(
+//               'Hata', 'E-posta değişimi sırasında bir hata oluştu.');
+//         }
+//       } else {
+//         // If email hasn't changed, update user details
+//         final success = await UserProvider().updateUserDetails(updatedUser);
+//         if (success) {
+//           _showMessageDialog('Başarılı', 'Kullanıcı bilgileri güncellendi.');
+//         } else {
+//           _showMessageDialog('Hata', 'Bilgiler güncellenirken hata oluştu.');
+//         }
+//       }
+//     } catch (e) {
+//       _showMessageDialog('Hata', 'Bir hata oluştu: $e');
+//     } finally {
+//       setState(() {
+//         _isEditing = false;
+//         _isLoading = false;
+//       });
 //     }
+//   }
 //
-//     if (userProvider.isLoading) {
-//       return const Center(child: CircularProgressIndicator());
-//     }
+//   void _showMessageDialog(String title, String message) {
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: Text(title),
+//         content: Text(message),
+//         actions: [
+//           TextButton(
+//             child: const Text('Tamam'),
+//             onPressed: () => Navigator.of(context).pop(),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 //
-//     if (userProvider.user == null) {
-//       return const Center(child: Text('No user details available.'));
-//     }
+//   Widget _buildReadOnlyField(String label, String value) {
+//     return ListTile(
+//       title: Text(label),
+//       subtitle: Text(value.isNotEmpty ? value : 'Yok'),
+//     );
+//   }
 //
-//     final user = userProvider.user!;
-//
-//     return ListView(
-//       padding: const EdgeInsets.all(16.0),
+//   Widget _buildEditableField(String label, TextEditingController controller,
+//       {TextInputType? keyboardType}) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
 //       children: [
-//         ListTile(
-//           title: const Text('Name'),
-//           subtitle: Text(user.name),
+//         Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+//         const SizedBox(height: 4),
+//         TextField(
+//           controller: controller,
+//           keyboardType: keyboardType,
+//           decoration: const InputDecoration(
+//             border: OutlineInputBorder(),
+//           ),
 //         ),
-//         ListTile(
-//           title: const Text('Email'),
-//           subtitle: Text(user.email),
-//         ),
-//         // Add more user details as needed
+//         const SizedBox(height: 16),
 //       ],
 //     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return FutureBuilder<UserModel?>(
+//       future: _userFuture,
+//       builder: (context, snapshot) {
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//           return const Center(child: CircularProgressIndicator());
+//         } else if (snapshot.hasError) {
+//           return Center(
+//               child: Text(
+//                   'Kullanıcı detayları alınırken hata oluştu: ${snapshot.error}'));
+//         } else if (snapshot.data == null) {
+//           return const Center(child: Text('Kullanıcı bilgisi bulunamadı.'));
+//         } else {
+//           final user = snapshot.data!;
+//           // Populate fields once the data is loaded
+//           if (!_isEditing) {
+//             _populateFields(user);
+//           }
+//
+//           return Padding(
+//             padding: const EdgeInsets.all(16.0),
+//             child: SingleChildScrollView(
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   if (!_isEditing) ...[
+//                     _buildReadOnlyField('Ad', user.name),
+//                     _buildReadOnlyField('E-posta', user.email),
+//                     _buildReadOnlyField('Soyisim', user.surname ?? ''),
+//                     _buildReadOnlyField('Yaş', user.age?.toString() ?? ''),
+//                     _buildReadOnlyField('Referans', user.reference ?? ''),
+//                     _buildReadOnlyField('Notlar', user.notes ?? ''),
+//                     const SizedBox(height: 20),
+//                     ElevatedButton(
+//                       onPressed: () {
+//                         setState(() {
+//                           _isEditing = true;
+//                         });
+//                       },
+//                       child: const Text('Düzenle'),
+//                     ),
+//                   ] else ...[
+//                     _buildEditableField('Ad', _nameController),
+//                     _buildEditableField('E-posta', _emailController,
+//                         keyboardType: TextInputType.emailAddress),
+//                     _buildEditableField('Soyisim', _surnameController),
+//                     _buildEditableField('Yaş', _ageController,
+//                         keyboardType: TextInputType.number),
+//                     _buildEditableField('Referans', _referenceController),
+//                     _buildEditableField('Notlar', _notesController),
+//                     Row(
+//                       children: [
+//                         ElevatedButton(
+//                           onPressed: () => _saveChanges(user),
+//                           child: _isLoading
+//                               ? const CircularProgressIndicator()
+//                               : const Text('Kaydet'),
+//                         ),
+//                         const SizedBox(width: 16),
+//                         ElevatedButton(
+//                           onPressed: () {
+//                             setState(() {
+//                               _isEditing = false;
+//                             });
+//                           },
+//                           child: const Text('İptal'),
+//                         ),
+//                       ],
+//                     ),
+//                   ]
+//                 ],
+//               ),
+//             ),
+//           );
+//         }
+//       },
+//     );
+//   }
+//
+//   @override
+//   void dispose() {
+//     _nameController.dispose();
+//     _emailController.dispose();
+//     _surnameController.dispose();
+//     _ageController.dispose();
+//     _referenceController.dispose();
+//     _notesController.dispose();
+//     super.dispose();
 //   }
 // }
 // // tabs/images_tab.dart
@@ -202,24 +421,21 @@
 //
 //   @override
 //   MealStateManager getProvider(BuildContext context) {
-//     return Provider.of<MealStateManager>(context);
+//     final provider = Provider.of<MealStateManager>(context,listen: false);
+//     provider.setUserId(userId);
+//     return provider;
 //   }
 //
 //   @override
-//   List<MealModel> getDataList(MealStateManager provider) {
-//     return provider.meals;
+//   Future<List<dynamic>> getDataList(MealStateManager provider, bool showAllData) {
+//     return provider.fetchMeals(showAllImages: showAllData);
 //   }
 //
 //   @override
-//   bool getShowAllData(MealStateManager provider) {
-//     return provider.showAllImages;
-//   }
+//    createState() => _ImagesTabState();
+// }
 //
-//   @override
-//   void setShowAllData(MealStateManager provider, bool value) {
-//     provider.setShowAllImages(value);
-//   }
-//
+// class _ImagesTabState extends BaseTabState<MealStateManager, ImagesTab> {
 //   @override
 //   Widget buildList(BuildContext context, List<dynamic> dataList) {
 //     List<MealModel> meals = dataList.cast<MealModel>();
@@ -245,12 +461,11 @@
 //     );
 //   }
 //
-//   void _showFullImage(BuildContext context, String imageUrl, MealModel meal) {
+//   void _showFullImage(BuildContext context, String imageUrl, MealModel meal) { //TODO
 //     // Implement your image viewer dialog
+//     // You can call setState here if needed
 //   }
 // }
-// // tabs/payments_tab.dart
-//
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 // import '../dialogs/edit_payment_dialog.dart';
@@ -261,30 +476,27 @@
 // class PaymentsTab extends BaseTab<PaymentProvider> {
 //   const PaymentsTab({super.key, required super.userId})
 //       : super(
-//     allDataLabel: 'All Payments',
-//     subscriptionDataLabel: 'Subscription Payments',
+//     allDataLabel: 'Tüm ödemeler',
+//     subscriptionDataLabel: 'Paket Ödemeleri',
 //   );
 //
 //   @override
 //   PaymentProvider getProvider(BuildContext context) {
-//     return Provider.of<PaymentProvider>(context);
+//     final provider = Provider.of<PaymentProvider>(context, listen:false);
+//     provider.setUserId(userId);
+//     return provider;
 //   }
 //
 //   @override
-//   List<PaymentModel> getDataList(PaymentProvider provider) {
-//     return provider.payments;
+//   Future<List<dynamic>> getDataList(PaymentProvider provider, bool showAllData) {
+//     return provider.fetchPayments(showAllPayments: showAllData);
 //   }
 //
 //   @override
-//   bool getShowAllData(PaymentProvider provider) {
-//     return provider.showAllPayments;
-//   }
+//   BaseTabState<PaymentProvider, BaseTab<PaymentProvider>> createState() => _PaymentsTabState();
+// }
 //
-//   @override
-//   void setShowAllData(PaymentProvider provider, bool value) {
-//     provider.setShowAllPayments(value);
-//   }
-//
+// class _PaymentsTabState extends BaseTabState<PaymentProvider, PaymentsTab> {
 //   @override
 //   Widget buildList(BuildContext context, List<dynamic> dataList) {
 //     List<PaymentModel> payments = dataList.cast<PaymentModel>();
@@ -292,14 +504,25 @@
 //       itemCount: payments.length,
 //       itemBuilder: (context, index) {
 //         PaymentModel payment = payments[index];
+//
+//         // Build the subtitle based on whether paymentDate is null
+//         String subtitleText = '';
+//         if (payment.paymentDate != null) {
+//           subtitleText +=
+//           'Ödendiği Tarih: ${payment.paymentDate!.toLocal().toString().split(' ')[0]}\n';
+//         }
+//         if (payment.dueDate != null) {
+//           subtitleText +=
+//           'Planlanan Ödeme Tarihi: ${payment.dueDate!.toLocal().toString().split(' ')[0]}';
+//         }
+//
 //         return ListTile(
-//           title: Text('Amount: ${payment.amount}'),
-//           subtitle: Text(
-//               'Payment Date: ${payment.paymentDate.toLocal().toString().split(' ')[0]}\nDue Date: ${payment.dueDate?.toLocal().toString().split(' ')[0] ?? '-'}'),
+//           title: Text('Miktar: ${payment.amount}'),
+//           subtitle: Text(subtitleText),
 //           trailing: Row(
 //             mainAxisSize: MainAxisSize.min,
 //             children: [
-//               Text('Status: ${payment.status}'),
+//               Text('Durum: ${payment.status.label}'),
 //               IconButton(
 //                 icon: const Icon(Icons.edit),
 //                 onPressed: () {
@@ -321,26 +544,24 @@
 //       context: context,
 //       builder: (context) {
 //         return EditPaymentDialog(
-//             payment: payment,
-//             onPaymentUpdated:() {  Provider.of<PaymentProvider>(context, listen: false)
-//                 .fetchPayments();}
+//           payment: payment,
+//           onPaymentUpdated: () {
+//             setState(() {
+//               fetchData(); // Re-fetch data when payment is updated
+//             });
+//           },
 //         );
 //       },
 //     );
 //   }
 // }
 //
-// // tabs/subscriptions_tab.dart
-//
-// import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
-// import '../models/logger.dart';
+// import '../dialogs/edit_sub_dialog.dart';
 // import '../models/subs_model.dart';
 // import '../providers/user_provider.dart';
 // import 'basetab.dart';
-//
-// final Logger logger = Logger.forClass(SubscriptionsTab);
 //
 // class SubscriptionsTab extends BaseTab<UserProvider> {
 //   const SubscriptionsTab({super.key, required super.userId})
@@ -351,24 +572,21 @@
 //
 //   @override
 //   UserProvider getProvider(BuildContext context) {
-//     return Provider.of<UserProvider>(context);
+//     final provider = Provider.of<UserProvider>(context,listen: false);
+//     provider.setUserId(userId);
+//     return provider;
 //   }
 //
 //   @override
-//   List<SubscriptionModel> getDataList(UserProvider provider) {
-//     return provider.subscriptions;
+//   Future<List<dynamic>> getDataList(UserProvider provider, bool showAllData) {
+//     return provider.fetchSubscriptions(showAllSubscriptions: showAllData);
 //   }
 //
 //   @override
-//   bool getShowAllData(UserProvider provider) {
-//     return provider.showAllSubscriptions;
-//   }
+//   BaseTabState<UserProvider, BaseTab<UserProvider>> createState() => _SubscriptionsTabState();
+// }
 //
-//   @override
-//   void setShowAllData(UserProvider provider, bool value) {
-//     provider.setShowAllSubscriptions(value);
-//   }
-//
+// class _SubscriptionsTabState extends BaseTabState<UserProvider, SubscriptionsTab> {
 //   @override
 //   Widget buildList(BuildContext context, List<dynamic> dataList) {
 //     List<SubscriptionModel> subscriptions = dataList.cast<SubscriptionModel>();
@@ -409,240 +627,13 @@
 //         return EditSubscriptionDialog(
 //           subscription: subscription,
 //           onSubscriptionUpdated: () {
-//             Provider.of<UserProvider>(context, listen: false).fetchSubscriptions();
+//             Provider.of<UserProvider>(context, listen: false).fetchSubscriptions(showAllSubscriptions: showAllData);
 //           },
 //         );
 //       },
 //     );
 //   }
 // }
-//
-// class EditSubscriptionDialog extends StatefulWidget {
-//   final SubscriptionModel subscription;
-//   final VoidCallback onSubscriptionUpdated;
-//
-//   const EditSubscriptionDialog({
-//     super.key,
-//     required this.subscription,
-//     required this.onSubscriptionUpdated,
-//   });
-//
-//   @override
-//   createState() => _EditSubscriptionDialogState();
-// }
-//
-// class _EditSubscriptionDialogState extends State<EditSubscriptionDialog> {
-//   final _formKey = GlobalKey<FormState>();
-//   late TextEditingController _packageNameController;
-//   late TextEditingController _totalMeetingsController;
-//   late TextEditingController _totalAmountController;
-//   DateTime? _startDate;
-//   DateTime? _endDate;
-//   bool _isLoading = false;
-//   late SubActiveStatus _status;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _packageNameController = TextEditingController(text: widget.subscription.packageName);
-//     _totalMeetingsController = TextEditingController(text: widget.subscription.totalMeetings.toString());
-//     _totalAmountController = TextEditingController(text: widget.subscription.totalAmount.toString());
-//     _startDate = widget.subscription.startDate;
-//     _endDate = widget.subscription.endDate;
-//     _status = widget.subscription.status;
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return AlertDialog(
-//       title: const Text('Edit Subscription'),
-//       content: SingleChildScrollView(
-//         child: Form(
-//           key: _formKey,
-//           child: ListBody(
-//             children: [
-//               TextFormField(
-//                 controller: _packageNameController,
-//                 decoration: const InputDecoration(labelText: 'Package Name'),
-//                 validator: (value) {
-//                   if (value == null || value.isEmpty) {
-//                     return 'Please enter package name';
-//                   }
-//                   return null;
-//                 },
-//               ),
-//               const SizedBox(height: 16),
-//               TextFormField(
-//                 controller: _totalMeetingsController,
-//                 keyboardType: TextInputType.number,
-//                 decoration: const InputDecoration(labelText: 'Total Meetings'),
-//                 validator: (value) {
-//                   if (value == null || value.isEmpty) {
-//                     return 'Please enter total meetings';
-//                   }
-//                   if (int.tryParse(value) == null) {
-//                     return 'Invalid number';
-//                   }
-//                   return null;
-//                 },
-//               ),
-//               const SizedBox(height: 16),
-//               TextFormField(
-//                 controller: _totalAmountController,
-//                 keyboardType: TextInputType.number,
-//                 decoration: const InputDecoration(labelText: 'Total Amount'),
-//                 validator: (value) {
-//                   if (value == null || value.isEmpty) {
-//                     return 'Please enter total amount';
-//                   }
-//                   if (double.tryParse(value) == null) {
-//                     return 'Invalid amount';
-//                   }
-//                   return null;
-//                 },
-//               ),
-//               const SizedBox(height: 16),
-//               ListTile(
-//                 title: Text(_startDate == null
-//                     ? 'Select Start Date'
-//                     : 'Start Date: ${_startDate!.toLocal().toString().split(' ')[0]}'),
-//                 trailing: const Icon(Icons.calendar_today),
-//                 onTap: () async {
-//                   DateTime? pickedDate = await showDatePicker(
-//                     context: context,
-//                     initialDate: _startDate ?? DateTime.now(),
-//                     firstDate: DateTime.now().subtract(const Duration(days: 365)),
-//                     lastDate: DateTime.now().add(const Duration(days: 365)),
-//                   );
-//                   if (pickedDate != null) {
-//                     setState(() {
-//                       _startDate = pickedDate;
-//                     });
-//                   }
-//                 },
-//               ),
-//               const SizedBox(height: 16),
-//               ListTile(
-//                 title: Text(_endDate == null
-//                     ? 'Select End Date'
-//                     : 'End Date: ${_endDate!.toLocal().toString().split(' ')[0]}'),
-//                 trailing: const Icon(Icons.calendar_today),
-//                 onTap: () async {
-//                   DateTime initialDate = _startDate != null
-//                       ? _startDate!.add(const Duration(days: 30))
-//                       : DateTime.now().add(const Duration(days: 30));
-//                   DateTime? pickedDate = await showDatePicker(
-//                     context: context,
-//                     initialDate: _endDate ?? initialDate,
-//                     firstDate: _startDate ?? DateTime.now(),
-//                     lastDate: DateTime.now().add(const Duration(days: 730)),
-//                   );
-//                   if (pickedDate != null) {
-//                     setState(() {
-//                       _endDate = pickedDate;
-//                     });
-//                   }
-//                 },
-//               ),
-//               const SizedBox(height: 16),
-//               DropdownButtonFormField<SubActiveStatus>(
-//                 value: _status,
-//                 items: SubActiveStatus.values.map((SubActiveStatus status) {
-//                   return DropdownMenuItem<SubActiveStatus>(
-//                     value: status,
-//                     child: Text(status.label),
-//                   );
-//                 }).toList(),
-//                 onChanged: (newValue) {
-//                   setState(() {
-//                     _status = newValue!;
-//                   });
-//                 },
-//                 decoration: const InputDecoration(labelText: 'Subscription Status'),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//       actions: [
-//         TextButton(
-//           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-//           child: const Text('Cancel'),
-//         ),
-//         ElevatedButton(
-//           onPressed: _isLoading ? null : _updateSubscription,
-//           child: _isLoading
-//               ? const CircularProgressIndicator()
-//               : const Text('Update Subscription'),
-//         ),
-//       ],
-//     );
-//   }
-//
-//   Future<void> _updateSubscription() async {
-//     if (!_formKey.currentState!.validate()) {
-//       return;
-//     }
-//
-//     if (_startDate == null || _endDate == null) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Please select start and end dates.')),
-//       );
-//       return;
-//     }
-//
-//     setState(() {
-//       _isLoading = true;
-//     });
-//
-//     try {
-//       final userId = widget.subscription.userId;
-//       final subscriptionId = widget.subscription.subscriptionId;
-//
-//       await FirebaseFirestore.instance
-//           .collection('users')
-//           .doc(userId)
-//           .collection('subscriptions')
-//           .doc(subscriptionId)
-//           .update({
-//         'packageName': _packageNameController.text,
-//         'startDate': Timestamp.fromDate(_startDate!),
-//         'endDate': Timestamp.fromDate(_endDate!),
-//         'totalMeetings': int.parse(_totalMeetingsController.text),
-//         'totalAmount': double.parse(_totalAmountController.text),
-//         'status': _status.label,
-//         // Update other fields as necessary
-//       });
-//
-//       widget.onSubscriptionUpdated();
-//
-//       if (!mounted) return;
-//
-//       setState(() {
-//         _isLoading = false;
-//       });
-//
-//       Navigator.of(context).pop();
-//     } catch (e) {
-//       setState(() {
-//         _isLoading = false;
-//       });
-//       // Handle error
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Error updating subscription: $e')),
-//       );
-//     }
-//   }
-//
-//   @override
-//   void dispose() {
-//     _packageNameController.dispose();
-//     _totalMeetingsController.dispose();
-//     _totalAmountController.dispose();
-//     super.dispose();
-//   }
-// }
-// // tabs/tests_tab.dart
 //
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
@@ -659,24 +650,21 @@
 //
 //   @override
 //   TestProvider getProvider(BuildContext context) {
-//     return Provider.of<TestProvider>(context);
-//   }r
-//
-//   @override
-//   List<TestModel> getDataList(TestProvider provider) {
-//     return provider.tests;
+//     final provider = Provider.of<TestProvider>(context);
+//     provider.setUserId(userId);
+//     return provider;
 //   }
 //
 //   @override
-//   bool getShowAllData(TestProvider provider) {
-//     return provider.showAllTests;
+//   Future<List<dynamic>> getDataList(TestProvider provider, bool showAllData) {
+//     return provider.fetchTests(); //hep tum testleri döner
 //   }
 //
 //   @override
-//   void setShowAllData(TestProvider provider, bool value) {
-//     provider.setShowAllTests(value);
-//   }
+//   BaseTabState<TestProvider, BaseTab<TestProvider>> createState() => _TestsTabState();
+// }
 //
+// class _TestsTabState extends BaseTabState<TestProvider, TestsTab> {
 //   @override
 //   Widget buildList(BuildContext context, List<dynamic> dataList) {
 //     List<TestModel> tests = dataList.cast<TestModel>();
@@ -686,11 +674,7 @@
 //         TestModel test = tests[index];
 //         return ListTile(
 //           title: Text('Test Name: ${test.testName}'),
-//           subtitle: Text(
-//               'Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
-//           onTap: () {
-//             // Handle onTap if necessary
-//           },
+//           subtitle: Text('Date: ${test.testDate.toLocal().toString().split(' ')[0]}'),
 //         );
 //       },
 //     );

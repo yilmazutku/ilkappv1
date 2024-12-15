@@ -1,8 +1,7 @@
+// user_provider.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:untitled/main.dart';
-
+import 'package:flutter/foundation.dart';
 import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
@@ -11,20 +10,18 @@ import '../pages/admin_create_user_page.dart';
 final Logger logger = Logger.forClass(UserProvider);
 
 class UserProvider extends ChangeNotifier {
-  static final UserProvider _userProvider = UserProvider._internal();
-  static final List<String> collections = ['subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments'];
-
-  factory UserProvider() => _userProvider;
-  UserProvider._internal();
+  static final List<String> collections = [
+    'subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments'
+  ];
 
   String? _userId;
   String? get userId => _userId;
 
   void setUserId(String userId) {
     _userId = userId;
+    notifyListeners();
   }
 
-  /// Fetch User Details
   Future<UserModel?> fetchUserDetails() async {
     try {
       if (_userId == null) {
@@ -45,7 +42,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  /// Update User Details if Email Not Changed
   Future<bool> updateUserDetails(UserModel updatedUser) async {
     try {
       final userDoc = FirebaseFirestore.instance.collection('users').doc(updatedUser.userId);
@@ -59,8 +55,7 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  /// Update Email and Migrate Data
-  Future<bool> updateEmailAndMigrate({
+  Future<String?> updateEmailAndMigrate({
     required String oldUid,
     required String oldEmail,
     required String password,
@@ -71,10 +66,9 @@ class UserProvider extends ChangeNotifier {
       final adminUser = FirebaseAuth.instance.currentUser;
       if (adminUser == null) {
         logger.err('updateEmailAndMigrate: Admin is not signed in.');
-        return false;
+        return null;
       }
 
-      // Step 1: Migrate Firestore data
       final newUid = await _migrateUserDataAndRecreateAuth(
         oldUid: oldUid,
         newEmail: newEmail,
@@ -84,9 +78,9 @@ class UserProvider extends ChangeNotifier {
 
       if (newUid == null) {
         logger.err('updateEmailAndMigrate: Data migration or user creation failed.');
-        return false;
+        return null;
       }
-      /// Silinen kullanıcı, geçici şifreye sahip olmalı. yoksa çalışmaz!!!
+
       try {
         final oldUser = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: oldEmail,
@@ -95,25 +89,22 @@ class UserProvider extends ChangeNotifier {
         await oldUser.user?.delete();
         logger.info('Deleted the old user and Successfully updated email and migrated data for oldUid={}', [oldUid]);
       } on Exception catch (e) {
-       logger.err('Exception occurred when trying to delete the old user from authentication. {}',[e]);
+        logger.err('Exception when deleting old user: {}', [e]);
       }
-      await signInAutomatically(); ///TEKRAR ADMIN OLARAK GIRIS YAP
 
-      // Step 2: Delete old Firestore document
+      await signInAutomatically();
+
       await FirebaseFirestore.instance.collection('users').doc(oldUid).delete();
       logger.info('Deleted old Firestore user document for UID={}', [oldUid]);
 
-      // Update the provider state
       setUserId(newUid);
-      notifyListeners();
-      return true;
+      return newUid;
     } catch (e) {
       logger.err('updateEmailAndMigrate: Error during email update and migration: {}', [e]);
-      return false;
+      return null;
     }
   }
 
-  /// Migrate Firestore Data and Recreate Auth User
   Future<String?> _migrateUserDataAndRecreateAuth({
     required String oldUid,
     required String newEmail,
@@ -121,13 +112,10 @@ class UserProvider extends ChangeNotifier {
     required UserModel updatedUser,
   }) async {
     try {
-      // Generate new UID for the user
       final newUid = FirebaseFirestore.instance.collection('users').doc().id;
 
-      // Step 1: Migrate Firestore Data
       await _migrateUserData(oldUid, newUid);
 
-      // Step 2: Create new Firebase Authentication user
       UserCredential newUserCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: newEmail,
         password: password,
@@ -138,39 +126,34 @@ class UserProvider extends ChangeNotifier {
         return null;
       }
 
-      // Step 3: Update Firestore Document with new UID
       final updatedUserMap = updatedUser.toMap();
       updatedUserMap['userId'] = newUid;
       await FirebaseFirestore.instance.collection('users').doc(newUid).set(updatedUserMap);
 
       return newUid;
     } catch (e) {
-      logger.err('Error during Firestore data migration and user recreation: {}', [e]);
+      logger.err('Error during data migration and user recreation: {}', [e]);
       return null;
     }
   }
 
-  /// Migrate Top-Level and Subcollections
   Future<void> _migrateUserData(String oldUid, String newUid) async {
     final oldDocRef = FirebaseFirestore.instance.collection('users').doc(oldUid);
     final newDocRef = FirebaseFirestore.instance.collection('users').doc(newUid);
 
-    // Step 1: Migrate Top-Level Data
     final oldDataSnapshot = await oldDocRef.get();
     if (oldDataSnapshot.exists) {
       final userData = oldDataSnapshot.data();
       if (userData != null) {
-        userData['userId'] = newUid; // Update UID
+        userData['userId'] = newUid;
         await newDocRef.set(userData, SetOptions(merge: true));
         logger.info('Top-level data migrated from oldUid={} to newUid={}', [oldUid, newUid]);
       }
     }
 
-    // Step 2: Migrate Subcollections
     await _migrateSubcollections(oldDocRef, newDocRef);
   }
 
-  /// Migrate Subcollections
   Future<void> _migrateSubcollections(DocumentReference oldDocRef, DocumentReference newDocRef) async {
     for (String subcollectionName in collections) {
       final oldSubcollectionRef = oldDocRef.collection(subcollectionName);
@@ -179,12 +162,16 @@ class UserProvider extends ChangeNotifier {
       for (final doc in querySnapshot.docs) {
         final newDocRefSub = newDocRef.collection(subcollectionName).doc(doc.id);
         await newDocRefSub.set(doc.data());
-        logger.info('Migrated document id={} in subcollection={} for newUid={}', [doc.id, subcollectionName, newDocRef.id]);
+        logger.info('Migrated doc id={} in subcollection={} for newUid={}', [doc.id, subcollectionName, newDocRef.id]);
       }
     }
   }
 
-  /// Fetch Subscriptions
+  Future<void> signInAutomatically() async {
+    // Re-sign in the admin user if needed
+    // Implementation depends on how you handle admin authentication.
+  }
+
   Future<List<SubscriptionModel>> fetchSubscriptions({required bool showAllSubscriptions}) async {
     try {
       if (_userId == null) {
@@ -209,7 +196,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetch All Users
   Future<List<UserModel>> fetchUsers() async {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('users').get();

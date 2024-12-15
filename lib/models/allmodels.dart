@@ -7,7 +7,7 @@
 //   final String subscriptionId;
 //   final MeetingType meetingType;
 //   final DateTime appointmentDateTime;
-//   MeetingStatus status;
+//   AppointmentStatus status;
 //   final String? notes;
 //   final DateTime createdAt;
 //   final DateTime? updatedAt;
@@ -41,7 +41,7 @@
 //       subscriptionId: data['subscriptionId'],
 //       meetingType: MeetingType.fromLabel(data['meetingType']),
 //       appointmentDateTime: (data['appointmentDateTime'] as Timestamp).toDate(),
-//       status: MeetingStatus.fromLabel(data['status']),
+//       status: AppointmentStatus.fromLabel(data['status']),
 //       notes: data['notes'],
 //       createdAt: (data['createdAt'] as Timestamp).toDate(),
 //       updatedAt: data['updatedAt'] != null
@@ -55,8 +55,8 @@
 //       isDeleted: data['isDeleted'] == null
 //           ? false
 //           : data['isDeleted'] == 'true'
-//           ? true
-//           : false,
+//               ? true
+//               : false,
 //     );
 //   }
 //
@@ -83,19 +83,20 @@
 //   }
 // }
 //
-// enum MeetingStatus {
+// enum AppointmentStatus {
 //   completed('Yapıldı'),
 //   scheduled('Planlandı'),
 //   burned('Yakıldı'),
 //   canceled('Iptal edildi'),
+//  // pendingCancellation('Iptal onayı bekliyor'), // New status
 //   postponed('Ertelendi');
 //
-//   const MeetingStatus(this.label);
+//   const AppointmentStatus(this.label);
 //
 //   final String label;
 //
-//   static MeetingStatus fromLabel(String label) {
-//     return MeetingStatus.values.firstWhere((e) => e.label == label);
+//   static AppointmentStatus fromLabel(String label) {
+//     return AppointmentStatus.values.firstWhere((e) => e.label == label);
 //   }
 // }
 //
@@ -159,8 +160,61 @@
 //       'notes': notes,
 //     };
 //   }
+// }import 'dart:developer' as developer;
+// import 'package:intl/intl.dart'; // For formatting the timestamp
+//
+// class Logger {
+//   final String name;
+//
+//   Logger(this.name);
+//
+//   void _log(String level, String message, {Object? error, StackTrace? stackTrace}) {
+//     // Get the current time formatted as hour:minute:second
+//     String currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+//
+//     // Include the time in the log message
+//     developer.log(
+//       '[$currentTime] [$level] $message',
+//       name: name,
+//       error: error,
+//       stackTrace: stackTrace,
+//     );
+//   }
+//
+//   factory Logger.forClass(Type type) {
+//     return Logger(type.toString());
+//   }
+//
+//   void info(String message, [List<Object>? args]) {
+//     _log('INFO', _format(message, args));
+//   }
+//
+//   void debug(String message, [List<Object>? args]) {
+//     _log('DEBUG', _format(message, args));
+//   }
+//
+//   void warn(String message, [List<Object>? args]) {
+//     _log('WARN', _format(message, args));
+//   }
+//
+//   void err(String message, [List<Object>? args]) {
+//     _log('ERROR', _format(message, args));
+//   }
+//
+//   String _format(String message, [List<Object>? args]) {
+//     if (args == null || args.isEmpty) {
+//       return message;
+//     }
+//     for (var arg in args) {
+//       message = message.replaceFirst(RegExp(r'\{\}'), arg.toString() ?? 'null');
+//     }
+//     return message;
+//   }
 // }
+//
 // import 'package:cloud_firestore/cloud_firestore.dart';
+//
+// import 'logger.dart';
 //
 // class MealModel {
 //   final String mealId;
@@ -169,8 +223,9 @@
 //   final String subscriptionId;
 //   final String? description;
 //   final DateTime timestamp;
-//   final int? calories; // Optional
-//   final String? notes; // Optional
+//   final int? calories;
+//   final String? notes;
+//   bool isChecked; // Now mutable to allow state changes
 //
 //   MealModel({
 //     required this.mealId,
@@ -181,6 +236,7 @@
 //     required this.timestamp,
 //     this.calories,
 //     this.notes,
+//     required this.isChecked,
 //   });
 //
 //   factory MealModel.fromDocument(DocumentSnapshot doc) {
@@ -194,34 +250,38 @@
 //       timestamp: (data['timestamp'] as Timestamp).toDate(),
 //       calories: data['calories'],
 //       notes: data['notes'],
+//       isChecked: data['isChecked'] ?? false,
 //     );
 //   }
 //
 //   Map<String, dynamic> toMap() {
 //     return {
-//       'mealType': mealType.name, // Store the enum's name or label
+//       'mealType': mealType.name,
 //       'imageUrl': imageUrl,
-//       'subscriptionId': subscriptionId, // Include subscriptionId
+//       'subscriptionId': subscriptionId,
 //       'description': description,
 //       'timestamp': Timestamp.fromDate(timestamp),
 //       'calories': calories,
 //       'notes': notes,
+//       'isChecked': isChecked,
 //     };
 //   }
 // }
 //
+// final Logger logger = Logger.forClass(Meals);
 // enum Meals {
-//   br('Kahvaltı', 'sabah/', '09:00'),
-//   firstmid('sabah ara öğün', 'ilkara/', '10:30'),
-//   lunch('Öğle', 'oglen/', '12:30'),
-//   secondmid('Öğle Ara Öğün', 'ikinciara/', '16:00'),
-//   dinner('Akşam', 'aksam/', '19:00'),
-//   thirdmid('Gece Ara Öğün', 'ucuncuara/', '21:00');
 //
-//   const Meals(this.label, this.url, this.defaultTime);
+//
+//   br('Kahvaltı','09:00'),
+//   firstmid('İlk Ara Öğün', '10:30'),
+//   lunch('Öğle', '12:30'),
+//   secondmid('İkinci Ara Öğün',  '16:00'),
+//   dinner('Akşam', '19:00'),
+//   thirdmid('Üçüncü Ara Öğün', '21:00');
+//
+//   const Meals(this.label,this.defaultTime);
 //
 //   final String label;
-//   final String url;
 //   final String defaultTime;
 //
 //   // Method to get enum from label
@@ -229,8 +289,13 @@
 //     return Meals.values.firstWhere((e) => e.label == label);
 //   }
 //
-//   static Meals fromName(String name) {
-//     return Meals.values.firstWhere((e) => e.name == name);
+//   static Meals? fromName(String name) {
+//     try {
+//       return Meals.values.firstWhere((meal) => meal.label == name);
+//     } catch (e) {
+//       logger.warn('No matching meal found for name: {}', [name]);
+//       return null; // Return null if no match is found
+//     }
 //   }
 // }
 //
@@ -292,13 +357,15 @@
 //   }
 // }import 'package:cloud_firestore/cloud_firestore.dart';
 //
+// import 'logger.dart';
+//
 // class PaymentModel {
 //   final String paymentId;
 //   final String userId;
-//   final String subscriptionId; // Added subscriptionId
+//   final String subscriptionId;
 //   final double amount;
-//   final DateTime paymentDate;
-//   final String status;
+//   final DateTime? paymentDate; // Made nullable
+//   final PaymentStatus status;
 //   final String? dekontUrl;
 //   final DateTime? dueDate;
 //   final List<int>? notificationTimes;
@@ -306,9 +373,9 @@
 //   PaymentModel({
 //     required this.paymentId,
 //     required this.userId,
-//     required this.subscriptionId, // Added subscriptionId
+//     required this.subscriptionId,
 //     required this.amount,
-//     required this.paymentDate,
+//     this.paymentDate, // Nullable
 //     required this.status,
 //     this.dekontUrl,
 //     this.dueDate,
@@ -321,10 +388,11 @@
 //       paymentId: doc.id,
 //       userId: data['userId'],
 //       subscriptionId: data['subscriptionId'],
-//       // Fetch subscriptionId
 //       amount: data['amount'].toDouble(),
-//       paymentDate: (data['paymentDate'] as Timestamp).toDate(),
-//       status: data['status'],
+//       paymentDate: data['paymentDate'] != null
+//           ? (data['paymentDate'] as Timestamp).toDate()
+//           : null,
+//       status: PaymentStatus.fromLabel(data['status']),
 //       dekontUrl: data['dekontUrl'],
 //       dueDate: data['dueDate'] != null
 //           ? (data['dueDate'] as Timestamp).toDate()
@@ -338,15 +406,42 @@
 //   Map<String, dynamic> toMap() {
 //     return {
 //       'userId': userId,
-//       'subscriptionId': subscriptionId, // Include subscriptionId
+//       'subscriptionId': subscriptionId,
 //       'amount': amount,
-//       'paymentDate': Timestamp.fromDate(paymentDate),
-//       'status': status,
+//       'paymentDate': paymentDate != null ? Timestamp.fromDate(paymentDate!) : null,
+//       'status': status.label,
 //       'dekontUrl': dekontUrl,
 //       'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
 //       'notificationTimes': notificationTimes,
 //     };
 //   }
+// }
+//
+//
+// final Logger logger = Logger.forClass(PaymentStatus);
+// enum PaymentStatus {
+//
+//   completed('Tamamlandı'),
+//   planned('Planlandı'),
+//   ;
+//
+//   const PaymentStatus(this.label);
+//
+//   final String label;
+//
+//   // Method to get enum from label
+//   static PaymentStatus fromLabel(String label) {
+//     return PaymentStatus.values.firstWhere((e) => e.label == label);
+//   }
+//
+//   // static PaymentStatus? fromName(String name) {
+//   //   try {
+//   //     return PaymentStatus.values.firstWhere((e) => e.label == name);
+//   //   } catch (e) {
+//   //     logger.warn('No matching PaymentStatus found for name: {}', [name]);
+//   //     return null; // Return null if no match is found
+//   //   }
+//   // }
 // }import 'package:cloud_firestore/cloud_firestore.dart';
 //
 // class SubscriptionModel {
@@ -490,40 +585,59 @@
 //   final String userId;
 //   final String name;
 //   final String email;
+//   final String password; // For Firebase user creation
 //   final String role; // 'admin' or 'customer'
 //   final DateTime createdAt;
+//   final String? surname;
+//   final int? age;
+//   final String? reference;
+//   final String? notes;
 //
 //   UserModel({
 //     required this.userId,
 //     required this.name,
 //     required this.email,
+//     required this.password,
 //     required this.role,
 //     required this.createdAt,
+//     this.surname,
+//     this.age,
+//     this.reference,
+//     this.notes,
 //   });
 //
 //   factory UserModel.fromDocument(DocumentSnapshot doc) {
 //     final data = doc.data() as Map<String, dynamic>;
 //     return UserModel(
 //       userId: doc.id,
-//       name: data['name'],
-//       email: data['email'],
-//       role: data['role'],
+//       name: data['name'] ?? '',
+//       email: data['email'] ?? '',
+//       password: '', // Password should not be stored in Firestore
+//       role: data['role'] ?? 'customer',
 //       createdAt: (data['createdAt'] as Timestamp).toDate(),
+//       surname: data['surname'],
+//       age: data['age'],
+//       reference: data['reference'],
+//       notes: data['notes'],
 //     );
-//   }
-//
-//   @override
-//   String toString() {
-//     return 'UserModel{userId: $userId, name: $name, email: $email, role: $role, createdAt: $createdAt}';
 //   }
 //
 //   Map<String, dynamic> toMap() {
 //     return {
-//       'userId':userId,
+//       'userId': userId,
 //       'name': name,
 //       'email': email,
 //       'role': role,
 //       'createdAt': Timestamp.fromDate(createdAt),
+//       if (surname != null) 'surname': surname,
+//       if (age != null) 'age': age,
+//       if (reference != null) 'reference': reference,
+//       if (notes != null) 'notes': notes,
 //     };
+//   }
+//
+//   @override
+//   String toString() {
+//     return 'UserModel{userId: $userId, name: $name, email: $email, role: $role, createdAt: $createdAt, surname: $surname, age: $age, reference: $reference, notes: $notes}';
 //   }
 // }

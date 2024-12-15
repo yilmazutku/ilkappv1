@@ -1,4 +1,6 @@
+// details_tab.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../pages/admin_create_user_page.dart';
 import '../providers/user_provider.dart';
@@ -15,7 +17,6 @@ class DetailsTab extends StatefulWidget {
 class _DetailsTabState extends State<DetailsTab> {
   late Future<UserModel?> _userFuture;
 
-  // Controllers for all fields including optional ones
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _surnameController = TextEditingController();
@@ -23,13 +24,15 @@ class _DetailsTabState extends State<DetailsTab> {
   final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  bool _isEditing = false; // Toggle editing mode
-  bool _isLoading = false; // Show loading indicator during save
+  bool _isEditing = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _userFuture = UserProvider().fetchUserDetails();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    userProvider.setUserId(widget.userId);
+    _userFuture = userProvider.fetchUserDetails();
   }
 
   void _populateFields(UserModel user) {
@@ -55,24 +58,17 @@ class _DetailsTabState extends State<DetailsTab> {
       password: originalUser.password,
       role: originalUser.role,
       createdAt: originalUser.createdAt,
-      surname: _surnameController.text.trim().isNotEmpty
-          ? _surnameController.text.trim()
-          : null,
-      age: _ageController.text.trim().isNotEmpty
-          ? int.tryParse(_ageController.text.trim())
-          : null,
-      reference: _referenceController.text.trim().isNotEmpty
-          ? _referenceController.text.trim()
-          : null,
-      notes: _notesController.text.trim().isNotEmpty
-          ? _notesController.text.trim()
-          : null,
+      surname: _surnameController.text.trim().isNotEmpty ? _surnameController.text.trim() : null,
+      age: _ageController.text.trim().isNotEmpty ? int.tryParse(_ageController.text.trim()) : null,
+      reference: _referenceController.text.trim().isNotEmpty ? _referenceController.text.trim() : null,
+      notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
     );
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
       if (originalUser.email != updatedUser.email) {
-        // If email has changed, perform migration
-        final success = await UserProvider().updateEmailAndMigrate(
+        final newUid = await userProvider.updateEmailAndMigrate(
           oldUid: originalUser.userId,
           oldEmail: originalUser.email,
           password: CreateUserPage.tempPw,
@@ -80,18 +76,24 @@ class _DetailsTabState extends State<DetailsTab> {
           updatedUser: updatedUser,
         );
 
-        if (success) {
-          _showMessageDialog('Başarılı',
-              'E-posta değiştirildi ve kullanıcı bilgileri taşındı.');
+        if (newUid != null) {
+          // userProvider.setUserId(newUid) already called inside updateEmailAndMigrate
+          // notifyListeners() also called there
+          setState(() {
+            _userFuture = userProvider.fetchUserDetails();
+          });
+
+          _showMessageDialog('Başarılı', 'E-posta değiştirildi ve kullanıcı bilgileri taşındı.');
         } else {
-          _showMessageDialog(
-              'Hata', 'E-posta değişimi sırasında bir hata oluştu.');
+          _showMessageDialog('Hata', 'E-posta değişimi sırasında bir hata oluştu.');
         }
       } else {
-        // If email hasn't changed, update user details
-        final success = await UserProvider().updateUserDetails(updatedUser);
+        final success = await userProvider.updateUserDetails(updatedUser);
         if (success) {
           _showMessageDialog('Başarılı', 'Kullanıcı bilgileri güncellendi.');
+          setState(() {
+            _userFuture = userProvider.fetchUserDetails();
+          });
         } else {
           _showMessageDialog('Hata', 'Bilgiler güncellenirken hata oluştu.');
         }
@@ -129,8 +131,7 @@ class _DetailsTabState extends State<DetailsTab> {
     );
   }
 
-  Widget _buildEditableField(String label, TextEditingController controller,
-      {TextInputType? keyboardType}) {
+  Widget _buildEditableField(String label, TextEditingController controller, {TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -156,14 +157,11 @@ class _DetailsTabState extends State<DetailsTab> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(
-              child: Text(
-                  'Kullanıcı detayları alınırken hata oluştu: ${snapshot.error}'));
+          return Center(child: Text('Kullanıcı detayları alınırken hata oluştu: ${snapshot.error}'));
         } else if (snapshot.data == null) {
           return const Center(child: Text('Kullanıcı bilgisi bulunamadı.'));
         } else {
           final user = snapshot.data!;
-          // Populate fields once the data is loaded
           if (!_isEditing) {
             _populateFields(user);
           }
@@ -192,20 +190,16 @@ class _DetailsTabState extends State<DetailsTab> {
                     ),
                   ] else ...[
                     _buildEditableField('Ad', _nameController),
-                    _buildEditableField('E-posta', _emailController,
-                        keyboardType: TextInputType.emailAddress),
+                    _buildEditableField('E-posta', _emailController, keyboardType: TextInputType.emailAddress),
                     _buildEditableField('Soyisim', _surnameController),
-                    _buildEditableField('Yaş', _ageController,
-                        keyboardType: TextInputType.number),
+                    _buildEditableField('Yaş', _ageController, keyboardType: TextInputType.number),
                     _buildEditableField('Referans', _referenceController),
                     _buildEditableField('Notlar', _notesController),
                     Row(
                       children: [
                         ElevatedButton(
                           onPressed: () => _saveChanges(user),
-                          child: _isLoading
-                              ? const CircularProgressIndicator()
-                              : const Text('Kaydet'),
+                          child: _isLoading ? const CircularProgressIndicator() : const Text('Kaydet'),
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton(

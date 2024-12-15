@@ -1,3 +1,4 @@
+// customer_summary_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,14 +18,11 @@ import '../dialogs/add_appointment_dialog.dart';
 import '../dialogs/add_image_dialog.dart';
 import '../dialogs/add_payment_dialog.dart';
 import '../dialogs/add_sub_dialog.dart';
-import '../dialogs/add_test_dialog.dart';
 
 final Logger logger = Logger.forClass(CustomerSummaryPage);
 
 class CustomerSummaryPage extends StatefulWidget {
-  final String userId;
-
-  const CustomerSummaryPage({super.key, required this.userId});
+  const CustomerSummaryPage({super.key});
 
   @override
   createState() => _CustomerSummaryPageState();
@@ -42,7 +40,6 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   @override
   void initState() {
     super.initState();
-
     _tabController = TabController(length: 6, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != _previousTabIndex) {
@@ -54,12 +51,14 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    logger.info('Initializing CustomerSummaryPage with userId={}', [widget.userId]);
-    userProvider.setUserId(widget.userId);
+    final userProvider = Provider.of<UserProvider>(context);
+    final userId = userProvider.userId;
 
-    Provider.of<MealStateManager>(context, listen: false).setUserId(widget.userId);
-    Provider.of<PaymentProvider>(context, listen: false).setUserId(widget.userId);
+    if (userId == null) {
+      return const Scaffold(
+        body: Center(child: Text('Kullanıcı ID set edilmedi.')),
+      );
+    }
 
     return FutureBuilder<UserModel?>(
       future: userProvider.fetchUserDetails(),
@@ -76,12 +75,17 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             ),
           );
         } else if (!snapshot.hasData || snapshot.data == null) {
-          logger.warn('User data not found for userId={}', [widget.userId]);
-          return Scaffold(
-            body: const Center(child: Text('Kullanıcı bilgisi bulunamadı.')),
+          logger.warn('User data not found for userId={}', [userId]);
+          return const Scaffold(
+            body: Center(child: Text('Kullanıcı bilgisi bulunamadı.')),
           );
         } else {
           _user = snapshot.data;
+
+          // Set MealStateManager and PaymentProvider with current userId
+          Provider.of<MealStateManager>(context, listen: false).setUserId(userId);
+          Provider.of<PaymentProvider>(context, listen: false).setUserId(userId);
+
           return _buildScaffold(_user!);
         }
       },
@@ -131,9 +135,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   }
 
   Widget _buildSubscriptionDropdown(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId!;
+
     return FutureBuilder<List<SubscriptionModel>>(
-      future: Provider.of<UserProvider>(context, listen: false)
-          .fetchSubscriptions(showAllSubscriptions: false),
+      future: userProvider.fetchSubscriptions(showAllSubscriptions: false),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
@@ -143,7 +149,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         } else {
           _subscriptions = snapshot.data ?? [];
           if (_subscriptions.isEmpty) {
-            logger.warn('No subscriptions found for userId={}', [widget.userId]);
+            logger.warn('No subscriptions found for userId={}', [userId]);
             return Container();
           }
 
@@ -153,12 +159,9 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
                 setState(() {
                   _selectedSubscription = _subscriptions.first;
                   final newValue = _selectedSubscription!.subscriptionId;
-                  Provider.of<AppointmentManager>(context, listen: false)
-                      .setSelectedSubscriptionId(newValue);
-                  Provider.of<MealStateManager>(context, listen: false)
-                      .setSelectedSubscriptionId(newValue);
-                  Provider.of<PaymentProvider>(context, listen: false)
-                      .setSelectedSubscriptionId(newValue);
+                  Provider.of<AppointmentManager>(context, listen: false).setSelectedSubscriptionId(newValue);
+                  Provider.of<MealStateManager>(context, listen: false).setSelectedSubscriptionId(newValue);
+                  Provider.of<PaymentProvider>(context, listen: false).setSelectedSubscriptionId(newValue);
                   logger.info('Default subscription selected: subscriptionId={}', [newValue]);
                 });
               }
@@ -170,16 +173,11 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             onChanged: (String? newValue) {
               if (newValue == null) return;
               setState(() {
-                _selectedSubscription = _subscriptions.firstWhere(
-                      (sub) => sub.subscriptionId == newValue,
-                );
+                _selectedSubscription = _subscriptions.firstWhere((sub) => sub.subscriptionId == newValue);
                 logger.info('Subscription selected: subscriptionId={}', [newValue]);
-                Provider.of<AppointmentManager>(context, listen: false)
-                    .setSelectedSubscriptionId(newValue);
-                Provider.of<MealStateManager>(context, listen: false)
-                    .setSelectedSubscriptionId(newValue);
-                Provider.of<PaymentProvider>(context, listen: false)
-                    .setSelectedSubscriptionId(newValue);
+                Provider.of<AppointmentManager>(context, listen: false).setSelectedSubscriptionId(newValue);
+                Provider.of<MealStateManager>(context, listen: false).setSelectedSubscriptionId(newValue);
+                Provider.of<PaymentProvider>(context, listen: false).setSelectedSubscriptionId(newValue);
               });
             },
             items: _subscriptions.map<DropdownMenuItem<String>>((SubscriptionModel sub) {
@@ -225,7 +223,8 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   }
 
   void _showAddSubscriptionDialog() {
-    final userId = _user?.userId ?? widget.userId;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId!;
     showDialog(
       context: context,
       builder: (context) {
@@ -251,14 +250,17 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       return;
     }
 
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId!;
+
     showDialog(
       context: context,
       builder: (context) {
         return AddAppointmentDialog(
-          userId: widget.userId,
+          userId: userId,
           subscriptionId: subscriptionId,
           onAppointmentAdded: () {
-            logger.info('Appointment added for userId={}, subscriptionId={}', [widget.userId, subscriptionId]);
+            logger.info('Appointment added for userId={}, subscriptionId={}', [userId, subscriptionId]);
           },
         );
       },
@@ -274,14 +276,17 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       return;
     }
 
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId!;
+
     showDialog(
       context: context,
       builder: (context) {
         return AddPaymentDialog(
-          userId: widget.userId,
+          userId: userId,
           subscription: subscription,
           onPaymentAdded: () {
-            logger.info('Payment added for userId={}, subscriptionId={}', [widget.userId, subscription.subscriptionId]);
+            logger.info('Payment added for userId={}, subscriptionId={}', [userId, subscription.subscriptionId]);
           },
         );
       },
@@ -297,14 +302,17 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       return;
     }
 
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.userId!;
+
     showDialog(
       context: context,
       builder: (context) {
         return AddImageDialog(
-          userId: widget.userId,
+          userId: userId,
           subscriptionId: subscriptionId,
           onImageAdded: () {
-            logger.info('Image added for userId={}, subscriptionId={}', [widget.userId, subscriptionId]);
+            logger.info('Image added for userId={}, subscriptionId={}', [userId, subscriptionId]);
           },
         );
       },
