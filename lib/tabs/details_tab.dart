@@ -31,8 +31,7 @@ class _DetailsTabState extends State<DetailsTab> {
   void initState() {
     super.initState();
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.setUserId(widget.userId);
-    _userFuture = userProvider.fetchUserDetails();
+    _userFuture = userProvider.fetchUserDetails(userId:widget.userId);
   }
 
   void _populateFields(UserModel user) {

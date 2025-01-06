@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:untitled/pages/meas_page.dart';
 import 'package:untitled/pages/reset_password_page.dart';
 import 'package:untitled/pages/user_past_appointments_page.dart';
 import 'package:untitled/pages/user_payments_page.dart';
@@ -140,6 +141,7 @@ class LoginPage extends StatelessWidget {
           crossAxisSpacing: 8,
           children: [
             _buildGridItem(context, Icons.food_bank, 'Planım', () => _navigateToMeal(context)),
+            _buildGridItem(context, Icons.food_bank, 'Meas', () => _navigateToMeas(context)),
             _buildGridItem(context, Icons.calendar_today, 'Geçmiş Randevularım',
                     () => _navigateToPastAppointments(context)),
             _buildGridItem(context, Icons.payments, 'Ödemelerim',
@@ -179,6 +181,21 @@ class LoginPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToMeas(BuildContext context) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+    final subscriptionId = await getCurrentSubscriptionId(userId);
+    if (subscriptionId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MeasurementPage(
+
         ),
       ),
     );

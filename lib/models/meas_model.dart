@@ -1,59 +1,68 @@
 
+class Measurement {
+  DateTime date;
+  double? chest;
+  double? back;
+  double? waist;
+  double? hips;
+  double? leg;
+  double? arm;
+  double? weight;
+  String? fatKg;
+  String? hungerStatus;
+  String? constipation;
+  String? other;
+  int? calorie;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-class MeasurementModel {
-  final String measurementId;
-  final String userId;
-  final DateTime date;
-  final double height; // in cm
-  final double weight; // in kg
-  final double? armCircumference; // in cm
-  final double? legCircumference; // in cm
-  final double? waistCircumference; // in cm
-  final double? bodyFatPercentage; // Optional
-  final String? notes; // Optional
-
-  MeasurementModel({
-    required this.measurementId,
-    required this.userId,
+  Measurement({
     required this.date,
-    required this.height,
-    required this.weight,
-    this.armCircumference,
-    this.legCircumference,
-    this.waistCircumference,
-    this.bodyFatPercentage,
-    this.notes,
+    this.chest,
+    this.back,
+    this.waist,
+    this.hips,
+    this.leg,
+    this.arm,
+    this.weight,
+    this.fatKg,
+    this.hungerStatus,
+    this.constipation,
+    this.other,
+    this.calorie,
   });
 
-  factory MeasurementModel.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return MeasurementModel(
-      measurementId: doc.id,
-      userId: data['userId'],
-      date: (data['date'] as Timestamp).toDate(),
-      height: data['height'],
-      weight: data['weight'],
-      armCircumference: data['armCircumference'],
-      legCircumference: data['legCircumference'],
-      waistCircumference: data['waistCircumference'],
-      bodyFatPercentage: data['bodyFatPercentage'],
-      notes: data['notes'],
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'chest': chest,
+      'back': back,
+      'waist': waist,
+      'hips': hips,
+      'leg': leg,
+      'arm': arm,
+      'weight': weight,
+      'fatKg': fatKg,
+      'hungerStatus': hungerStatus,
+      'constipation': constipation,
+      'other': other,
+      'calorie': calorie,
+    };
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'date': Timestamp.fromDate(date),
-      'height': height,
-      'weight': weight,
-      'armCircumference': armCircumference,
-      'legCircumference': legCircumference,
-      'waistCircumference': waistCircumference,
-      'bodyFatPercentage': bodyFatPercentage,
-      'notes': notes,
-    };
+  static Measurement fromJson(Map<String, dynamic> json) {
+    return Measurement(
+      date: DateTime.parse(json['date']),
+      chest: json['chest']?.toDouble(),
+      back: json['back']?.toDouble(),
+      waist: json['waist']?.toDouble(),
+      hips: json['hips']?.toDouble(),
+      leg: json['leg']?.toDouble(),
+      arm: json['arm']?.toDouble(),
+      weight: json['weight']?.toDouble(),
+      fatKg: json['fatKg'],
+      hungerStatus: json['hungerStatus'],
+      constipation: json['constipation'],
+      other: json['other'],
+      calorie: json['calorie']?.toInt(),
+    );
   }
 }

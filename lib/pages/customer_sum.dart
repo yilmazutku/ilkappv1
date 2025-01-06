@@ -1,7 +1,12 @@
 // customer_summary_page.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../dialogs/add_appointment_dialog.dart';
+import '../dialogs/add_image_dialog.dart';
+import '../dialogs/add_payment_dialog.dart';
+import '../dialogs/add_sub_dialog.dart';
 import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
@@ -14,16 +19,12 @@ import '../tabs/details_tab.dart';
 import '../tabs/images_tab.dart';
 import '../tabs/payment_tab.dart';
 import '../tabs/sub_tab.dart';
-import '../dialogs/add_appointment_dialog.dart';
-import '../dialogs/add_image_dialog.dart';
-import '../dialogs/add_payment_dialog.dart';
-import '../dialogs/add_sub_dialog.dart';
 
 final Logger logger = Logger.forClass(CustomerSummaryPage);
 
 class CustomerSummaryPage extends StatefulWidget {
-  const CustomerSummaryPage({super.key});
-
+  const CustomerSummaryPage({required this.user, super.key});
+  final UserModel user;
   @override
   createState() => _CustomerSummaryPageState();
 }
@@ -51,17 +52,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final userId = userProvider.userId;
-
-    if (userId == null) {
-      return const Scaffold(
-        body: Center(child: Text('Kullanıcı ID set edilmedi.')),
-      );
-    }
+    final userProvider = Provider.of<UserProvider>(context,listen: false);
+    final userId = widget.user.userId;
+  //  userProvider.setUserId(userId);
+  //  final userId = userProvider.userId;
 
     return FutureBuilder<UserModel?>(
-      future: userProvider.fetchUserDetails(),
+      future: userProvider.fetchUserDetails(userId:userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -136,10 +133,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
 
   Widget _buildSubscriptionDropdown(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId!;
+    final userId = widget.user.userId;
 
     return FutureBuilder<List<SubscriptionModel>>(
-      future: userProvider.fetchSubscriptions(showAllSubscriptions: false),
+      future: userProvider.fetchSubscriptions(
+        userId: userId, // Pass the userId explicitly
+        showAllSubscriptions: false,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
@@ -223,18 +223,16 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   }
 
   void _showAddSubscriptionDialog() {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId!;
     showDialog(
       context: context,
       builder: (context) {
         return AddSubscriptionDialog(
-          userId: userId,
+          userId: widget.user.userId,
           onSubscriptionAdded: () {
             setState(() {
               _selectedSubscription = null; // Reset selection
             });
-            logger.info('Subscription added and refreshed for userId={}', [userId]);
+            logger.info('Subscription added and refreshed for userId={}', [widget.user.userId]);
           },
         );
       },
@@ -249,18 +247,14 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       );
       return;
     }
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId!;
-
     showDialog(
       context: context,
       builder: (context) {
         return AddAppointmentDialog(
-          userId: userId,
+          userId: widget.user.userId,
           subscriptionId: subscriptionId,
           onAppointmentAdded: () {
-            logger.info('Appointment added for userId={}, subscriptionId={}', [userId, subscriptionId]);
+            logger.info('Appointment added for userId={}, subscriptionId={}', [widget.user.userId, subscriptionId]);
           },
         );
       },
@@ -275,18 +269,14 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       );
       return;
     }
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId!;
-
     showDialog(
       context: context,
       builder: (context) {
         return AddPaymentDialog(
-          userId: userId,
+          userId: widget.user.userId,
           subscription: subscription,
           onPaymentAdded: () {
-            logger.info('Payment added for userId={}, subscriptionId={}', [userId, subscription.subscriptionId]);
+            logger.info('Payment added for userId={}, subscriptionId={}', [widget.user.userId, subscription.subscriptionId]);
           },
         );
       },
@@ -301,18 +291,14 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       );
       return;
     }
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final userId = userProvider.userId!;
-
     showDialog(
       context: context,
       builder: (context) {
         return AddImageDialog(
-          userId: userId,
+          userId: widget.user.userId,
           subscriptionId: subscriptionId,
           onImageAdded: () {
-            logger.info('Image added for userId={}, subscriptionId={}', [userId, subscriptionId]);
+            logger.info('Image added for userId={}, subscriptionId={}', [widget.user.userId, subscriptionId]);
           },
         );
       },

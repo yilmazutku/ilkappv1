@@ -54,7 +54,7 @@ class _AdminImagesState extends State<AdminImages> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const CustomerSummaryPage(),
+                        builder: (context) => new CustomerSummaryPage(user:user),
                       ),
                     );
                   },

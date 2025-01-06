@@ -35,6 +35,7 @@ dependencies:
   flutter_gen: any
   firebase_core: any
   image_picker: any
+  excel: ^2.0.4
   firebase_storage: any
   cloud_firestore: any
   firebase_app_check: ^0.3.0+4

@@ -14,22 +14,14 @@ class UserProvider extends ChangeNotifier {
     'subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments'
   ];
 
-  String? _userId;
-  String? get userId => _userId;
-
-  void setUserId(String userId) {
-    _userId = userId;
-    notifyListeners();
-  }
-
-  Future<UserModel?> fetchUserDetails() async {
+  Future<UserModel?> fetchUserDetails({String? userId}) async {
     try {
-      if (_userId == null) {
+      if (userId==null) {
         logger.err('fetchUserDetails: User ID not set.');
         return null;
       }
-      final doc = await FirebaseFirestore.instance.collection('users').doc(_userId).get();
-      logger.info('Fetching user details for userId={}', [_userId!]);
+      final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      logger.info('Fetching user details for userId={} ', [userId!]);
 
       if (doc.exists) {
         return UserModel.fromDocument(doc);
@@ -97,11 +89,13 @@ class UserProvider extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(oldUid).delete();
       logger.info('Deleted old Firestore user document for UID={}', [oldUid]);
 
-      setUserId(newUid);
       return newUid;
     } catch (e) {
       logger.err('updateEmailAndMigrate: Error during email update and migration: {}', [e]);
       return null;
+    }
+    finally {
+      notifyListeners();
     }
   }
 
@@ -172,15 +166,14 @@ class UserProvider extends ChangeNotifier {
     // Implementation depends on how you handle admin authentication.
   }
 
-  Future<List<SubscriptionModel>> fetchSubscriptions({required bool showAllSubscriptions}) async {
+  Future<List<SubscriptionModel>> fetchSubscriptions({
+    required String userId,
+    required bool showAllSubscriptions,
+  }) async {
     try {
-      if (_userId == null) {
-        logger.err('fetchSubscriptions: User ID not set.');
-        return [];
-      }
       Query query = FirebaseFirestore.instance
           .collection('users')
-          .doc(_userId)
+          .doc(userId)
           .collection('subscriptions')
           .orderBy('startDate', descending: true);
 
@@ -191,10 +184,11 @@ class UserProvider extends ChangeNotifier {
       final snapshot = await query.get();
       return snapshot.docs.map((doc) => SubscriptionModel.fromDocument(doc)).toList();
     } catch (e) {
-      logger.err('Error fetching subscriptions: {}', [e]);
+      logger.err('Error fetching subscriptions for userId={}: {}', [userId, e]);
       return [];
     }
   }
+
 
   Future<List<UserModel>> fetchUsers() async {
     try {

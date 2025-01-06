@@ -15,13 +15,16 @@ class SubscriptionsTab extends BaseTab<UserProvider> {
   @override
   UserProvider getProvider(BuildContext context) {
     final provider = Provider.of<UserProvider>(context,listen: false);
-    provider.setUserId(userId);
+  //  provider.setUserId(userId);
     return provider;
   }
 
   @override
   Future<List<dynamic>> getDataList(UserProvider provider, bool showAllData) {
-    return provider.fetchSubscriptions(showAllSubscriptions: showAllData);
+    return provider.fetchSubscriptions(
+      userId: userId, // Pass the userId explicitly
+      showAllSubscriptions: false,
+    );
   }
 
   @override
@@ -69,7 +72,10 @@ class _SubscriptionsTabState extends BaseTabState<UserProvider, SubscriptionsTab
         return EditSubscriptionDialog(
           subscription: subscription,
           onSubscriptionUpdated: () {
-            Provider.of<UserProvider>(context, listen: false).fetchSubscriptions(showAllSubscriptions: showAllData);
+            Provider.of<UserProvider>(context, listen: false).fetchSubscriptions(
+              userId: widget.userId, // Pass the userId explicitly
+              showAllSubscriptions: false,
+            );
           },
         );
       },
