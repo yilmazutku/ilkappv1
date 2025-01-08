@@ -11,6 +11,7 @@ import 'package:untitled/providers/meal_state_and_upload_manager.dart';
 import 'package:untitled/providers/user_provider.dart';
 import 'package:untitled/providers/payment_provider.dart';
 import 'package:untitled/providers/test_provider.dart';
+import 'package:untitled/providers/meas_provider.dart';
 import 'firebase_options.dart';
 import 'models/logger.dart';
 
@@ -58,6 +59,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => MeasProvider()),
         ChangeNotifierProvider(create: (_) => TestProvider()),
       ],
       child: MaterialApp(

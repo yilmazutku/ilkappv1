@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:untitled/tabs/measurements_tab.dart';
 
 import '../dialogs/add_appointment_dialog.dart';
 import '../dialogs/add_image_dialog.dart';
@@ -41,7 +42,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != _previousTabIndex) {
         logger.info('Tab changed: index={}', [_tabController.index]);
@@ -108,6 +109,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             Tab(text: 'Ödemeler'),
             Tab(text: 'Resimler'),
             Tab(text: 'Testler'),
+            Tab(text: 'Ölçümler'),
             Tab(text: 'Abonelikler'),
           ],
         ),
@@ -120,6 +122,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           PaymentsTab(userId: user.userId),
           ImagesTab(userId: user.userId),
           const Center(child: Text('Testler Sekmesi')), // Placeholder
+          MeasTab(userId: user.userId),
           SubscriptionsTab(userId: user.userId),
         ],
       ),

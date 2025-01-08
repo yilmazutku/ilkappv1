@@ -23,15 +23,14 @@ abstract class BaseTab<T> extends StatefulWidget {
 abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
   bool showAllData = false;
   Future<List<dynamic>>? dataFuture;
+  bool _dataFetched = false;
 
   @override
   void initState() {
     super.initState();
-   // fetchData();
-    //   // Avoid calling fetchData or similar logic here if it depends on Provider
+    // We'll fetch data later in didChangeDependencies
   }
 
-  bool _dataFetched = false;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -50,7 +49,7 @@ abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Toggle Button
+        // Toggle for "Tüm Ölçümler" vs "Abonelik Ölçümleri"
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -66,6 +65,8 @@ abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
             ),
           ],
         ),
+
+        // FutureBuilder for the data
         Expanded(
           child: FutureBuilder<List<dynamic>>(
             future: dataFuture,
@@ -73,12 +74,12 @@ abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
-                return Center(child: Text('Error fetching data: ${snapshot.error}'));
+                return Center(
+                  child: Text('Error fetching data: ${snapshot.error}'),
+                );
               } else {
+                // Even if dataList is empty, we still build the UI
                 final dataList = snapshot.data ?? [];
-                if (dataList.isEmpty) {
-                  return const Center(child: Text('No data found.'));
-                }
                 return buildList(context, dataList);
               }
             },
@@ -88,6 +89,6 @@ abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
     );
   }
 
-  // Abstract method
+  // Let the subclass define how to build the actual list (and action buttons)
   Widget buildList(BuildContext context, List<dynamic> dataList);
 }
