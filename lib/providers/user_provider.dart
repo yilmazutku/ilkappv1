@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../main.dart';
 import '../models/logger.dart';
 import '../models/subs_model.dart';
 import '../models/user_model.dart';
@@ -11,7 +12,7 @@ final Logger logger = Logger.forClass(UserProvider);
 
 class UserProvider extends ChangeNotifier {
   static final List<String> collections = [
-    'subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments'
+    'subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments','measurements'
   ];
 
   Future<UserModel?> fetchUserDetails({String? userId}) async {
@@ -161,10 +162,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signInAutomatically() async {
-    // Re-sign in the admin user if needed
-    // Implementation depends on how you handle admin authentication.
-  }
 
   Future<List<SubscriptionModel>> fetchSubscriptions({
     required String userId,

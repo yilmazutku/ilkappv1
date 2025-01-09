@@ -134,7 +134,7 @@ class LoginPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(2.0),
         child: GridView.count(
           crossAxisCount: 2,
           mainAxisSpacing: 8,
@@ -169,16 +169,16 @@ class LoginPage extends StatelessWidget {
   Widget _buildGridItem(
       BuildContext context, IconData icon, String label, VoidCallback onTap) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(1)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(1),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40),
-            const SizedBox(height: 8),
+            Icon(icon, size: 20),
+            const SizedBox(height: 2),
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
