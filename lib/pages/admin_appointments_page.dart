@@ -18,7 +18,7 @@ class AdminAppointmentsPage extends StatefulWidget {
 }
 
 class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
-  DateTime? startDate;
+  DateTime? startDate = DateTime.now();
   DateTime? endDate;
   MeetingType? selectedMeetingType;
   AppointmentStatus? selectedMeetingStatus;

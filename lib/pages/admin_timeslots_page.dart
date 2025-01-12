@@ -4,63 +4,120 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../models/logger.dart';
+import '../models/appointment_model.dart';
+import '../models/logger.dart';
+import '../models/appointment_model.dart'; // adjust as needed
 
 final Logger logger = Logger.forClass(AdminTimeSlotsPage);
 
 class AdminTimeSlotsPage extends StatefulWidget {
-  const AdminTimeSlotsPage({Key? key}) : super(key: key);
+  const AdminTimeSlotsPage({super.key});
 
   @override
-  _AdminTimeSlotsPageState createState() => _AdminTimeSlotsPageState();
+   createState() => _AdminTimeSlotsPageState();
 }
 
 class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
   DateTime _selectedDate = DateTime.now();
-  Map<String, bool> _timeSlots = {}; // Map of time string to availability
   bool _isLoading = false;
+
+  /// For displaying "what is stored in Firebase" for this day.
+  List<String> _storedTimesForDay = [];
+
+  /// For showing which times have appointments on them.
+  /// e.g. {'09:00': true, '09:30': false, ...}
+  Map<String, bool> _hasAppointment = {};
+
+  /// Text field controller where admin can type new times
+  final TextEditingController _timeInputController = TextEditingController();
+
+  /// Reference to your AppointmentManager (or you can simply create a new instance)
 
   @override
   void initState() {
     super.initState();
-    _fetchTimeSlotsForDate(_selectedDate);
+    _fetchDayData(_selectedDate);
   }
 
-  Future<void> _fetchTimeSlotsForDate(DateTime date) async {
+  /// Whenever a date is selected, fetch data
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    setState(() {
+      _selectedDate = selectedDay;
+    });
+    _fetchDayData(_selectedDate);
+  }
+
+  /// Fetch stored times from `admininput/timeslots/dates/<YYYY-MM-DD>`
+  /// and also fetch appointments from your `AppointmentManager`.
+  Future<void> _fetchDayData(DateTime date) async {
     setState(() {
       _isLoading = true;
-      _timeSlots.clear();
+      _storedTimesForDay.clear();
+      _hasAppointment.clear();
     });
 
+    final String dateString = DateFormat('yyyy-MM-dd').format(date);
+
     try {
-      String dateString = DateFormat('yyyy-MM-dd').format(date);
-      DocumentSnapshot timeslotDoc = await FirebaseFirestore.instance
+      // 1) Fetch times from Firestore
+      final docSnap = await FirebaseFirestore.instance
           .collection('admininput')
           .doc('timeslots')
           .collection('dates')
           .doc(dateString)
           .get();
 
-      List<String> availableTimes = [];
-      if (timeslotDoc.exists) {
-        Map<String, dynamic> data = timeslotDoc.data() as Map<String, dynamic>;
-        availableTimes = List<String>.from(data['times'] ?? []);
+      if (docSnap.exists) {
+        final data = docSnap.data() as Map<String, dynamic>;
+        final List<dynamic> storedTimes = data['times'] ?? [];
+        _storedTimesForDay = storedTimes.map((e) => e.toString()).toList();
       }
 
-      // Generate all possible time slots for the day
-      _timeSlots = _generateAllTimeSlots();
+      // 2) Fetch existing appointments for this day
+      //    Adjust the userId or other filters as needed
+      //    If you want to fetch ALL appointments from all users, you might do a collectionGroup query
+      List<AppointmentModel> dayAppointments = [];
+      {
+        // Example approach: fetch from AppointmentManager
+        // But if your AppointmentManager requires a specific user ID or subscription,
+        // adapt accordingly. This is just the idea.
+        // This snippet tries to emulate a "fetch all appointments for that day".
+        dayAppointments = await _fetchAppointmentsForDate(date);
+      }
 
-      // Mark available times
-      for (String time in availableTimes) {
-        if (_timeSlots.containsKey(time)) {
-          _timeSlots[time] = true;
+      // 3) Mark which stored times have appointments
+      for (final timeStr in _storedTimesForDay) {
+        // parse the time into hour + minute
+        final parts = timeStr.split(':');
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+
+        bool appointmentExists = false;
+        for (final appt in dayAppointments) {
+          final apptTime = appt.appointmentDateTime;
+          if (apptTime.year == date.year &&
+              apptTime.month == date.month &&
+              apptTime.day == date.day &&
+              apptTime.hour == hour &&
+              apptTime.minute == minute &&
+              appt.status != AppointmentStatus.canceled) {
+            appointmentExists = true;
+            break;
+          }
         }
+        _hasAppointment[timeStr] = appointmentExists;
       }
+
+      // Optionally, populate the text field with the stored times
+      // (If you only want the text field to show new times, you can skip this.)
+      // Here, we just clear it or keep it separate.
+      _timeInputController.text = _storedTimesForDay.join(',');
 
       setState(() {});
     } catch (e) {
-      logger.err('Error fetching time slots: {}', [e]);
+      logger.err('Error fetching day data: {}', [e]);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching time slots: $e')),
+        SnackBar(content: Text('Error fetching day data: $e')),
       );
     } finally {
       setState(() {
@@ -69,131 +126,185 @@ class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
     }
   }
 
-  Map<String, bool> _generateAllTimeSlots() {
-    Map<String, bool> timeSlots = {};
-    DateTime startDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 9, 0);
-    DateTime endDateTime = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 19, 0);
+  /// Example function: fetch all appointments on the given date.
+  /// You might do a collectionGroup query to get from all users, or filter, etc.
+  Future<List<AppointmentModel>> _fetchAppointmentsForDate(DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    DateTime currentTime = startDateTime;
-    while (!currentTime.isAfter(endDateTime)) {
-      String timeString = DateFormat('HH:mm').format(currentTime);
-      timeSlots[timeString] = false; // Initially set all slots to unavailable
-      currentTime = currentTime.add(const Duration(minutes: 30));
+      final querySnapshot = await FirebaseFirestore.instance
+          .collectionGroup('appointments')
+          .where('appointmentDateTime', isGreaterThanOrEqualTo: startOfDay)
+          .where('appointmentDateTime', isLessThan: endOfDay)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AppointmentModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      logger.err('Error fetching appointments for date {}: {}', [date, e]);
+      return [];
     }
-
-    return timeSlots;
   }
 
-  Future<void> _updateTimeSlot(String timeString, bool isAvailable) async {
-    setState(() {
-      _timeSlots[timeString] = isAvailable;
-    });
+  /// When "Save" is pressed, update the times in Firestore with the new values
+  Future<void> _onSaveTimes() async {
+    final String dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
-    String dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    DocumentReference docRef = FirebaseFirestore.instance
+    // 1) Parse times from text field (comma-separated)
+    final rawInput = _timeInputController.text.trim();
+    final inputs = rawInput.split(',');
+    // Clean them up, removing extra spaces, ignoring empty
+    final newTimes = <String>[];
+    for (final input in inputs) {
+      final t = input.trim();
+      if (t.isNotEmpty) newTimes.add(t);
+    }
+
+    // 2) Save times in Firestore
+    final docRef = FirebaseFirestore.instance
         .collection('admininput')
         .doc('timeslots')
         .collection('dates')
         .doc(dateString);
 
     try {
-      DocumentSnapshot timeslotDoc = await docRef.get();
-      List<String> availableTimes = [];
-      if (timeslotDoc.exists) {
-        Map<String, dynamic> data = timeslotDoc.data() as Map<String, dynamic>;
-        availableTimes = List<String>.from(data['times'] ?? []);
-      }
-
-      if (isAvailable) {
-        // Add time to available times
-        if (!availableTimes.contains(timeString)) {
-          availableTimes.add(timeString);
-        }
-      } else {
-        // Remove time from available times
-        availableTimes.remove(timeString);
-      }
-
-      await docRef.set({'times': availableTimes});
-    } catch (e) {
-      logger.err('Error updating time slot: {}', [e]);
+      await docRef.set({'times': newTimes});
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating time slot: $e')),
+        const SnackBar(content: Text('Times updated successfully!')),
+      );
+      // Optionally re-fetch to see updated data
+      _fetchDayData(_selectedDate);
+    } catch (e) {
+      logger.err('Error saving times: {}', [e]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving times: $e')),
       );
     }
   }
 
-  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    setState(() {
-      _selectedDate = selectedDay;
-      _fetchTimeSlotsForDate(_selectedDate);
-    });
-  }
+  Widget _buildStoredTimesSection() {
+    if (_storedTimesForDay.isEmpty) {
+      return const Text(
+        'No times stored for this date.',
+        style: TextStyle(fontStyle: FontStyle.italic),
+      );
+    }
 
-  Widget _buildTimeSlotsGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      itemCount: _timeSlots.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4, // Adjust according to your UI preference
-        childAspectRatio: 2,
-      ),
-      itemBuilder: (context, index) {
-        String timeString = _timeSlots.keys.elementAt(index);
-        bool isAvailable = _timeSlots[timeString]!;
-        return GestureDetector(
-          onTap: () {
-            bool newAvailability = !isAvailable;
-            _updateTimeSlot(timeString, newAvailability);
-          },
-          child: Card(
-            color: isAvailable ? Colors.green[200] : Colors.red[200],
-            child: Center(
-              child: Text(
-                timeString,
-                style: TextStyle(
-                  color: isAvailable ? Colors.black : Colors.white,
-                ),
+    // Show them in a Wrap or Column as tags/rectangles, plus whether they have an appointment
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 8.0,
+      children: _storedTimesForDay.map((timeStr) {
+        final hasAppt = _hasAppointment[timeStr] ?? false;
+        // color or style them accordingly
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: hasAppt ? Colors.orangeAccent : Colors.lightGreen,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                timeStr,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
+              if (hasAppt)
+                const Text(
+                  'Appointment Booked',
+                  style: TextStyle(fontSize: 12),
+                ),
+            ],
           ),
         );
-      },
+      }).toList(),
     );
   }
 
+  CalendarFormat _calendarFormat = CalendarFormat.week;
   @override
   Widget build(BuildContext context) {
+    final dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Time Slots'),
+        title: const Text('Admin Time Slots (Refactor)'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          // Calendar Widget
-          TableCalendar(
-            firstDay: DateTime.now().subtract(const Duration(days: 365)),
-            lastDay: DateTime.now().add(const Duration(days: 365)),
-            focusedDay: _selectedDate,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDate, day);
-            },
-            onDaySelected: _onDaySelected,
-          ),
-          const SizedBox(height: 16),
-          // Date Display
-          Text(
-            'Selected Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          // Time Slots Grid
-          Expanded(
-            child: _buildTimeSlotsGrid(),
-          ),
-        ],
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Calendar
+            TableCalendar(
+              firstDay: DateTime.now().subtract(const Duration(days: 365)),
+              lastDay: DateTime.now().add(const Duration(days: 365)),
+              focusedDay: _selectedDate,
+              selectedDayPredicate: (day) {
+                return isSameDay(_selectedDate, day);
+              },
+              onDaySelected: _onDaySelected,
+              calendarFormat: _calendarFormat,
+              // IMPORTANT: add onFormatChanged callback
+              onFormatChanged: (format) {
+                setState(() {
+                  _calendarFormat = format;
+                });
+              },
+              // ...
+            ),
+            const SizedBox(height: 16),
+
+            // Selected date text
+            Text(
+              'Selected Date: $dateString',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // Section: showing stored times from Firestore
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Times in Firestore for $dateString:',
+                //style: Theme.of(context).textTheme.subtitle1,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Build the stored times with appointment info
+            _buildStoredTimesSection(),
+            const SizedBox(height: 24),
+
+            // Section: text field to input new times
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Enter available times (comma-separated, 24h format):',
+              //  style: Theme.of(context).textTheme.subtitle1,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            TextField(
+              controller: _timeInputController,
+              decoration: const InputDecoration(
+                hintText: 'e.g. 09:00,09:30,10:00,12:30...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton(
+              onPressed: _onSaveTimes,
+              child: const Text('Save Times'),
+            ),
+          ],
+        ),
       ),
     );
   }

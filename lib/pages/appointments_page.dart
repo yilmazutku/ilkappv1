@@ -234,7 +234,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             ),
             const SizedBox(height: 16),
             // Available Time Slots
-            Text(
+           const Text(
               'Uygun Saatler',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal),
             ),
