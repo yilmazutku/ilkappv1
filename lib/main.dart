@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:untitled/pages/login_page.dart';
 import 'package:untitled/providers/appointment_manager.dart';
+import 'package:untitled/providers/diet_provider.dart';
 import 'package:untitled/providers/image_manager.dart';
 import 'package:untitled/providers/login_manager.dart';
 import 'package:untitled/providers/meal_state_and_upload_manager.dart';
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
         ChangeNotifierProvider(create: (_) => MeasProvider()),
         ChangeNotifierProvider(create: (_) => TestProvider()),
+        ChangeNotifierProvider(create: (_) => DietProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

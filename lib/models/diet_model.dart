@@ -1,49 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../models/logger.dart';
 
-class DietModel {
-  final String dietId;
-  final String userId;
-  final String dietPlanUrl; // URL to the diet plan document
-  final DateTime assignedAt;
-  final DateTime? validFrom;
-  final DateTime? validTo;
-  final String? notes; // Optional
+class DietDocument {
+  final String docId;
+  final DateTime? uploadTime;
+  final List<dynamic> subtitles;
 
-  DietModel({
-    required this.dietId,
-    required this.userId,
-    required this.dietPlanUrl,
-    required this.assignedAt,
-    this.validFrom,
-    this.validTo,
-    this.notes,
+  DietDocument({
+    required this.docId,
+    required this.uploadTime,
+    required this.subtitles,
   });
 
-  factory DietModel.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return DietModel(
-      dietId: doc.id,
-      userId: data['userId'],
-      dietPlanUrl: data['dietPlanUrl'],
-      assignedAt: (data['assignedAt'] as Timestamp).toDate(),
-      validFrom: data['validFrom'] != null
-          ? (data['validFrom'] as Timestamp).toDate()
-          : null,
-      validTo: data['validTo'] != null
-          ? (data['validTo'] as Timestamp).toDate()
-          : null,
-      notes: data['notes'],
+  factory DietDocument.fromSnapshot(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>?;
+    final uploadTime = (data?['uploadTime'] as Timestamp?)?.toDate();
+    final subtitles = data?['subtitles'] ?? [];
+    return DietDocument(
+      docId: doc.id,
+      uploadTime: uploadTime,
+      subtitles: subtitles,
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'dietPlanUrl': dietPlanUrl,
-      'assignedAt': Timestamp.fromDate(assignedAt),
-      'validFrom': validFrom != null ? Timestamp.fromDate(validFrom!) : null,
-      'validTo': validTo != null ? Timestamp.fromDate(validTo!) : null,
-      'notes': notes,
-    };
+  String get displayName {
+    // docId often like "20230101_1145"; or use uploadTime if you prefer
+    // Adjust format if needed:
+    if (uploadTime != null) {
+      final dateStr = '${uploadTime!.year}-${uploadTime!.month.toString().padLeft(2, '0')}-${uploadTime!.day.toString().padLeft(2, '0')}';
+      return 'liste_$dateStr';
+    }
+    return 'liste_${docId}';
   }
 }

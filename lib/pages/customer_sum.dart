@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:untitled/tabs/measurements_tab.dart';
 
 import '../dialogs/add_appointment_dialog.dart';
+import '../dialogs/add_diet_dialog.dart';
 import '../dialogs/add_image_dialog.dart';
 import '../dialogs/add_payment_dialog.dart';
 import '../dialogs/add_sub_dialog.dart';
@@ -17,6 +18,7 @@ import '../providers/payment_provider.dart';
 import '../providers/user_provider.dart';
 import '../tabs/appointments_tab.dart';
 import '../tabs/details_tab.dart';
+import '../tabs/diet_tab.dart';
 import '../tabs/images_tab.dart';
 import '../tabs/payment_tab.dart';
 import '../tabs/sub_tab.dart';
@@ -42,7 +44,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != _previousTabIndex) {
         logger.info('Tab changed: index={}', [_tabController.index]);
@@ -110,6 +112,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
             Tab(text: 'Resimler'),
             Tab(text: 'Testler'),
             Tab(text: 'Ölçümler'),
+            Tab(text: 'Listeler'),  // ...
             Tab(text: 'Abonelikler'),
           ],
         ),
@@ -123,6 +126,7 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
           ImagesTab(userId: user.userId),
           const Center(child: Text('Testler Sekmesi')), // Placeholder
           MeasTab(userId: user.userId),
+          DietTab(userId: user.userId), // ...
           SubscriptionsTab(userId: user.userId),
         ],
       ),
@@ -215,6 +219,9 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
         case 5:
           _showAddSubscriptionDialog();
           break;
+        case 6: // <-- DIET TAB index
+          _showAddDietDialog(); // We'll define this
+          break;
         default:
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Bu sekme için ekleme yapılamaz.')),
@@ -224,7 +231,13 @@ class _CustomerSummaryPageState extends State<CustomerSummaryPage>
       logger.err('Error while handling add button: {}', [e]);
     }
   }
-
+// Add this method:
+  void _showAddDietDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AddDietDialog(userId: widget.user.userId),
+    );
+  }
   void _showAddSubscriptionDialog() {
     showDialog(
       context: context,
