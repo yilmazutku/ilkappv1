@@ -10,7 +10,7 @@ final Logger logger = Logger.forClass(UserPaymentsPage);
 class UserPaymentsPage extends StatefulWidget {
   final String userId;
 
-  const UserPaymentsPage({Key? key, required this.userId}) : super(key: key);
+  const UserPaymentsPage({super.key, required this.userId});
 
   @override
   createState() => _UserPaymentsPageState();
@@ -26,7 +26,7 @@ class _UserPaymentsPageState extends State<UserPaymentsPage> {
   PaymentStatus? _selectedStatus;
   DateTimeRange? _selectedDateRange;
   bool _isDateAscending = true;
-
+///TODO: sub id ile get?
   @override
   void initState() {
     super.initState();
@@ -39,8 +39,7 @@ class _UserPaymentsPageState extends State<UserPaymentsPage> {
       _isLoading = true;
     });
     final paymentProvider = Provider.of<PaymentProvider>(context, listen: false);
-    paymentProvider.setUserId(widget.userId);
-    paymentProvider.fetchPayments(showAllPayments: true).then((payments) {
+    paymentProvider.fetchPayments(null,userId:widget.userId,showAllPayments: true).then((payments) {
       setState(() {
         _allPayments = payments;
         _applyFilters();

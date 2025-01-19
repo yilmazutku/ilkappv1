@@ -15,13 +15,12 @@ class PaymentsTab extends BaseTab<PaymentProvider> {
   @override
   PaymentProvider getProvider(BuildContext context) {
     final provider = Provider.of<PaymentProvider>(context, listen:false);
-    provider.setUserId(userId);
     return provider;
   }
 
   @override
   Future<List<dynamic>> getDataList(PaymentProvider provider, bool showAllData) {
-    return provider.fetchPayments(showAllPayments: showAllData);
+    return provider.fetchPayments(null,userId:userId,showAllPayments: showAllData);
   }
 
   @override

@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // if needed for date formatting
 import '../models/logger.dart';
 import '../models/meas_model.dart';
+import 'dart:typed_data';
 
 final Logger logger = Logger.forClass(MeasProvider);
 
@@ -58,11 +60,45 @@ class MeasProvider extends ChangeNotifier {
   }
 
 
-  // Placeholder for parsing Excel into a list of MeasurementModel
-  List<MeasurementModel> _parseExcelFile(File excelFile) {
-    // Implement your Excel parsing logic
-    // Return a list of MeasurementModel objects
-    return [];
+  /// Upload a PDF to Firebase Storage and store metadata in Firestore
+  Future<void> uploadTanitaPdfFile({
+    required String userId,
+    required String fileName,
+    required List<int> fileBytes,
+  }) async {
+    final logger = Logger.forClass(MeasProvider);
+    try {
+      final now = DateTime.now();
+      final storagePath = 'users/$userId/measurements/tanita_${now.millisecondsSinceEpoch}.pdf';
+
+      // 1) Upload to Storage
+      final storageRef = FirebaseStorage.instance.ref().child(storagePath);
+      final Uint8List uint8FileBytes = Uint8List.fromList(fileBytes);
+      final uploadTask = await storageRef.putData(uint8FileBytes, SettableMetadata(contentType: 'application/pdf'));
+
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+
+      // 2) Save metadata doc in Firestore
+      final docId = 'tanita_${now.millisecondsSinceEpoch}';
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('measurements')
+          .doc('tanita')      // or just .doc('tanita_{someKey}') if you prefer
+          .collection('pdfFiles')
+          .doc(docId);
+
+      await docRef.set({
+        'pdfUrl': downloadUrl,
+        'fileName': fileName,
+        'uploadTime': FieldValue.serverTimestamp(),
+      });
+
+      logger.info('Tanita PDF uploaded: $docId');
+    } catch (e) {
+      logger.err('Error uploading Tanita PDF: {}', [e.toString()]);
+      rethrow;
+    }
   }
 
   MeasProvider();

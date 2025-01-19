@@ -14,13 +14,13 @@ import '../providers/payment_provider.dart';
 class AddPaymentDialog extends StatefulWidget {
   final String userId;
   final Function onPaymentAdded;
-  final SubscriptionModel subscription;
+  final SubscriptionModel? subscription;
 
   const AddPaymentDialog({
     super.key,
     required this.userId,
     required this.onPaymentAdded,
-    required this.subscription,
+   this.subscription,
   });
 
   @override

@@ -16,13 +16,12 @@ class ImagesTab extends BaseTab<MealStateManager> {
   @override
   MealStateManager getProvider(BuildContext context) {
     final provider = Provider.of<MealStateManager>(context,listen: false);
-    provider.setUserId(userId);
     return provider;
   }
 
   @override
   Future<List<dynamic>> getDataList(MealStateManager provider, bool showAllData) {
-    return provider.fetchMeals(showAllImages: showAllData);
+    return provider.fetchMeals(null,userId:userId,showAllImages: showAllData);
   }
 
   @override

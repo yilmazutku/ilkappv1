@@ -63,6 +63,7 @@ dependencies:
   intl: any
   syncfusion_flutter_pdf: ^27.1.52 # Use this for reading and manipulating PDF files
   file_picker: ^8.0.7               # File picker package
+  url_launcher: ^6.3.1
 dev_dependencies:
   flutter_gen: any
   flutter_test:

@@ -15,14 +15,10 @@ class UserProvider extends ChangeNotifier {
     'subscriptions', 'appointments', 'dietlists', 'dailyData', 'meals', 'payments','measurements'
   ];
 
-  Future<UserModel?> fetchUserDetails({String? userId}) async {
+  Future<UserModel?> fetchUserDetails({required String userId}) async {
     try {
-      if (userId==null) {
-        logger.err('fetchUserDetails: User ID not set.');
-        return null;
-      }
       final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      logger.info('Fetching user details for userId={} ', [userId!]);
+      logger.info('Fetching user details for userId={} ', [userId]);
 
       if (doc.exists) {
         return UserModel.fromDocument(doc);

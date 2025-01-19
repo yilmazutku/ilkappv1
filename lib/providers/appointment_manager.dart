@@ -7,14 +7,9 @@ import '../models/logger.dart';
 class AppointmentManager extends ChangeNotifier {
   final Logger logger = Logger.forClass(AppointmentManager);
 
-  String? _selectedSubscriptionId;
-
-  void setSelectedSubscriptionId(String? subscriptionId) {
-    _selectedSubscriptionId = subscriptionId;
-  }
 
   // Fetch Appointments
-  Future<List<AppointmentModel>> fetchAppointments(
+  Future<List<AppointmentModel>> fetchAppointments(String? subscriptionId,
       {required bool showAllAppointments, required String userId}) async {
     try {
       Query query = FirebaseFirestore.instance
@@ -23,9 +18,9 @@ class AppointmentManager extends ChangeNotifier {
           .collection('appointments')
           .orderBy('appointmentDateTime', descending: false);
 
-      if (!showAllAppointments && _selectedSubscriptionId != null) {
+      if (!showAllAppointments && subscriptionId != null) {
         query =
-            query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
+            query.where('subscriptionId', isEqualTo: subscriptionId);
       }
 
       QuerySnapshot snapshot = await query.get();

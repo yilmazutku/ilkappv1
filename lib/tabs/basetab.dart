@@ -21,7 +21,7 @@ abstract class BaseTab<T> extends StatefulWidget {
 }
 
 abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
-  bool showAllData = false;
+  bool showAllData = true;
   Future<List<dynamic>>? dataFuture;
   bool _dataFetched = false;
 
@@ -50,21 +50,21 @@ abstract class BaseTabState<T, W extends BaseTab<T>> extends State<W> {
     return Column(
       children: [
         // Toggle for "Tüm Ölçümler" vs "Abonelik Ölçümleri"
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(showAllData ? widget.allDataLabel : widget.subscriptionDataLabel),
-            Switch(
-              value: showAllData,
-              onChanged: (value) {
-                setState(() {
-                  showAllData = value;
-                  fetchData();
-                });
-              },
-            ),
-          ],
-        ),
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.center,
+        //   children: [
+        //     Text(showAllData ? widget.allDataLabel : widget.subscriptionDataLabel),
+        //     Switch(
+        //       value: showAllData,
+        //       onChanged: (value) {
+        //         setState(() {
+        //           showAllData = value;
+        //           fetchData();
+        //         });
+        //       },
+        //     ),
+        //   ],
+        // ),
 
         // FutureBuilder for the data
         Expanded(

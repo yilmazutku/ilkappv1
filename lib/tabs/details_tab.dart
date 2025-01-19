@@ -79,7 +79,7 @@ class _DetailsTabState extends State<DetailsTab> {
           // userProvider.setUserId(newUid) already called inside updateEmailAndMigrate
           // notifyListeners() also called there
           setState(() {
-            _userFuture = userProvider.fetchUserDetails();
+            _userFuture = userProvider.fetchUserDetails(userId:newUid);
           });
 
           _showMessageDialog('Başarılı', 'E-posta değiştirildi ve kullanıcı bilgileri taşındı.');
@@ -91,7 +91,7 @@ class _DetailsTabState extends State<DetailsTab> {
         if (success) {
           _showMessageDialog('Başarılı', 'Kullanıcı bilgileri güncellendi.');
           setState(() {
-            _userFuture = userProvider.fetchUserDetails();
+            _userFuture = userProvider.fetchUserDetails(userId:originalUser.userId);
           });
         } else {
           _showMessageDialog('Hata', 'Bilgiler güncellenirken hata oluştu.');

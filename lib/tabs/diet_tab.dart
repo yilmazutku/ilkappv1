@@ -14,13 +14,12 @@ class DietTab extends BaseTab<DietProvider> {
   @override
   DietProvider getProvider(BuildContext context) {
     final provider = Provider.of<DietProvider>(context, listen: false);
-    provider.setUserId(userId);
     return provider;
   }
 
   @override
   Future<List<dynamic>> getDataList(DietProvider provider, bool showAllData) {
-    return provider.fetchDiets(showAllData: showAllData);
+    return provider.fetchDiets(userId:userId,showAllData: true);
   }
 
   @override
@@ -55,7 +54,7 @@ class _DietTabState extends BaseTabState<DietProvider, DietTab> {
               final confirmed = await _confirmDeletion(context, dietDoc.displayName);
               if (confirmed == true) {
                 await Provider.of<DietProvider>(context, listen: false)
-                    .deleteDiet(dietDoc.docId);
+                    .deleteDiet(userId:widget.userId,docId:dietDoc.docId);
                 setState(() {
                   fetchData(); // re-fetch list
                 });

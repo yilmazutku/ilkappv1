@@ -5,19 +5,13 @@ import '../models/logger.dart';
 
 class DietProvider extends ChangeNotifier {
   final Logger logger = Logger.forClass(DietProvider);
-  String? _userId;
 
-  void setUserId(String userId) => _userId = userId;
 
-  Future<List<DietDocument>> fetchDiets({bool showAllData = false}) async {
-    if (_userId == null) {
-      logger.err('fetchDiets called without a userId');
-      return [];
-    }
+  Future<List<DietDocument>> fetchDiets({required String userId,required bool showAllData}) async {
     try {
       Query query = FirebaseFirestore.instance
           .collection('users')
-          .doc(_userId!)
+          .doc(userId)
           .collection('dietlists')
           .orderBy('uploadTime', descending: true);
 
@@ -27,7 +21,7 @@ class DietProvider extends ChangeNotifier {
       final diets = snapshot.docs
           .map((doc) => DietDocument.fromSnapshot(doc))
           .toList();
-      logger.info('Fetched ${diets.length} diets for user $_userId');
+      logger.info('Fetched ${diets.length} diets for user $userId');
       return diets;
     } catch (e, s) {
       logger.err('Error fetching diets: $e', [s]);
@@ -35,11 +29,10 @@ class DietProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteDiet(String docId) async {
-    if (_userId == null) return;
+  Future<void> deleteDiet({required String userId,required String docId}) async {
     await FirebaseFirestore.instance
         .collection('users')
-        .doc(_userId!)
+        .doc(userId)
         .collection('dietlists')
         .doc(docId)
         .delete();

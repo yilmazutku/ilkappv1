@@ -22,11 +22,11 @@ class AppointmentsTab extends BaseTab<AppointmentManager> {
 
   @override
   Future<List<dynamic>> getDataList(AppointmentManager provider, bool showAllData) {
-    return provider.fetchAppointments(showAllAppointments: showAllData, userId: userId);
+    return provider.fetchAppointments(null,showAllAppointments: showAllData, userId: userId);
   }
 
   @override
-  _AppointmentsTabState createState() => _AppointmentsTabState();
+   createState() => _AppointmentsTabState();
 }
 
 class _AppointmentsTabState extends BaseTabState<AppointmentManager, AppointmentsTab> {

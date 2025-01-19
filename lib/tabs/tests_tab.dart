@@ -13,9 +13,8 @@ class TestsTab extends BaseTab<TestProvider> {
 
   @override
   TestProvider getProvider(BuildContext context) {
-    final provider = Provider.of<TestProvider>(context);
-    provider.setUserId(userId);
-    return provider;
+
+    return Provider.of<TestProvider>(context);
   }
 
   @override

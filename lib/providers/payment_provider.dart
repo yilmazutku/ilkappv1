@@ -13,31 +13,19 @@ final Logger logger = Logger.forClass(PaymentProvider);
 class PaymentProvider extends ChangeNotifier {
   final Logger logger = Logger.forClass(PaymentProvider);
 
-  String? _userId;
-  String? _selectedSubscriptionId;
-
-  // Setters
-  void setUserId(String userId) {
-    _userId = userId;
-  }
-
-  void setSelectedSubscriptionId(String? subscriptionId) {
-    _selectedSubscriptionId = subscriptionId;
-  }
 
   // Fetch Payments
-  Future<List<PaymentModel>> fetchPayments({required bool showAllPayments}) async {
-    if (_userId == null) return [];
+  Future<List<PaymentModel>> fetchPayments(String? selectedSubscriptionId,{required String userId,required bool showAllPayments}) async {
 
     try {
       Query query = FirebaseFirestore.instance
           .collection('users')
-          .doc(_userId)
+          .doc(userId)
           .collection('payments')
           .orderBy('paymentDate', descending: true);
 
-      if (!showAllPayments && _selectedSubscriptionId != null) {
-        query = query.where('subscriptionId', isEqualTo: _selectedSubscriptionId);
+      if (!showAllPayments && selectedSubscriptionId != null) {
+        query = query.where('subscriptionId', isEqualTo: selectedSubscriptionId);
       }
 
       final snapshot = await query.get();
@@ -55,7 +43,7 @@ class PaymentProvider extends ChangeNotifier {
   // Method to add payment
   Future<void> addPayment({
     required String userId,
-    required SubscriptionModel subscription,
+    SubscriptionModel? subscription,
     required double amount,
     DateTime? paymentDate,
     PaymentStatus status = PaymentStatus.completed,
@@ -81,7 +69,7 @@ class PaymentProvider extends ChangeNotifier {
       PaymentModel paymentModel = PaymentModel(
         paymentId: paymentDocRef.id,
         userId: userId,
-        subscriptionId: subscription.subscriptionId,
+        subscriptionId: subscription?.subscriptionId,
         amount: amount,
         paymentDate: paymentDate,
         status: status,
@@ -94,16 +82,16 @@ class PaymentProvider extends ChangeNotifier {
       logger.info('Payment added successfully for user $userId');
 
       // Update the subscription's amountPaid
-      subscription.amountPaid += paymentModel.amount;
+      subscription?.amountPaid += paymentModel.amount;
 
       // Update the subscription in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .collection('subscriptions')
-          .doc(subscription.subscriptionId)
+          .doc(subscription?.subscriptionId)
           .update({
-        'amountPaid': subscription.amountPaid,
+        'amountPaid': subscription?.amountPaid,
       });
 
       // No need to call fetchPayments() here since we're not maintaining a local list

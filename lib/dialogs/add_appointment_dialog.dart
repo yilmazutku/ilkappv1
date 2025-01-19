@@ -10,13 +10,13 @@ final Logger logger = Logger.forClass(AddAppointmentDialog);
 
 class AddAppointmentDialog extends StatefulWidget {
   final String userId;
-  final String subscriptionId;
+  final String? subscriptionId;
   final VoidCallback onAppointmentAdded;
 
   const AddAppointmentDialog({
     super.key,
     required this.userId,
-    required this.subscriptionId,
+    this.subscriptionId,
     required this.onAppointmentAdded,
   });
 

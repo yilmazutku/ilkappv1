@@ -23,28 +23,29 @@ class Logger {
     return Logger(type.toString());
   }
 
-  void info(String message, [List<Object>? args]) {
+  void info(String message, [List<Object?>? args]) { // Allow nullable arguments
     _log('INFO', _format(message, args));
   }
 
-  void debug(String message, [List<Object>? args]) {
+  void debug(String message, [List<Object?>? args]) {
     _log('DEBUG', _format(message, args));
   }
 
-  void warn(String message, [List<Object>? args]) {
+  void warn(String message, [List<Object?>? args]) {
     _log('WARN', _format(message, args));
   }
 
-  void err(String message, [List<Object>? args]) {
+  void err(String message, [List<Object?>? args]) {
     _log('ERROR', _format(message, args));
   }
 
-  String _format(String message, [List<Object>? args]) {
+  String _format(String message, [List<Object?>? args]) {
     if (args == null || args.isEmpty) {
       return message;
     }
     for (var arg in args) {
-      message = message.replaceFirst(RegExp(r'\{\}'), arg.toString() ?? 'null');
+      // Replace '{}' with the string representation of the argument or 'null'
+      message = message.replaceFirst(RegExp(r'\{\}'), arg?.toString() ?? 'null');
     }
     return message;
   }

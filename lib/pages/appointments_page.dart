@@ -47,7 +47,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
   void _fetchUserAppointments() {
     final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
     _userAppointmentsFuture =
-        appointmentManager.fetchAppointments(showAllAppointments: true, userId: widget.userId);
+        appointmentManager.fetchAppointments(null,showAllAppointments: true, userId: widget.userId);
   }
 
   Future<void> _bookAppointment() async {

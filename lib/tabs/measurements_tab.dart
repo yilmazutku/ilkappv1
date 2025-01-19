@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/meas_model.dart';
+import '../pages/tanita_explorer_page.dart';
 import '../providers/meas_provider.dart';
 import 'basetab.dart'; // Your BaseTab definitions
 import '../models/logger.dart'; // For logging
@@ -74,6 +75,18 @@ class _MeasurementsTabState extends BaseTabState<MeasProvider, MeasTab> {
             ElevatedButton(
               onPressed: _addRow,
               child: const Text('Yeni Satır'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to a "TanitaExplorerPage"
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TanitaExplorerPage(userId: widget.userId),
+                  ),
+                );
+              },
+              child: const Text('Tanita'),
             ),
           ],
         ),

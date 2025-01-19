@@ -7,7 +7,7 @@ class MealModel {
   final String mealId;
   final Meals mealType;
   final String imageUrl;
-  final String subscriptionId;
+  final String? subscriptionId;
   final String? description;
   final DateTime timestamp;
   final int? calories;
@@ -18,7 +18,7 @@ class MealModel {
     required this.mealId,
     required this.mealType,
     required this.imageUrl,
-    required this.subscriptionId,
+    this.subscriptionId,
     this.description,
     required this.timestamp,
     this.calories,

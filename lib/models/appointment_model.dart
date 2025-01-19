@@ -4,7 +4,7 @@ import 'package:untitled/models/user_model.dart';
 class AppointmentModel {
   final String appointmentId;
   final String userId;
-  final String subscriptionId;
+  final String? subscriptionId;
   final MeetingType meetingType;
   final DateTime appointmentDateTime;
   AppointmentStatus status;
@@ -19,7 +19,7 @@ class AppointmentModel {
   AppointmentModel({
     required this.appointmentId,
     required this.userId,
-    required this.subscriptionId,
+    this.subscriptionId,
     required this.meetingType,
     required this.appointmentDateTime,
     required this.status,

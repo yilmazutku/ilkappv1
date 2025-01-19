@@ -5,7 +5,7 @@ import 'logger.dart';
 class PaymentModel {
   final String paymentId;
   final String userId;
-  final String subscriptionId;
+  final String? subscriptionId;
   final double amount;
   final DateTime? paymentDate; // Made nullable
   final PaymentStatus status;
@@ -16,7 +16,7 @@ class PaymentModel {
   PaymentModel({
     required this.paymentId,
     required this.userId,
-    required this.subscriptionId,
+    this.subscriptionId,
     required this.amount,
     this.paymentDate, // Nullable
     required this.status,

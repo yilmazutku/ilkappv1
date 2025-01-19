@@ -12,13 +12,13 @@ import '../providers/image_manager.dart';
 
 class AddImageDialog extends StatefulWidget {
   final String userId;
-  final String subscriptionId;
+  final String? subscriptionId;
   final VoidCallback onImageAdded;
 
   const AddImageDialog({
     super.key,
     required this.userId,
-    required this.subscriptionId,
+   this.subscriptionId,
     required this.onImageAdded,
   });
 
