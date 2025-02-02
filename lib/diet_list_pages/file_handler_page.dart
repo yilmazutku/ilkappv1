@@ -49,7 +49,7 @@ class _FileHandlerPageState extends State<FileHandlerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste Yükleyici'),
+        title: const Text('Diyet Liste Yükleyici'),
       ),
       body: Center(
         child: Column(

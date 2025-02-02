@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:untitled/diet_list_pages/odeme_takip_handler.dart';
 import 'package:untitled/pages/meas_page.dart';
 import 'package:untitled/pages/reset_password_page.dart';
 import 'package:untitled/pages/user_past_appointments_page.dart';
@@ -160,6 +161,8 @@ class LoginPage extends StatelessWidget {
                     () => _navigateToFileHandler(context)),
             _buildGridItem(context, Icons.person_add, 'Admin Kullanıcı Oluştur',
                     () => _navigateToCreateUser(context)),
+            _buildGridItem(context, Icons.person_add, 'Admin Odeme Cizelge',
+                    () => _navigateToOdemeTakipHandler(context)),
           ],
         ),
       ),
@@ -306,6 +309,15 @@ class LoginPage extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => const CreateUserPage(),
+      ),
+    );
+  }
+
+  void _navigateToOdemeTakipHandler(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OdemeTakipFileHandlerPage(),
       ),
     );
   }

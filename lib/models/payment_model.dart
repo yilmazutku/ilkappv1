@@ -6,6 +6,7 @@ class PaymentModel {
   final String paymentId;
   final String userId;
   final String? subscriptionId;
+  final String? notes;
   final double amount;
   final DateTime? paymentDate; // Made nullable
   final PaymentStatus status;
@@ -17,6 +18,7 @@ class PaymentModel {
     required this.paymentId,
     required this.userId,
     this.subscriptionId,
+    this.notes,
     required this.amount,
     this.paymentDate, // Nullable
     required this.status,
@@ -31,6 +33,7 @@ class PaymentModel {
       paymentId: doc.id,
       userId: data['userId'],
       subscriptionId: data['subscriptionId'],
+        notes:data['notes'],
       amount: data['amount'].toDouble(),
       paymentDate: data['paymentDate'] != null
           ? (data['paymentDate'] as Timestamp).toDate()
@@ -50,6 +53,7 @@ class PaymentModel {
     return {
       'userId': userId,
       'subscriptionId': subscriptionId,
+      'notes':notes,
       'amount': amount,
       'paymentDate': paymentDate != null ? Timestamp.fromDate(paymentDate!) : null,
       'status': status.label,

@@ -50,6 +50,7 @@ class PaymentProvider extends ChangeNotifier {
     File? dekontImage,
     DateTime? dueDate,
     List<int>? notificationTimes,
+    String? notes
   }) async {
     try {
       String? dekontUrl;
@@ -82,18 +83,19 @@ class PaymentProvider extends ChangeNotifier {
       logger.info('Payment added successfully for user $userId');
 
       // Update the subscription's amountPaid
-      subscription?.amountPaid += paymentModel.amount;
 
       // Update the subscription in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('subscriptions')
-          .doc(subscription?.subscriptionId)
-          .update({
-        'amountPaid': subscription?.amountPaid,
-      });
-
+      if (subscription != null) {
+        subscription.amountPaid += paymentModel.amount;
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('subscriptions')
+            .doc(subscription?.subscriptionId)
+            .update({
+          'amountPaid': subscription?.amountPaid,
+        });
+      }
       // No need to call fetchPayments() here since we're not maintaining a local list
     } catch (e) {
       logger.err('Error adding payment: $e');
