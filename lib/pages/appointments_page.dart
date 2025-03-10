@@ -15,10 +15,10 @@ class AppointmentsPage extends StatefulWidget {
   final String subscriptionId;
 
   const AppointmentsPage({
-    Key? key,
+    super.key,
     required this.userId,
     required this.subscriptionId,
-  }) : super(key: key);
+  });
 
   @override
   createState() => _AppointmentsPageState();
@@ -36,18 +36,12 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     super.initState();
     logger.info('Initializing AppointmentsPage state.');
     _fetchAvailableTimes();
-    _fetchUserAppointments();
   }
 
   void _fetchAvailableTimes() {
     final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
     _availableTimesFuture = appointmentManager.getAvailableTimesForDate(_selectedDate);
-  }
-
-  void _fetchUserAppointments() {
-    final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
-    _userAppointmentsFuture =
-        appointmentManager.fetchAppointments(null,showAllAppointments: true, userId: widget.userId);
+    _userAppointmentsFuture = appointmentManager.fetchAppointments(null,showAllAppointments: true, userId: widget.userId);
   }
 
   Future<void> _bookAppointment() async {
@@ -98,7 +92,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
         appointmentDateTime: appointmentDateTime,
         status: AppointmentStatus.scheduled,
         createdAt: DateTime.now(),
-        createdBy: 'user',
+        createdBy: 'user', //TODO current session login kim yaptıysa o
       );
 
       await appointmentManager.addAppointment(appointment);
@@ -111,7 +105,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       // Refresh available times and user's appointments
       setState(() {
         _fetchAvailableTimes();
-        _fetchUserAppointments();
         _selectedTime = null;
       });
     } catch (e, stackTrace) {
@@ -138,7 +131,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
       }
       setState(() {
         _fetchAvailableTimes();
-        _fetchUserAppointments();
       });
     } catch (e, stackTrace) {
       logger.err('Error canceling appointment: {}', [e]);
@@ -174,7 +166,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   children: [
                     Icon(Icons.event_available, color: Colors.deepPurple, size: 30),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       'Görüşme Türü:',
                       style: TextStyle(
                         fontSize: 18,
@@ -303,7 +295,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             ),
             const SizedBox(height: 24),
             // User's Appointments
-            Text(
+            const Text(
               'Randevularım',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
             ),
