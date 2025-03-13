@@ -69,13 +69,12 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collectionGroup('appointments')
           .get();
-
+      CollectionReference collection = FirebaseFirestore.instance
+          .collection('users');
       List<AppointmentModel> fetchedAppointments =
       await Future.wait(snapshot.docs.map((doc) async {
         AppointmentModel appointment = AppointmentModel.fromDocument(doc);
-
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
+        DocumentSnapshot userDoc = await collection
             .doc(appointment.userId)
             .get();
 
@@ -125,8 +124,8 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
   void _pickDateRange() async {
     DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      firstDate: DateTime(2025),
+      lastDate: DateTime(2030),
       initialDateRange: (startDate != null && endDate != null)
           ? DateTimeRange(start: startDate!, end: endDate!)
           : null,
@@ -149,7 +148,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
       bool canceled = await appointmentManager.cancelAppointment(
         appointment.appointmentId,
         appointment.userId,
-        canceledBy: 'admin',
+        canceledBy: 'admin', //TODO nuray mı nilay mı?
       );
 
       if (!mounted) return;
@@ -163,7 +162,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
       logger.err('Randevu iptal edilirken hata: {}', [e]);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Randevu iptal edilirken hata: $e')),
+        SnackBar(content: Text('Randevu iptal edilirken hata oluştu: $e')),
       );
     }
   }
@@ -211,7 +210,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
           ),
           DropdownButton<MeetingType?>(
             value: selectedMeetingType,
-            hint: const Text('Toplantı Türü'),
+            hint: const Text('Görüşme Türü'),
             items: meetingTypes.map((type) {
               return DropdownMenuItem<MeetingType?>(
                 value: type,
@@ -227,7 +226,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
           ),
           DropdownButton<AppointmentStatus?>(
             value: selectedMeetingStatus,
-            hint: const Text('Toplantı Durumu'),
+            hint: const Text('Görüşme Durumu'),
             items: meetingStatuses.map((status) {
               return DropdownMenuItem<AppointmentStatus?>(
                 value: status,

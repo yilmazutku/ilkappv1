@@ -2,11 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-
 import '../models/logger.dart';
 import '../models/appointment_model.dart';
-import '../models/logger.dart';
-import '../models/appointment_model.dart'; // adjust as needed
+
 
 final Logger logger = Logger.forClass(AdminTimeSlotsPage);
 
@@ -26,7 +24,7 @@ class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
 
   /// For showing which times have appointments on them.
   /// e.g. {'09:00': true, '09:30': false, ...}
-  Map<String, bool> _hasAppointment = {};
+  final Map<String, bool> _hasAppointment = {};
 
   /// Text field controller where admin can type new times
   final TextEditingController _timeInputController = TextEditingController();
@@ -116,6 +114,7 @@ class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
       setState(() {});
     } catch (e) {
       logger.err('Error fetching day data: {}', [e]);
+      if(!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error fetching day data: $e')),
       );
@@ -178,8 +177,9 @@ class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
       _fetchDayData(_selectedDate);
     } catch (e) {
       logger.err('Error saving times: {}', [e]);
+      if(!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving times: $e')),
+        SnackBar(content: Text('Zamanları kaydederken hata oluştu: $e')),
       );
     }
   }
@@ -293,7 +293,7 @@ class _AdminTimeSlotsPageState extends State<AdminTimeSlotsPage> {
             TextField(
               controller: _timeInputController,
               decoration: const InputDecoration(
-                hintText: 'e.g. 09:00,09:30,10:00,12:30...',
+                hintText: 'Örn. 09:00,09:30,10:00,17:30...',
                 border: OutlineInputBorder(),
               ),
             ),

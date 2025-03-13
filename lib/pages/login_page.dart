@@ -134,7 +134,7 @@ class LoginPage extends StatelessWidget {
       },
       {
         'icon': Icons.food_bank,
-        'label': 'Meas',
+        'label': 'Ölçümlerim',
         'onTap': () => _navigateToMeas(context),
       },
       {
@@ -149,13 +149,13 @@ class LoginPage extends StatelessWidget {
       },
       {
         'icon': Icons.timeline,
-        'label': 'Admin Timeslots',
+        'label': 'Admin Zamanlar',
         'onTap': () => _navigateToAdminTimeSlots(context),
       },
       {
         'icon': Icons.event,
-        'label': 'Randevu',
-        'onTap': () => _navigateToAppointments(context),
+        'label': 'Randevu Al',
+        'onTap': () => _navigateToUserAppointments(context),
       },
       {
         'icon': Icons.lock,
@@ -164,17 +164,17 @@ class LoginPage extends StatelessWidget {
       },
       {
         'icon': Icons.assignment,
-        'label': 'Admin Appointments',
+        'label': 'Admin Randevular',
         'onTap': () => _navigateToAdminAppointments(context),
       },
       {
         'icon': Icons.image,
-        'label': 'Admin Images',
+        'label': 'Admin Panel',
         'onTap': () => _navigateToAdminImages(context),
       },
       {
         'icon': Icons.list,
-        'label': 'Admin Liste',
+        'label': 'Admin Liste Yükle',
         'onTap': () => _navigateToFileHandler(context),
       },
       {
@@ -184,7 +184,7 @@ class LoginPage extends StatelessWidget {
       },
       {
         'icon': Icons.person_add,
-        'label': 'Admin Odeme Cizelge',
+        'label': 'Admin Odeme Takip Cizelge Yukle',
         'onTap': () => _navigateToOdemeTakipHandler(context),
       },
     ];
@@ -255,7 +255,7 @@ class LoginPage extends StatelessWidget {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
     final subscriptionId = await getCurrentSubscriptionId(userId);
-    if (subscriptionId == null) return;
+    if (subscriptionId == null || !context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -289,11 +289,12 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Future<void> _navigateToAppointments(BuildContext context) async {
+  Future<void> _navigateToUserAppointments(BuildContext context) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
     final subscriptionId = await getCurrentSubscriptionId(userId);
     if (subscriptionId == null) return;
+    if(!context.mounted)return;
     Navigator.push(
       context,
       MaterialPageRoute(

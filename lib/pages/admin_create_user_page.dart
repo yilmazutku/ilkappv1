@@ -21,9 +21,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String _statusMessage = '';
 
   Future<void> createUser({
     required String name,
@@ -45,7 +43,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
     try {
       // Check if a user with the same email already exists
-      final existingUserQuery = await _firestore
+      final existingUserQuery = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
@@ -85,7 +83,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
       );
 
       // Store user data in Firestore
-      await _firestore.collection('users').doc(userId).set(newUser.toMap());
+      await FirebaseFirestore.instance.collection('users').doc(userId).set(newUser.toMap());
 
       _showMessageDialog('Başarılı', 'Kullanıcı $name başarıyla oluşturuldu.');
       logger.info('User created: {}', [newUser]);
