@@ -10,14 +10,12 @@ import '../dialogs/edit_appointment_dialog.dart';
 
 final Logger logger = Logger.forClass(AdminAppointmentsPage);
 
-// Extracted sizes:
-const double kColumnWidth = 150.0;
-const double kMainMargin = 4.0;
-const double kVerticalMargin = 4.0;
-const double kContainerPadding = 8.0;
-const double kBorderRadiusValue = 8.0;
-const double kIconButtonSize = 20.0;
-const double kDayTitleFontSize = 16.0;
+// Adjust these values to suit your design:
+const double kColumnWidth = 150.0;        // width of each day's column
+const double kMainMargin = 4.0;          // margin around the day columns
+const double kDayTitleFontSize = 16.0;   // font size for the day header
+const double kFixedDayHeight = 500.0;    // total vertical space each day column occupies
+const double kMaxCardHeight = 135.0;      // max height of each appointment "blue box"
 
 class AdminAppointmentsPage extends StatefulWidget {
   const AdminAppointmentsPage({super.key});
@@ -36,7 +34,6 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
 
   final List<MeetingType?> meetingTypes = [null, ...MeetingType.values];
   final List<AppointmentStatus?> meetingStatuses = [null, ...AppointmentStatus.values];
-
   final List<String> sortOptions = [
     'Tarih Artan',
     'Tarih Azalan',
@@ -66,17 +63,15 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
 
   Future<List<AppointmentModel>> _fetchAppointmentsWithUsers() async {
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
+      final snapshot = await FirebaseFirestore.instance
           .collectionGroup('appointments')
           .get();
-      CollectionReference collection = FirebaseFirestore.instance
-          .collection('users');
-      List<AppointmentModel> fetchedAppointments =
-      await Future.wait(snapshot.docs.map((doc) async {
-        AppointmentModel appointment = AppointmentModel.fromDocument(doc);
-        DocumentSnapshot userDoc = await collection
-            .doc(appointment.userId)
-            .get();
+
+      final usersCollection = FirebaseFirestore.instance.collection('users');
+
+      final fetchedAppointments = await Future.wait(snapshot.docs.map((doc) async {
+        final appointment = AppointmentModel.fromDocument(doc);
+        final userDoc = await usersCollection.doc(appointment.userId).get();
 
         appointment.user = UserModel.fromDocument(userDoc);
         return appointment;
@@ -90,15 +85,16 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
   }
 
   List<AppointmentModel> _applyFiltersAndSort(List<AppointmentModel> appointments) {
-    List<AppointmentModel> filteredAppointments = appointments.where((appointment) {
-      bool matchesDate = (startDate == null ||
+    final filteredAppointments = appointments.where((appointment) {
+      final matchesDate = (startDate == null ||
           appointment.appointmentDateTime.isAfter(startDate!)) &&
           (endDate == null ||
-              appointment.appointmentDateTime.isBefore(endDate!.add(const Duration(days: 1))));
-      bool matchesType = selectedMeetingType == null ||
-          appointment.meetingType == selectedMeetingType;
-      bool matchesStatus = selectedMeetingStatus == null ||
-          appointment.status == selectedMeetingStatus;
+              appointment.appointmentDateTime
+                  .isBefore(endDate!.add(const Duration(days: 1))));
+      final matchesType = (selectedMeetingType == null) ||
+          (appointment.meetingType == selectedMeetingType);
+      final matchesStatus = (selectedMeetingStatus == null) ||
+          (appointment.status == selectedMeetingStatus);
 
       return matchesDate && matchesType && matchesStatus;
     }).toList();
@@ -122,7 +118,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
   }
 
   void _pickDateRange() async {
-    DateTimeRange? pickedRange = await showDateRangePicker(
+    final pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
@@ -142,13 +138,11 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
 
   Future<void> _deleteAppointment(AppointmentModel appointment) async {
     try {
-      final appointmentManager =
-      Provider.of<AppointmentManager>(context, listen: false);
-
-      bool canceled = await appointmentManager.cancelAppointment(
+      final appointmentManager = Provider.of<AppointmentManager>(context, listen: false);
+      final canceled = await appointmentManager.cancelAppointment(
         appointment.appointmentId,
         appointment.userId,
-        canceledBy: 'admin', //TODO nuray mı nilay mı?
+        canceledBy: 'admin', // or "Nilay"/"Nuray" if you have that info
       );
 
       if (!mounted) return;
@@ -167,16 +161,39 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
     }
   }
 
+  void _onDeleteClicked(AppointmentModel appt) async {
+    final confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Randevu İptali"),
+          content: const Text("Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text("Hayır"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text("Evet"),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmDelete == true) {
+      await _deleteAppointment(appt);
+    }
+  }
+
   void _showEditAppointmentDialog(BuildContext context, AppointmentModel appointment) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (_) {
         return EditAppointmentDialog(
           appointment: appointment,
           onAppointmentUpdated: () {
-            setState(() {
-              _fetchAllAppointments();
-            });
+            setState(() => _fetchAllAppointments());
           },
         );
       },
@@ -188,6 +205,60 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
     return endDate!.difference(startDate!).inDays == 6;
   }
 
+  /// Build the blue "box" for a single appointment.
+  ///
+  /// - **Delete icon** is in the top-right corner using a Stack/Positioned.
+  /// - **Meeting info** is on a single line: "meetingType time status".
+  Widget _buildAppointmentCard(AppointmentModel appt) {
+    // Combine meeting info into one line, e.g.: "Yüzyüze 19:30 İptal Edildi"
+    final String combinedLine = [
+      appt.meetingType.label,
+      DateFormat('HH:mm').format(appt.appointmentDateTime),
+      appt.status.label,
+    ].join(' ');
+
+    return GestureDetector(
+      onTap: () => _showEditAppointmentDialog(context, appt),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade100,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Stack(
+          children: [
+            // The textual content (name + one-line meeting info)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appt.user?.name ?? 'Bilinmiyor',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  combinedLine,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            // Delete icon in the top-right corner
+            // Positioned(
+            //   top: 0,
+            //   right: 0,
+            //   child: IconButton(
+            //     icon: const Icon(Icons.cancel, color: Colors.red),
+            //     iconSize: 16,
+            //     onPressed: () => _onDeleteClicked(appt),
+            //   ),
+            // ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,16 +267,10 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Yenile',
-            onPressed: () {
-              setState(() {
-                _fetchAllAppointments();
-              });
-            },
+            onPressed: () => setState(() => _fetchAllAppointments()),
           ),
           IconButton(
             icon: const Icon(Icons.date_range),
-            tooltip: 'Tarih Aralığı Seç',
             onPressed: _pickDateRange,
           ),
           DropdownButton<MeetingType?>(
@@ -217,12 +282,10 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                 child: Text(type == null ? 'Tümü' : type.label),
               );
             }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedMeetingType = value;
-                _fetchAllAppointments();
-              });
-            },
+            onChanged: (value) => setState(() {
+              selectedMeetingType = value;
+              _fetchAllAppointments();
+            }),
           ),
           DropdownButton<AppointmentStatus?>(
             value: selectedMeetingStatus,
@@ -233,12 +296,10 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                 child: Text(status == null ? 'Tümü' : status.label),
               );
             }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedMeetingStatus = value;
-                _fetchAllAppointments();
-              });
-            },
+            onChanged: (value) => setState(() {
+              selectedMeetingStatus = value;
+              _fetchAllAppointments();
+            }),
           ),
           DropdownButton<String>(
             value: sortOption,
@@ -249,12 +310,10 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                 child: Text(option),
               );
             }).toList(),
-            onChanged: (value) {
-              setState(() {
-                sortOption = value;
-                _fetchAllAppointments();
-              });
-            },
+            onChanged: (value) => setState(() {
+              sortOption = value;
+              _fetchAllAppointments();
+            }),
           ),
           if (startDate != null ||
               endDate != null ||
@@ -262,16 +321,13 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
               selectedMeetingStatus != null)
             IconButton(
               icon: const Icon(Icons.clear),
-              tooltip: 'Filtreleri Temizle',
-              onPressed: () {
-                setState(() {
-                  startDate = null;
-                  endDate = null;
-                  selectedMeetingType = null;
-                  selectedMeetingStatus = null;
-                  _fetchAllAppointments();
-                });
-              },
+              onPressed: () => setState(() {
+                startDate = null;
+                endDate = null;
+                selectedMeetingType = null;
+                selectedMeetingStatus = null;
+                _fetchAllAppointments();
+              }),
             ),
         ],
       ),
@@ -291,6 +347,7 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
               return const Center(child: Text('Randevu bulunamadı.'));
             }
 
+            // If the range is exactly 7 days, display columns for each day
             if (_isExactly7Days) {
               final List<DateTime> weekDays = List.generate(
                 7,
@@ -313,92 +370,47 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                     return Container(
                       width: kColumnWidth,
                       margin: const EdgeInsets.all(kMainMargin),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            dayTitle,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: kDayTitleFontSize,
+                      child: SizedBox(
+                        height: kFixedDayHeight, // e.g. 500 px
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dayTitle,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: kDayTitleFontSize,
+                              ),
                             ),
-                          ),
-                          const Divider(),
-                          ...dayAppointments.map((appt) {
-                            return GestureDetector(
-                              onTap: () => _showEditAppointmentDialog(context, appt),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: kVerticalMargin),
-                                padding: const EdgeInsets.all(kContainerPadding),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
-                                  borderRadius: BorderRadius.circular(kBorderRadiusValue),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      appt.user?.name ?? 'Bilinmiyor',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      DateFormat('HH:mm').format(appt.appointmentDateTime),
-                                    ),
-                                    Text(
-                                      'Durum: ${appt.status.label}',
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.cancel, color: Colors.red),
-                                        onPressed: () async {
-                                          bool? confirmDelete = await showDialog<bool>(
-                                            context: context,
-                                            builder: (BuildContext context) {
-                                              return AlertDialog(
-                                                title: const Text("Randevu İptali"),
-                                                content: const Text(
-                                                    "Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () {
-                                                      Navigator.of(context).pop(false);
-                                                    },
-                                                    child: const Text("Hayır"),
-                                                  ),
-                                                  TextButton(
-                                                    onPressed: () {
-                                                      Navigator.of(context).pop(true);
-                                                    },
-                                                    child: const Text("Evet"),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                          if (confirmDelete == true) {
-                                            await _deleteAppointment(appt);
-                                          }
-                                        },
-                                        iconSize: kIconButtonSize,
-                                      ),
-                                    ),
-                                  ],
+                            const Divider(),
+                            if (dayAppointments.isEmpty)
+                              const Text('Bu gün boş.'),
+                            if (dayAppointments.isNotEmpty)
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: dayAppointments.map((appt) {
+                                      return SizedBox(
+                                        height: kMaxCardHeight, // up to 60 px
+                                        child: _buildAppointmentCard(appt),
+                                      );
+                                    }).toList(),
+                                  ),
                                 ),
                               ),
-                            );
-                          }),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   }).toList(),
                 ),
               );
             } else {
+              // Otherwise, just show them in a simple ListView
               return ListView.builder(
                 itemCount: appointments.length,
                 itemBuilder: (context, index) {
-                  AppointmentModel appointment = appointments[index];
+                  final appointment = appointments[index];
                   return ListTile(
                     title: Text(
                       'Tarih: ${DateFormat('dd/MM/yyyy HH:mm').format(appointment.appointmentDateTime)}',
@@ -414,14 +426,13 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            _showEditAppointmentDialog(context, appointment);
-                          },
+                          onPressed: () =>
+                              _showEditAppointmentDialog(context, appointment),
                         ),
                         IconButton(
                           icon: const Icon(Icons.cancel, color: Colors.red),
                           onPressed: () async {
-                            bool? confirmDelete = await showDialog<bool>(
+                            final confirmDelete = await showDialog<bool>(
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
@@ -430,15 +441,13 @@ class _AdminAppointmentsPageState extends State<AdminAppointmentsPage> {
                                       "Bu randevuyu iptal etmek istediğinizden emin misiniz?"),
                                   actions: [
                                     TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(false);
-                                      },
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
                                       child: const Text("Hayır"),
                                     ),
                                     TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(true);
-                                      },
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
                                       child: const Text("Evet"),
                                     ),
                                   ],

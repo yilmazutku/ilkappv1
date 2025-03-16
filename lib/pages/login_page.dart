@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled/diet_list_pages/odeme_takip_handler.dart';
 import 'package:untitled/pages/meas_page.dart';
+import 'package:untitled/pages/profile_page.dart';
 import 'package:untitled/pages/reset_password_page.dart';
 import 'package:untitled/pages/user_past_appointments_page.dart';
 import 'package:untitled/pages/user_payments_page.dart';
@@ -125,120 +126,290 @@ class LoginPage extends StatelessWidget {
   }
 
   Widget _buildHomePageContent(BuildContext context) {
-    // Define our grid items using a list of maps for brevity.
-    final List<Map<String, dynamic>> gridItems = [
-      {
-        'icon': Icons.food_bank,
-        'label': 'Planım',
-        'onTap': () => _navigateToMeal(context),
-      },
-      {
-        'icon': Icons.food_bank,
-        'label': 'Ölçümlerim',
-        'onTap': () => _navigateToMeas(context),
-      },
-      {
-        'icon': Icons.calendar_today,
-        'label': 'Geçmiş Randevularım',
-        'onTap': () => _navigateToPastAppointments(context),
-      },
-      {
-        'icon': Icons.payments,
-        'label': 'Ödemelerim',
-        'onTap': () => _navigateToPayments(context),
-      },
-      {
-        'icon': Icons.timeline,
-        'label': 'Admin Zamanlar',
-        'onTap': () => _navigateToAdminTimeSlots(context),
-      },
-      {
-        'icon': Icons.event,
-        'label': 'Randevu Al',
-        'onTap': () => _navigateToUserAppointments(context),
-      },
-      {
-        'icon': Icons.lock,
-        'label': 'Şifre Sıfırla',
-        'onTap': () => _navigateToResetPassword(context),
-      },
-      {
-        'icon': Icons.assignment,
-        'label': 'Admin Randevular',
-        'onTap': () => _navigateToAdminAppointments(context),
-      },
-      {
-        'icon': Icons.image,
-        'label': 'Admin Panel',
-        'onTap': () => _navigateToAdminImages(context),
-      },
-      {
-        'icon': Icons.list,
-        'label': 'Admin Liste Yükle',
-        'onTap': () => _navigateToFileHandler(context),
-      },
-      {
-        'icon': Icons.person_add,
-        'label': 'Admin Kullanıcı Oluştur',
-        'onTap': () => _navigateToCreateUser(context),
-      },
-      {
-        'icon': Icons.person_add,
-        'label': 'Admin Odeme Takip Cizelge Yukle',
-        'onTap': () => _navigateToOdemeTakipHandler(context),
-      },
-    ];
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return const SizedBox();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ana Sayfa'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(2.0),
-        child: GridView.count(
-          crossAxisCount: 4,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          // Adjust childAspectRatio to make items appear smaller.
-          childAspectRatio: 5,
-          children: gridItems.map((item) {
-            return _buildGridItem(
+    return FutureBuilder<String>(
+      future: _getUserRole(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final role = snapshot.data ?? 'user';
+        final isAdmin = role == 'admin';
+
+        // User-specific grid items
+        final List<Map<String, dynamic>> userGridItems = [
+          {
+            'icon': Icons.food_bank,
+            'label': 'Planım',
+            'onTap': () => _navigateToMeal(context),
+          },
+          {
+            'icon': Icons.fitness_center,
+            'label': 'Ölçümlerim',
+            'onTap': () => _navigateToMeas(context),
+          },
+          {
+            'icon': Icons.calendar_today,
+            'label': 'Geçmiş Randevularım',
+            'onTap': () => _navigateToPastAppointments(context),
+          },
+          {
+            'icon': Icons.payments,
+            'label': 'Ödemelerim',
+            'onTap': () => _navigateToPayments(context),
+          },
+          {
+            'icon': Icons.event,
+            'label': 'Randevu Al',
+            'onTap': () => _navigateToUserAppointments(context),
+          },
+          {
+            'icon': Icons.person,
+            'label': 'Profil',
+            'onTap': () => Navigator.push(
               context,
-              item['icon'] as IconData,
-              item['label'] as String,
-              item['onTap'] as VoidCallback,
-            );
-          }).toList(),
-        ),
-      ),
+              MaterialPageRoute(builder: (_) => ProfilePage(userId: userId)),
+            ),
+          },
+        ];
+
+        // Admin-specific drawer items
+        final List<Map<String, dynamic>> adminDrawerItems = [
+          {
+            'icon': Icons.timeline,
+            'label': 'Admin Zamanlar',
+            'onTap': () => _navigateToAdminTimeSlots(context),
+          },
+          {
+            'icon': Icons.assignment,
+            'label': 'Admin Randevular',
+            'onTap': () => _navigateToAdminAppointments(context),
+          },
+          {
+            'icon': Icons.image,
+            'label': 'Admin Panel',
+            'onTap': () => _navigateToAdminImages(context),
+          },
+          {
+            'icon': Icons.list,
+            'label': 'Admin Liste Yükle',
+            'onTap': () => _navigateToFileHandler(context),
+          },
+          {
+            'icon': Icons.person_add,
+            'label': 'Admin Kullanıcı Oluştur',
+            'onTap': () => _navigateToCreateUser(context),
+          },
+          {
+            'icon': Icons.payment,
+            'label': 'Admin Ödeme Takip',
+            'onTap': () => _navigateToOdemeTakipHandler(context),
+          },
+        ];
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Ana Sayfa'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Provider.of<LoginProvider>(context, listen: false).logout();
+                },
+              ),
+            ],
+          ),
+          drawer: isAdmin
+              ? Drawer(
+            child: ListView(
+              children: [
+                const DrawerHeader(
+                  decoration: BoxDecoration(color: Colors.blue),
+                  child: Text('Admin Menüsü', style: TextStyle(color: Colors.white, fontSize: 20)),
+                ),
+                ...adminDrawerItems.map((item) => ListTile(
+                  leading: Icon(item['icon']),
+                  title: Text(item['label']),
+                  onTap: () {
+                    Navigator.pop(context); // Close drawer
+                    item['onTap']();
+                  },
+                )),
+              ],
+            ),
+          )
+              : null,
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.2,
+              children: userGridItems.map((item) {
+                return _buildGridItem(
+                  context,
+                  item['icon'] as IconData,
+                  item['label'] as String,
+                  item['onTap'] as VoidCallback,
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildGridItem(
-      BuildContext context,
-      IconData icon,
-      String label,
-      VoidCallback onTap,
-      ) {
+// Helper method to fetch user role
+  Future<String> _getUserRole(String userId) async {
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return userDoc.data()?['role'] ?? 'user';
+  }
+
+// Updated _buildGridItem for better styling
+  Widget _buildGridItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
     return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Reduce icon size to make it smaller.
-            Icon(icon, size: 18),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Icon(icon, size: 40, color: Colors.blue),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
+  //16.03.2025 değiştirildi grok3 ile:
+  // Widget _buildHomePageContent(BuildContext context) {
+  //   // Define our grid items using a list of maps for brevity.
+  //   final List<Map<String, dynamic>> gridItems = [
+  //     {
+  //       'icon': Icons.food_bank,
+  //       'label': 'Planım',
+  //       'onTap': () => _navigateToMeal(context),
+  //     },
+  //     {
+  //       'icon': Icons.food_bank,
+  //       'label': 'Ölçümlerim',
+  //       'onTap': () => _navigateToMeas(context),
+  //     },
+  //     {
+  //       'icon': Icons.calendar_today,
+  //       'label': 'Geçmiş Randevularım',
+  //       'onTap': () => _navigateToPastAppointments(context),
+  //     },
+  //     {
+  //       'icon': Icons.payments,
+  //       'label': 'Ödemelerim',
+  //       'onTap': () => _navigateToPayments(context),
+  //     },
+  //     {
+  //       'icon': Icons.timeline,
+  //       'label': 'Admin Zamanlar',
+  //       'onTap': () => _navigateToAdminTimeSlots(context),
+  //     },
+  //     {
+  //       'icon': Icons.event,
+  //       'label': 'Randevu Al',
+  //       'onTap': () => _navigateToUserAppointments(context),
+  //     },
+  //     {
+  //       'icon': Icons.lock,
+  //       'label': 'Şifre Sıfırla',
+  //       'onTap': () => _navigateToResetPassword(context),
+  //     },
+  //     {
+  //       'icon': Icons.assignment,
+  //       'label': 'Admin Randevular',
+  //       'onTap': () => _navigateToAdminAppointments(context),
+  //     },
+  //     {
+  //       'icon': Icons.image,
+  //       'label': 'Admin Panel',
+  //       'onTap': () => _navigateToAdminImages(context),
+  //     },
+  //     {
+  //       'icon': Icons.list,
+  //       'label': 'Admin Liste Yükle',
+  //       'onTap': () => _navigateToFileHandler(context),
+  //     },
+  //     {
+  //       'icon': Icons.person_add,
+  //       'label': 'Admin Kullanıcı Oluştur',
+  //       'onTap': () => _navigateToCreateUser(context),
+  //     },
+  //     {
+  //       'icon': Icons.person_add,
+  //       'label': 'Admin Odeme Takip Cizelge Yukle',
+  //       'onTap': () => _navigateToOdemeTakipHandler(context),
+  //     },
+  //   ];
+  //
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: const Text('Ana Sayfa'),
+  //       centerTitle: true,
+  //     ),
+  //     body: Padding(
+  //       padding: const EdgeInsets.all(2.0),
+  //       child: GridView.count(
+  //         crossAxisCount: 4,
+  //         mainAxisSpacing: 4,
+  //         crossAxisSpacing: 4,
+  //         // Adjust childAspectRatio to make items appear smaller.
+  //         childAspectRatio: 5,
+  //         children: gridItems.map((item) {
+  //           return _buildGridItem(
+  //             context,
+  //             item['icon'] as IconData,
+  //             item['label'] as String,
+  //             item['onTap'] as VoidCallback,
+  //           );
+  //         }).toList(),
+  //       ),
+  //     ),
+  //   );
+  // }
+//16.03.2025 değiştirildi grok3 ile:
+  // Widget _buildGridItem(
+  //     BuildContext context,
+  //     IconData icon,
+  //     String label,
+  //     VoidCallback onTap,
+  //     ) {
+  //   return Card(
+  //     elevation: 1,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+  //     child: InkWell(
+  //       onTap: onTap,
+  //       borderRadius: BorderRadius.circular(2),
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           // Reduce icon size to make it smaller.
+  //           Icon(icon, size: 18),
+  //           const SizedBox(height: 4),
+  //           Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // -- Navigation helpers below --
 

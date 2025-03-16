@@ -84,6 +84,13 @@ return true;  }
     notifyListeners();
   }
 
+  void logout() {
+    _isLoggedIn = false;
+    emailController.clear();
+    passwordController.clear();
+    notifyListeners();
+  }
+
   // Input validation
   bool _validateInputs() {
     if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
