@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../models/logger.dart';
+
 final Logger logger = Logger.forClass(LoginProvider);
 
+///TODO: mail/şifre yanlış girince defaulta düşüyor. login methodu commentler yer değiştirmeli uncommented yerlerle
 class LoginProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool _isLoading = false;
   String _errorMessage = '';
-  bool _isLoggedIn = false;
 
-  bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
 
-  // Login function
+  /// Attempts to log in with the provided email and password.
   Future<bool> login(BuildContext context) async {
-    //TODO gerçek logine çevirmek icin comemnten çıkar
     // if (!_validateInputs()) {
     //   notifyListeners();
     //   return false;
@@ -28,34 +26,36 @@ class LoginProvider extends ChangeNotifier {
     _errorMessage = '';
 
     bool isLoginSuccessful = await _signIn(
-        emailController.text.trim(), passwordController.text.trim());
-
-    if (isLoginSuccessful) {
-      _isLoggedIn = true;
-    }
+       'utkuyy97@gmail.com',
+        '612009'
+      // emailController.text.trim(),
+      //passwordController.text.trim(),
+    );
 
     _setLoadingState(false);
     notifyListeners();
     return isLoginSuccessful;
   }
 
-  // Sign-in function
+  /// Signs in using Firebase Authentication.
   Future<bool> _signIn(String email, String password) async {
     try {
-      //TODO gerçek logine çevirmek icin comemnte al 2.yi birinciyi de çıkar
-      // await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: 'utkuyy97@gmail.com', password: '612009');
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       return true;
     } on FirebaseAuthException catch (e) {
       _handleFirebaseAuthError(e);
       return false;
-    } catch (_) {
+    } catch (e) {
       _errorMessage = 'Beklenmeyen bir hata oluştu.';
+      logger.err('Unexpected error during sign-in: {}', [e.toString()]);
       return false;
     }
-return true;  }
+  }
 
-  // Handle Firebase errors
+  /// Handles Firebase Authentication errors and sets appropriate error messages.
   void _handleFirebaseAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'invalid-email':
@@ -65,33 +65,26 @@ return true;  }
         _errorMessage = 'Bu kullanıcı hesabı devre dışı bırakılmış.';
         break;
       case 'user-not-found':
-        _errorMessage = 'Kullanıcı adı bulunamadı.';
+        _errorMessage = 'Kullanıcı bulunamadı.';
         break;
       case 'wrong-password':
         _errorMessage = 'Girdiğiniz şifre yanlış. Lütfen tekrar deneyiniz.';
         break;
       default:
-        _errorMessage = 'Giriş yaparken beklenmeyen bir hata oluştu.';
+        _errorMessage = 'Giriş yaparken beklenmeyen bir hata oluştu. Lütfen mailinizi ve şifrenizi kontrol ediniz.';
         break;
     }
-    logger.err('firebase auth err:{}',[e.code]);
+    logger.err('Firebase auth error: {}', [e.code]);
     notifyListeners();
   }
 
-  // Clear the error message
+  /// Clears the error message.
   void clearError() {
     _errorMessage = '';
     notifyListeners();
   }
 
-  void logout() {
-    _isLoggedIn = false;
-    emailController.clear();
-    passwordController.clear();
-    notifyListeners();
-  }
-
-  // Input validation
+  /// Validates that email and password fields are not empty.
   bool _validateInputs() {
     if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
       _errorMessage = 'Lütfen alanları doldurunuz.';
@@ -100,7 +93,7 @@ return true;  }
     return true;
   }
 
-  // Set loading state
+  /// Updates the loading state and notifies listeners.
   void _setLoadingState(bool isLoading) {
     _isLoading = isLoading;
     notifyListeners();

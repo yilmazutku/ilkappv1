@@ -9,14 +9,13 @@ class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.userId});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   final _nameController = TextEditingController();
   final _surnameController = TextEditingController();
   final _ageController = TextEditingController();
-  bool _isEditing = false;
   bool _isLoading = true;
 
   @override
@@ -26,12 +25,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
-    final data = userDoc.data();
-    if (data != null) {
-      _nameController.text = data['name'] ?? '';
-      _surnameController.text = data['surname'] ?? '';
-      _ageController.text = data['age']?.toString() ?? '';
+    try {
+      print('Loading data for userId: ${widget.userId}');
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
+      final data = userDoc.data();
+      print('User data: $data');
+      if (data != null) {
+        _nameController.text = data['name'] ?? '';
+        _surnameController.text = data['surname'] ?? '';
+        _ageController.text = data['age']?.toString() ?? '';
+      } else {
+        print('No data found for userId: ${widget.userId}');
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
     }
     setState(() {
       _isLoading = false;
@@ -40,43 +47,72 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _saveUserData() async {
     if (_nameController.text.isEmpty || _surnameController.text.isEmpty || _ageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen tüm alanları doldurun')),
-      );
+      _showInfoDialog('Lütfen tüm alanları doldurun.');
       return;
     }
     setState(() => _isLoading = true);
-    await FirebaseFirestore.instance.collection('users').doc(widget.userId).update({
-      'name': _nameController.text,
-      'surname': _surnameController.text,
-      'age': int.tryParse(_ageController.text) ?? 0,
-    });
+    try {
+      int? age = int.tryParse(_ageController.text);
+      if (age == null) {
+        _showInfoDialog('Lütfen Yaş alanına geçerli bir sayı giriniz.');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      await FirebaseFirestore.instance.collection('users').doc(widget.userId).set({
+        'name': _nameController.text,
+        'surname': _surnameController.text,
+        'age': age,
+      }, SetOptions(merge: true));
+      print('User data saved for userId: ${widget.userId}');
+    } catch (e) {
+      print('Error saving user data: $e');
+    }
     setState(() {
-      _isEditing = false;
       _isLoading = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bilgiler güncellendi')),
+    _showInfoDialog('Bilgiler güncellendi!');
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if(!context.mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  void _showInfoDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final buttonWidth = MediaQuery.of(context).size.width * 0.33;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profil'),
         centerTitle: true,
         actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => setState(() => _isEditing = true),
-            ),
-          if (_isEditing)
             IconButton(
               icon: const Icon(Icons.save),
               onPressed: _saveUserData,
             ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+          ),
         ],
       ),
       body: _isLoading
@@ -88,34 +124,68 @@ class _ProfilePageState extends State<ProfilePage> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Ad'),
-              enabled: _isEditing,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _surnameController,
               decoration: const InputDecoration(labelText: 'Soyad'),
-              enabled: _isEditing,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _ageController,
               decoration: const InputDecoration(labelText: 'Yaş'),
               keyboardType: TextInputType.number,
-              enabled: _isEditing,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ResetPasswordPage(
-                      email: FirebaseAuth.instance.currentUser?.email ?? '',
+           // const Spacer(),
+            Column(
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: buttonWidth,
+                    child: ElevatedButton.icon(
+                      onPressed: _saveUserData,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Kaydet'),
                     ),
                   ),
-                );
-              },
-              child: const Text('Şifre Sıfırla'),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: buttonWidth,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ResetPasswordPage(
+                              email: FirebaseAuth.instance.currentUser?.email ?? '',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.lock_reset),
+                      label: const Text('Şifre Sıfırla'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: buttonWidth,
+                    child: ElevatedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Çıkış Yap'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
